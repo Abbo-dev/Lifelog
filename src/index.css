@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Quintessential&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+   padding: 0;
+   margin: 0;
+   box-sizing: border-box;
+   font-family: poppins, sans-serif , roboto;   
+}
+
+:root {
+  --app-bg-light: radial-gradient(circle at 15% 20%, rgba(94, 162, 239, 0.18), transparent 32%),
+                  radial-gradient(circle at 80% 0%, rgba(0, 114, 245, 0.15), transparent 35%),
+                  linear-gradient(140deg, #e8f1ff 0%, #dbe8ff 32%, #ccd9f5 100%);
+  --app-bg-dark: radial-gradient(circle at 20% 20%, rgba(94, 162, 239, 0.18), transparent 32%),
+                  radial-gradient(circle at 80% 0%, rgba(0, 114, 245, 0.22), transparent 38%),
+                  linear-gradient(145deg, #0b1d3a 0%, #0b1d3a 40%, #0c192f 100%);
+  --app-bg: var(--app-bg-light);
+  --nav-bg: transparent;
+}
+
+.dark:root {
+  --app-bg: var(--app-bg-dark);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--app-bg) !important;
+}
+
+html.dark,
+html.dark body,
+html.dark #root {
+  background: var(--app-bg) !important;
+}
+
+/* Subtle marquee for landing badges */
+.ticker {
+  animation: ticker 18s linear infinite;
+  width: max-content;
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  @apply min-h-[150px] outline-none;
+}
+
+.ProseMirror p {
+  @apply my-1;
+}
+
+.ProseMirror h1 {
+  @apply text-2xl font-bold my-2;
+}
+
+.ProseMirror h2 {
+  @apply text-xl font-bold my-2;
+}
+
+.ProseMirror ul {
+  @apply list-disc list-inside my-2;
+}
+
+.ProseMirror ol {
+  @apply list-decimal list-inside my-2;
+}
+
+.ProseMirror li {
+  @apply my-1;
+}
+
+.ProseMirror a {
+  @apply text-blue-600 dark:text-blue-400 underline;
+}
+
+.ProseMirror blockquote {
+  @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 italic;
+}
+
+.ProseMirror code {
+  @apply bg-gray-100 dark:bg-gray-800 rounded px-1;
+}
+
+.ProseMirror pre {
+  @apply bg-gray-100 dark:bg-gray-800 rounded p-2 my-2;
+}
+
+.ProseMirror pre code {
+  @apply bg-transparent p-0;
+}
+
+.ProseMirror mark {
+  @apply bg-yellow-200 dark:bg-yellow-800;
+}
+
+.ProseMirror ul[data-type="taskList"] {
+  @apply list-none;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  @apply flex items-start gap-2;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  @apply mt-1;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  @apply flex-1;
+}
+
+/* Dark mode styles */
+.dark .ProseMirror {
+  @apply text-white;
+}
+
+.dark .ProseMirror a {
+  @apply text-blue-400;
+}
+
+.dark .ProseMirror blockquote {
+  @apply border-gray-600;
+}
+
+.dark .ProseMirror code {
+  @apply bg-gray-800;
+}
+
+.dark .ProseMirror pre {
+  @apply bg-gray-800;
+}
+
+.dark .ProseMirror mark {
+  @apply bg-yellow-800;
+}
+
+/* Force Navbar to stay transparent across themes */
+.heroui-navbar,
+.heroui-navbar-wrapper,
+.heroui-navbar-content {
+  background: var(--nav-bg) !important;
+  box-shadow: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+}
