@@ -115,7 +115,7 @@ function Content() {
 
   return (
     <div
-      className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center px-4 pt-4 md:pt-6 pb-16"
+      className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center px-4 pt-14 md:pt-16 pb-24"
     >
       <div className="relative max-w-6xl w-full text-center z-10">
         <motion.div
@@ -167,39 +167,57 @@ function Content() {
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
-          className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 text-left"
-        >
-          {statCards.map((item) => (
-            <div
-              key={item.label}
-              className="glass-panel-soft rounded-2xl p-5 border border-white/10 text-slate-900 dark:text-white"
-            >
-              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/60">
-                {item.label}
-              </p>
-              <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">
-                {item.value}
-              </p>
-              <p className="text-sm text-slate-700 dark:text-white/70">{item.desc}</p>
-              <div className="mt-4 h-1.5 rounded-full bg-slate-200/70 dark:bg-white/5 overflow-hidden">
-                <span
-                  className="block h-full rounded-full bg-gradient-to-r from-[#5EA2EF] to-[#0072F5]"
-                  style={{ width: `${item.progress}%` }}
-                />
+        <div className="mt-20 space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="text-center"
+          >
+            <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/65">
+              Momentum stats
+            </p>
+            <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white mt-1">
+              See the lift you get with LifeLog
+            </h2>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ delay: 0.05, duration: 0.5, ease: "easeOut" }}
+            className="grid grid-cols-1 gap-8 text-left md:flex md:flex-wrap md:gap-6 md:justify-center"
+          >
+            {statCards.map((item) => (
+              <div
+                key={item.label}
+                className="glass-panel-soft rounded-2xl p-5 border border-white/10 text-slate-900 dark:text-white md:min-w-[280px] md:flex-1"
+              >
+                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/60">
+                  {item.label}
+                </p>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">
+                  {item.value}
+                </p>
+                <p className="text-sm text-slate-700 dark:text-white/70">{item.desc}</p>
+                <div className="mt-4 h-1.5 rounded-full bg-slate-200/70 dark:bg-white/5 overflow-hidden">
+                  <span
+                    className="block h-full rounded-full bg-gradient-to-r from-[#5EA2EF] to-[#0072F5]"
+                    style={{ width: `${item.progress}%` }}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
-        </motion.div>
+            ))}
+          </motion.div>
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
-          className="mt-10"
+          className="mt-16"
         >
           <div className="mockup-window rounded-[28px] p-6 md:p-8 border border-white/15">
             <div className="flex items-center justify-between pb-5 border-b border-white/10 flex-wrap gap-3">
@@ -357,38 +375,54 @@ function Content() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.6, ease: "easeOut" }}
-          className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 text-left"
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.55, ease: "easeOut" }}
+          className="mt-20 space-y-7"
         >
-          {highlights.map((item) => (
-            <div
-              key={item.title}
-              className="glass-panel-soft rounded-2xl p-5 border border-white/10 hover:-translate-y-1 transition-all hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)] text-slate-900 dark:text-white"
-            >
-              <div className="flex items-start gap-4">
-                <span className="glow-icon w-12 h-12 flex items-center justify-center shrink-0">
-                  <Image src={item.icon} alt={item.title} className="w-7 h-7 object-contain" />
-                </span>
-                <div className="space-y-1">
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-                    {item.title}
-                  </h2>
-                  <p className="text-sm text-slate-700 dark:text-white/75 leading-relaxed">
-                    {item.body}
-                  </p>
+          <div className="text-center">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/65">
+              Highlights
+            </p>
+            <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white mt-1">
+              Built to keep you organized and quick
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 text-left md:flex md:flex-wrap md:gap-6 md:justify-center">
+            {highlights.map((item, idx) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 * idx }}
+                className="glass-panel-soft rounded-2xl p-5 border border-white/10 hover:-translate-y-1 transition-all hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)] text-slate-900 dark:text-white"
+              >
+                <div className="flex items-start gap-4">
+                  <span className="glow-icon w-12 h-12 flex items-center justify-center shrink-0">
+                    <Image src={item.icon} alt={item.title} className="w-7 h-7 object-contain" />
+                  </span>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-slate-700 dark:text-white/75 leading-relaxed">
+                      {item.body}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
-          className="mt-14 glass-panel rounded-3xl p-8 border border-white/15 text-left"
+          className="mt-20 glass-panel rounded-3xl p-8 border border-white/15 text-left"
         >
           <div className="grid gap-8 lg:grid-cols-[1.05fr,0.95fr] items-start">
             <div className="space-y-4">
