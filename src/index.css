@@ -11,17 +11,18 @@ body {
 }
 
 :root {
-  --app-bg-light: radial-gradient(circle at 15% 20%, rgba(94, 162, 239, 0.18), transparent 32%),
-                  radial-gradient(circle at 80% 0%, rgba(0, 114, 245, 0.15), transparent 35%),
-                  linear-gradient(140deg, #e8f1ff 0%, #dbe8ff 32%, #ccd9f5 100%);
-  --app-bg-dark: radial-gradient(circle at 20% 20%, rgba(94, 162, 239, 0.18), transparent 32%),
-                  radial-gradient(circle at 80% 0%, rgba(0, 114, 245, 0.22), transparent 38%),
-                  linear-gradient(145deg, #0b1d3a 0%, #0b1d3a 40%, #0c192f 100%);
+  /* Shared palettes for light/dark */
+  --app-bg-light: radial-gradient(circle at 18% 18%, rgba(94, 162, 239, 0.16), transparent 35%),
+                  radial-gradient(circle at 82% 8%, rgba(0, 114, 245, 0.12), transparent 40%),
+                  linear-gradient(145deg, #e9f1ff 0%, #d9e7ff 28%, #c7d8f5 100%);
+  --app-bg-dark: radial-gradient(circle at 20% 20%, rgba(94, 162, 239, 0.12), transparent 35%),
+                  radial-gradient(circle at 80% 10%, rgba(0, 114, 245, 0.12), transparent 38%),
+                  linear-gradient(145deg, #0a1f3f 0%, #0b1e3a 35%, #0a274f 100%);
   --app-bg: var(--app-bg-light);
   --nav-bg: transparent;
 }
 
-.dark:root {
+html.dark {
   --app-bg: var(--app-bg-dark);
 }
 

@@ -42,7 +42,7 @@ const NavbarSide = () => {
   }, []);
 
   return (
-    <header className="w-full text-slate-900 dark:text-white bg-transparent">
+    <header className="fixed inset-x-0 top-0 z-30 w-full text-slate-900 dark:text-white bg-transparent">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-4 flex items-center justify-between">
         <div className="flex items-center justify-center">
           <Link to="/">
@@ -58,7 +58,7 @@ const NavbarSide = () => {
           </Link>
         </div>
 
-        <div className="flex items-center gap-3 md:gap-4 px-3 py-2 rounded-full bg-[#f0f4fb] dark:bg-[#0f1f3a] border border-slate-200/70 dark:border-slate-800 shadow-sm shadow-slate-200/40 dark:shadow-black/30">
+        <div className="flex items-center gap-3 md:gap-4 px-3 py-2 rounded-full bg-transparent border border-transparent shadow-none">
           <SwitchTheme />
 
           {loading ? (

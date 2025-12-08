@@ -1,16 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardBody } from "@heroui/card";
 import { Button, Avatar, Chip } from "@heroui/react";
 import { auth, db } from "../firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updateEmail,
   updatePassword,
 } from "firebase/auth";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addDays,
+  addMonths,
+  isSameMonth,
+  isSameDay,
+  isToday,
+} from "date-fns";
 
 const statCards = [
   { label: "Notes", key: "notes" },
@@ -34,6 +46,9 @@ function Profile() {
   const [savingEmail, setSavingEmail] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [notes, setNotes] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
   const user = auth.currentUser;
 
   const toDateValue = (value) => {
@@ -109,6 +124,20 @@ function Profile() {
     };
 
     fetchStats();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const notesRef = collection(db, "notes");
+    const q = query(notesRef, where("userId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const noteData = snapshot.docs.map((docItem) => ({
+        id: docItem.id,
+        ...docItem.data(),
+      }));
+      setNotes(noteData);
+    });
+    return unsubscribe;
   }, [user]);
 
   useEffect(() => {
@@ -188,6 +217,95 @@ function Profile() {
     }
   };
 
+  const formatDue = (note) => {
+    const due = toDateValue(note?.dueDate);
+    return due ? format(due, "EEE, MMM d • h:mma") : "No due date";
+  };
+
+  const pinnedNotes = useMemo(
+    () => notes.filter((note) => note.isPinned).slice(0, 6),
+    [notes]
+  );
+
+  const upcomingNotes = useMemo(() => {
+    const now = new Date();
+    const soon = addDays(now, 21);
+    return notes
+      .filter((note) => {
+        const due = toDateValue(note.dueDate);
+        return due && due >= now && due <= soon;
+      })
+      .sort((a, b) => {
+        const aTime = toDateValue(a.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        const bTime = toDateValue(b.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        return aTime - bTime;
+      });
+  }, [notes]);
+
+  const priorityNotes = useMemo(() => {
+    const map = new Map();
+    pinnedNotes.forEach((note) => map.set(note.id, note));
+    upcomingNotes.forEach((note) => {
+      if (!map.has(note.id)) {
+        map.set(note.id, note);
+      }
+    });
+    return Array.from(map.values()).slice(0, 8);
+  }, [pinnedNotes, upcomingNotes]);
+
+  const dashboardStats = useMemo(() => {
+    const total = notes.length;
+    const pinned = pinnedNotes.length;
+    const upcoming = upcomingNotes.length;
+    const dated = notes.filter((note) => !!toDateValue(note.dueDate)).length;
+    return { total, pinned, upcoming, dated };
+  }, [notes, pinnedNotes, upcomingNotes]);
+
+  const notesByDate = useMemo(() => {
+    const map = {};
+    notes.forEach((note) => {
+      const due = toDateValue(note.dueDate);
+      if (!due) return;
+      const key = format(due, "yyyy-MM-dd");
+      map[key] = map[key] || [];
+      map[key].push(note);
+    });
+    Object.values(map).forEach((list) =>
+      list.sort(
+        (a, b) =>
+          (toDateValue(a.dueDate)?.getTime() || 0) -
+          (toDateValue(b.dueDate)?.getTime() || 0)
+      )
+    );
+    return map;
+  }, [notes]);
+
+  const selectedDateNotes = useMemo(() => {
+    const key = format(selectedDate, "yyyy-MM-dd");
+    return notesByDate[key] || [];
+  }, [notesByDate, selectedDate]);
+
+  const calendarDays = useMemo(() => {
+    const start = startOfWeek(startOfMonth(calendarMonth), { weekStartsOn: 1 });
+    const end = endOfWeek(endOfMonth(calendarMonth), { weekStartsOn: 1 });
+    const days = [];
+    let current = start;
+    while (current <= end) {
+      days.push(current);
+      current = addDays(current, 1);
+    }
+    return days;
+  }, [calendarMonth]);
+
+  const handleMonthChange = (direction) => {
+    setCalendarMonth(addMonths(calendarMonth, direction));
+  };
+
+  const handleDateSelect = (day) => {
+    setSelectedDate(day);
+    setCalendarMonth(day);
+  };
+
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center text-slate-900 dark:text-gray-100" style={{ background: "var(--app-bg)" }}>
@@ -198,7 +316,7 @@ function Profile() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-slate-900 dark:text-gray-100" style={{ background: "transparent" }}>
+    <div className="relative min-h-screen overflow-hidden text-slate-900 dark:text-gray-100" style={{ background: "var(--app-bg)" }}>
       <div className="relative max-w-4xl mx-auto px-4 py-16">
         <div className="flex items-center justify-between mb-10">
           <div>
@@ -232,6 +350,225 @@ function Profile() {
             </motion.div>
           ))}
         </div>
+
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.45 }}
+          className="mt-10 glass-panel rounded-3xl p-5 md:p-6 text-white border border-white/10 shadow-2xl shadow-black/40 overflow-hidden"
+        >
+          <div className="flex items-center justify-between gap-3 flex-wrap pb-4 border-b border-white/10">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-white/70">
+                Dashboard snapshot
+              </p>
+              <h2 className="text-xl font-semibold">Live LifeLog view</h2>
+              <p className="text-xs text-white/70">
+                Pinned, due soon, and calendar from your notes.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="glass-chip px-3 py-1 text-[11px] border border-white/15">
+                Pinned {dashboardStats.pinned}
+              </span>
+              <span className="glass-chip px-3 py-1 text-[11px] text-[#5EA2EF] border border-white/15">
+                Upcoming {dashboardStats.upcoming}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-[1.05fr,0.95fr] items-start mt-5">
+            <div className="space-y-4">
+              <div className="glass-panel-soft rounded-2xl p-4 border border-white/10">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
+                      Pinned + due soon
+                    </p>
+                    <p className="text-xs text-white/70">
+                      Real notes from your workspace
+                    </p>
+                  </div>
+                  <span className="px-3 py-1 text-[11px] rounded-full border border-white/10 bg-white/5 text-white/80">
+                    {priorityNotes.length
+                      ? `${priorityNotes.length} highlighted`
+                      : "No priority notes yet"}
+                  </span>
+                </div>
+                <div className="mt-3 space-y-3">
+                  {priorityNotes.length === 0 ? (
+                    <p className="text-sm text-white/60">
+                      Pin notes or add due dates to see them here.
+                    </p>
+                  ) : (
+                    priorityNotes.map((note) => (
+                      <div
+                        key={note.id}
+                        className="flex items-start justify-between gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-3"
+                      >
+                        <div className="space-y-1 text-left">
+                          <p className="text-sm font-semibold text-white line-clamp-2">
+                            {note.title || "Untitled note"}
+                          </p>
+                          <p className="text-[11px] text-white/70">
+                            {note.isPinned ? "Pinned • " : ""}
+                            {formatDue(note)}
+                          </p>
+                          {note.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {note.tags.slice(0, 3).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="px-2 py-0.5 rounded-full text-[11px] border border-white/15 bg-white/5 text-white/80"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{ backgroundColor: note.color || "#5EA2EF" }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="glass-panel-soft rounded-2xl p-4 border border-white/10">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Total notes", value: dashboardStats.total },
+                    { label: "Pinned", value: dashboardStats.pinned },
+                    { label: "Upcoming", value: dashboardStats.upcoming },
+                    { label: "With dates", value: dashboardStats.dated },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="rounded-2xl border border-white/10 bg-white/5 p-3 text-left"
+                    >
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">
+                        {stat.label}
+                      </p>
+                      <p className="text-lg font-semibold text-white mt-1">
+                        {stat.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="glass-panel-soft rounded-2xl p-4 border border-white/10">
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => handleMonthChange(-1)}
+                    className="text-lg px-2 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                  >
+                    ‹
+                  </button>
+                  <div className="text-sm font-semibold text-white">
+                    {format(calendarMonth, "MMMM yyyy")}
+                  </div>
+                  <button
+                    onClick={() => handleMonthChange(1)}
+                    className="text-lg px-2 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                  >
+                    ›
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2 mt-3 text-[11px] text-white/60">
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+                    (day) => (
+                      <span key={day} className="text-center">
+                        {day}
+                      </span>
+                    )
+                  )}
+                </div>
+
+                <div className="grid grid-cols-7 gap-2 mt-2">
+                  {calendarDays.map((day) => {
+                    const key = format(day, "yyyy-MM-dd");
+                    const hasNotes = !!notesByDate[key];
+                    const selected = isSameDay(day, selectedDate);
+                    const inMonth = isSameMonth(day, calendarMonth);
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => handleDateSelect(day)}
+                        className={`relative h-12 rounded-xl border text-xs transition-all ${
+                          selected
+                            ? "border-[#5EA2EF] bg-[#5EA2EF]/20 text-white shadow-[0_0_0_1px_rgba(94,162,239,0.2)]"
+                            : inMonth
+                            ? "border-white/10 bg-white/5 text-white/80 hover:border-[#5EA2EF]/40"
+                            : "border-white/5 bg-white/5 text-white/40"
+                        }`}
+                      >
+                        <span className="absolute top-1 left-1 text-[11px]">
+                          {format(day, "d")}
+                        </span>
+                        {isToday(day) && (
+                          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]" />
+                        )}
+                        {hasNotes && (
+                          <span className="absolute bottom-1 left-1 right-1 mx-auto h-1.5 rounded-full bg-gradient-to-r from-[#5EA2EF] to-[#0072F5]" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
+                      {format(selectedDate, "MMM d, yyyy")}
+                    </p>
+                    <span className="text-xs text-white/70">
+                      {selectedDateNotes.length} scheduled
+                    </span>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {selectedDateNotes.length === 0 ? (
+                      <p className="text-sm text-white/60">
+                        No notes due on this date.
+                      </p>
+                    ) : (
+                      selectedDateNotes.map((note) => (
+                        <div
+                          key={note.id}
+                          className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                        >
+                          <div className="space-y-0.5 text-left">
+                            <p className="text-sm font-semibold text-white line-clamp-1">
+                              {note.title || "Untitled note"}
+                            </p>
+                            <p className="text-[11px] text-white/70">
+                              {formatDue(note)}
+                            </p>
+                          </div>
+                          <Chip
+                            size="sm"
+                            className="bg-[#5EA2EF]/15 text-white border border-white/10"
+                            variant="flat"
+                          >
+                            {note.tags?.[0] ? `#${note.tags[0]}` : "Scheduled"}
+                          </Chip>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.section>
 
         <motion.div
           initial={{ opacity: 0, y: 18 }}

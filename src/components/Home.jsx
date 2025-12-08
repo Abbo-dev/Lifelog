@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { motion } from "framer-motion";
+import { format, addDays } from "date-fns";
 
 function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -172,6 +173,52 @@ function Home() {
     return null;
   };
 
+  const formatDue = (note) => {
+    const due = toDateValue(note.dueDate);
+    return due ? format(due, "EEE, MMM d • h:mma") : "No due date";
+  };
+
+  const pinnedNotes = useMemo(
+    () => notes.filter((note) => note.isPinned).slice(0, 4),
+    [notes]
+  );
+
+  const upcomingNotes = useMemo(() => {
+    const now = new Date();
+    const soon = addDays(now, 14);
+    return notes
+      .filter((note) => {
+        const due = toDateValue(note.dueDate);
+        return due && due >= now && due <= soon;
+      })
+      .sort((a, b) => {
+        const aTime = toDateValue(a.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        const bTime = toDateValue(b.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        return aTime - bTime;
+      })
+      .slice(0, 5);
+  }, [notes]);
+
+  const priorityNotes = useMemo(() => {
+    const map = new Map();
+    pinnedNotes.forEach((note) => map.set(note.id, note));
+    upcomingNotes.forEach((note) => {
+      if (!map.has(note.id)) {
+        map.set(note.id, note);
+      }
+    });
+    return Array.from(map.values()).slice(0, 6);
+  }, [pinnedNotes, upcomingNotes]);
+
+  const dashboardStats = useMemo(() => {
+    const total = notes.length;
+    const pinned = pinnedNotes.length;
+    const upcoming = upcomingNotes.length;
+    const dated = notes.filter((note) => !!toDateValue(note.dueDate)).length;
+    return { total, pinned, upcoming, dated };
+  }, [notes, pinnedNotes, upcomingNotes]);
+  const nextDue = upcomingNotes[0];
+
   const filteredAndSortedNotes = useMemo(() => {
     let filtered = [...notes];
 
@@ -249,7 +296,7 @@ function Home() {
   return (
     <div
       className="relative min-h-screen overflow-hidden text-slate-900 dark:text-gray-100"
-      style={{ background: "transparent" }}
+      style={{ background: "var(--app-bg)" }}
     >
       {confetti && (
         <div className="fixed inset-0 z-30 overflow-hidden">
@@ -289,7 +336,137 @@ function Home() {
         </div>
       )}
 
-      <div className="relative flex flex-col items-center justify-around mt-6 md:mt-10 pt-[40px] max-w-[1200px] mx-auto px-4 pb-16">
+      <div className="relative flex flex-col items-center justify-around mt-2 md:mt-4 pt-6 max-w-[1200px] mx-auto px-4 pb-14">
+        {isAuthenticated && (
+          <motion.section
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            className="w-full glass-panel-soft rounded-2xl p-4 md:p-5 text-white border border-white/10 shadow-2xl shadow-black/30 mb-6 overflow-hidden"
+          >
+            <div className="flex items-start justify-between gap-3 flex-wrap pb-3 border-b border-white/10">
+              <div className="space-y-1">
+                <p className="text-[11px] uppercase tracking-[0.25em] text-white/70">
+                  Snapshot summary
+                </p>
+                <h2 className="text-lg font-semibold">Stay on track at a glance</h2>
+                <p className="text-xs text-white/70">
+                  Full dashboard snapshot now lives in Profile.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="px-3 py-2 text-[12px] rounded-full border border-white/15 bg-white/10 text-white hover:bg-white/15 transition-colors"
+                >
+                  View full snapshot
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+              {[
+                { label: "Total", value: dashboardStats.total },
+                { label: "Pinned", value: dashboardStats.pinned },
+                { label: "Upcoming", value: dashboardStats.upcoming },
+                { label: "With dates", value: dashboardStats.dated },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="glass-panel-soft rounded-xl p-3 border border-white/10 text-left"
+                >
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">
+                    {stat.label}
+                  </p>
+                  <p className="text-xl font-semibold text-white mt-1">
+                    {stat.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-[1.1fr,0.9fr]">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
+                    Priority notes
+                  </p>
+                  <span className="text-[11px] text-white/70">
+                    {priorityNotes.length ? `${priorityNotes.length} active` : "None yet"}
+                  </span>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {priorityNotes.length === 0 ? (
+                    <p className="text-sm text-white/60">
+                      Pin or set due dates to see them here.
+                    </p>
+                  ) : (
+                    priorityNotes.slice(0, 2).map((note) => (
+                      <div
+                        key={note.id}
+                        className="flex items-start justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                      >
+                        <div className="space-y-0.5 text-left">
+                          <p className="text-sm font-semibold text-white line-clamp-1">
+                            {note.title || "Untitled note"}
+                          </p>
+                          <p className="text-[11px] text-white/70">
+                            {note.isPinned ? "Pinned • " : ""}
+                            {formatDue(note)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleEdit(note)}
+                          className="text-[11px] px-2.5 py-1 rounded-full border border-white/15 bg-[#5EA2EF]/20 text-white hover:bg-[#5EA2EF]/30 transition-colors"
+                        >
+                          Open
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
+                    Next due
+                  </p>
+                  <span className="text-[11px] text-white/70">
+                    {nextDue ? "Within 2 weeks" : "No upcoming"}
+                  </span>
+                </div>
+                {nextDue ? (
+                  <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-3">
+                    <p className="text-sm font-semibold text-white line-clamp-1">
+                      {nextDue.title || "Untitled note"}
+                    </p>
+                    <p className="text-[11px] text-white/70 mt-1">
+                      {formatDue(nextDue)}
+                    </p>
+                    {nextDue.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {nextDue.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-0.5 rounded-full text-[11px] border border-white/15 bg-white/5 text-white/80"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-white/60 mt-2">
+                    Add a due date to see it here.
+                  </p>
+                )}
+              </div>
+            </div>
+          </motion.section>
+        )}
+
         {isAuthenticated && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
