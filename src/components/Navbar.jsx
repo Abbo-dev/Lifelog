@@ -1,16 +1,15 @@
+import { useEffect, useState } from "react";
 import { Image, Button, Avatar, Skeleton } from "@heroui/react";
-import SwitchTheme from "./Switch";
-import Logo from "../assets/logo1.png";
 import { Link, useNavigate } from "react-router-dom";
-import { auth } from "../firebase";
-import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
+import SwitchTheme from "./Switch";
+import Logo from "../assets/logo2.png";
+import { auth } from "../firebase";
 
 const NavbarSide = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
-
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -43,15 +42,12 @@ const NavbarSide = () => {
   }, []);
 
   return (
-    <header
-      className="w-full text-slate-900 dark:text-white bg-transparent"
-      style={{ background: "transparent" }}
-    >
-      <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-3 flex items-center justify-between pt-8">
+    <header className="w-full text-slate-900 dark:text-white bg-transparent">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-4 flex items-center justify-between">
         <div className="flex items-center justify-center">
           <Link to="/">
             {loading ? (
-              <Skeleton className="w-[140px]  rounded-lg" />
+              <Skeleton className="w-[140px] rounded-lg" />
             ) : (
               <Image
                 src={Logo}
@@ -62,7 +58,7 @@ const NavbarSide = () => {
           </Link>
         </div>
 
-        <div className="flex items-center gap-3 md:gap-4 px-3 py-2 rounded-full bg-white/70 dark:bg-white/10 border border-white/60 dark:border-white/10 shadow-sm shadow-slate-200/60 dark:shadow-black/20 backdrop-blur">
+        <div className="flex items-center gap-3 md:gap-4 px-3 py-2 rounded-full bg-[#f0f4fb] dark:bg-[#0f1f3a] border border-slate-200/70 dark:border-slate-800 shadow-sm shadow-slate-200/40 dark:shadow-black/30">
           <SwitchTheme />
 
           {loading ? (

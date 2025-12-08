@@ -9,13 +9,14 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { HeroUIProvider } from '@heroui/react'
 import NavbarSide from './components/Navbar'
+import Footer from './components/Footer'
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <HeroUIProvider>
-          <div className="min-h-screen" style={{ background: "var(--app-bg)" }}>
+          <div className="min-h-screen pt-24 pb-14">
             <NavbarSide />
             <Routes>
               <Route path="/" element={<Content />} />
@@ -25,6 +26,7 @@ function App() {
               <Route path="/forgetpassword" element={<ForgetPassword />} />
               <Route path="/profile" element={<Profile />} />
             </Routes>
+            <Footer />
           </div>
         </HeroUIProvider>
       </AuthProvider>

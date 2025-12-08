@@ -47,6 +47,50 @@ const pillars = [
   },
 ];
 
+const statCards = [
+  {
+    label: "Avg. time saved",
+    value: "12 min",
+    desc: "per entry with quick filters",
+    progress: 82,
+  },
+  {
+    label: "Notes organized",
+    value: "4.8k+",
+    desc: "kept tidy with tags & pins",
+    progress: 74,
+  },
+  {
+    label: "Focus streaks",
+    value: "94%",
+    desc: "stay engaged with daily logging",
+    progress: 93,
+  },
+];
+
+const mockupTimeline = [
+  {
+    title: "Prep quarterly review",
+    meta: "Pinned • Today, 4:00p",
+    tone: "emerald",
+  },
+  {
+    title: "Outline LifeLog updates",
+    meta: "Due tomorrow • Reminder 6:30p",
+    tone: "blue",
+  },
+  { title: "Share recap with team", meta: "Due Fri • Tag: work", tone: "cyan" },
+];
+
+const mockupInsights = [
+  { label: "Pinned", value: "12" },
+  { label: "Upcoming", value: "7" },
+  { label: "Completed", value: "21" },
+];
+
+const mockupBars = [82, 58, 91, 66, 74];
+const mockupFilters = ["Pinned", "Due soon", "Ideas", "Personal", "Work"];
+
 function Content() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -62,146 +106,323 @@ function Content() {
     ? { label: "Add another note", to: "/home" }
     : { label: "Create Account", to: "/signup" };
 
-  return (
-    <>
-      <div
-        className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center justify-start px-4 pt-12 md:pt-16 pb-12"
-        style={{ background: "transparent" }}
-      >
-        <div className="absolute inset-0 pointer-events-none" />
+  const toneStyles = {
+    emerald:
+      "bg-emerald-400/10 border-emerald-300/25 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.25)]",
+    blue: "bg-blue-400/10 border-blue-300/25 text-blue-100 shadow-[0_0_20px_rgba(59,130,246,0.2)]",
+    cyan: "bg-cyan-400/10 border-cyan-300/25 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.22)]",
+  };
 
-        <div className="relative max-w-6xl w-full text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="space-y-6"
-          >
-            <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-600 dark:text-slate-200/80 px-4 py-2 rounded-full bg-white/80 border border-slate-200/70 shadow-sm backdrop-blur dark:bg-white/5 dark:border-white/10">
+  return (
+    <div
+      className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center px-4 pt-4 md:pt-6 pb-16"
+    >
+      <div className="relative max-w-6xl w-full text-center z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="space-y-7"
+        >
+          <div className="flex justify-center">
+            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-slate-700 dark:text-white/80 px-4 py-2 rounded-full glass-chip">
               Your life, beautifully logged
             </p>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
-              Welcome to{" "}
-              <span className="bg-gradient-to-b from-[#5EA2EF] to-[#0072F5] bg-clip-text text-transparent drop-shadow">
-                LifeLog
-              </span>
-            </h1>
-            <p className="text-base md:text-lg text-slate-700 dark:text-slate-200/90 max-w-2xl mx-auto">
-              A playful, powerful space to capture thoughts, build routines, and
-              celebrate progress—day after day.
-            </p>
-            <div className="flex items-center justify-center gap-4">
-              <Link to="/home">
-                <Button
-                  color="primary"
-                  className="px-5 py-3 text-base font-semibold shadow-lg shadow-[#0072F5]/30 transition-transform hover:-translate-y-0.5 hover:scale-[1.02]"
-                >
-                  {primaryCtaLabel}
-                </Button>
-              </Link>
-              <Link to={secondaryCta.to}>
-                <Button
-                  className="px-5 py-3 text-base font-semibold border border-slate-300 text-slate-900 bg-white/85 shadow-md shadow-slate-200/60 transition-transform hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white dark:bg-white/10 dark:border-white/15 dark:text-white dark:shadow-slate-900/30"
-                  variant="flat"
-                >
-                  {secondaryCta.label}
-                </Button>
-              </Link>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-600 dark:text-slate-300">
-              <span className="px-3 py-1 rounded-full border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5">
-                No clutter. Your notes, synced and secure.
-              </span>
-              <span className="px-3 py-1 rounded-full border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5">
-                Fast search, drag filters, instant pinning.
-              </span>
-            </div>
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
-              {[
-                { label: "Avg. time saved", value: "12 min", desc: "per entry with quick filters" },
-                { label: "Notes organized", value: "4.8k+", desc: "kept tidy with tags & pins" },
-                { label: "Focus streaks", value: "94%", desc: "stay engaged with daily logging" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="p-4 rounded-2xl bg-white/85 border border-slate-200/80 shadow-md shadow-slate-200/60 dark:bg-white/5 dark:border-white/10 dark:shadow-black/20"
-                >
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-300">{item.label}</p>
-                  <p className="text-xl font-semibold text-slate-900 dark:text-white mt-1">{item.value}</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.5 }}
-              className="mt-4 rounded-full bg-white/85 border border-slate-200/70 px-3 py-2 inline-flex items-center gap-2 text-xs text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-slate-100/80 cursor-default shadow-sm dark:shadow-black/20"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Real-time sync • Drag a tag to filter • Dark/Light ready
-            </motion.div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.6, ease: "easeOut" }}
-            className="mt-12 grid gap-4 md:grid-cols-3 text-left"
-          >
-            {highlights.map((item) => (
-              <div
-                key={item.title}
-                className="p-5 rounded-2xl bg-white/85 border border-slate-200/80 shadow-md shadow-slate-200/50 hover:shadow-lg hover:-translate-y-1 transition-all dark:bg-white/5 dark:border-white/10 dark:shadow-black/20"
+          </div>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
+            Welcome to{" "}
+            <span className="bg-gradient-to-b from-[#5EA2EF] to-[#0072F5] bg-clip-text text-transparent drop-shadow">
+              LifeLog
+            </span>
+          </h1>
+          <p className="text-base md:text-lg text-slate-700 dark:text-white/80 max-w-2xl mx-auto">
+            A playful, powerful space to capture thoughts, build routines, and
+            celebrate progress—day after day.
+          </p>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Link to="/home">
+              <Button
+                color="primary"
+                className="px-5 py-3 text-base font-semibold shadow-[0_15px_40px_rgba(0,114,245,0.35)] hover:-translate-y-0.5 hover:scale-[1.02] transition-transform"
               >
-                <div className="flex items-start gap-3">
-                  <span className="inline-flex w-11 h-11 items-center justify-center rounded-xl bg-slate-900/5 border border-slate-200/70 dark:bg-white/10 dark:border-white/10">
-                    <Image src={item.icon} alt={item.title} className="w-7 h-7" />
-                  </span>
-                  <div className="space-y-1">
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-                      {item.title}
-                    </h2>
-                    <p className="text-sm text-slate-700 dark:text-slate-200/85 leading-relaxed">
-                      {item.body}
+                {primaryCtaLabel}
+              </Button>
+            </Link>
+            <Link to={secondaryCta.to}>
+              <Button
+                variant="flat"
+                className="px-5 py-3 text-base font-semibold glass-chip text-slate-900 dark:text-white border border-white/20 hover:-translate-y-0.5 hover:scale-[1.02] transition-transform"
+              >
+                {secondaryCta.label}
+              </Button>
+            </Link>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 dark:text-white/75">
+            <span className="px-3 py-1 rounded-full glass-chip border border-white/10 text-slate-700 dark:text-white/80">
+              No clutter. Your notes, synced and secure.
+            </span>
+            <span className="px-3 py-1 rounded-full glass-chip border border-white/10 text-slate-700 dark:text-white/80">
+              Fast search, drag filters, instant pinning.
+            </span>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+          className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 text-left"
+        >
+          {statCards.map((item) => (
+            <div
+              key={item.label}
+              className="glass-panel-soft rounded-2xl p-5 border border-white/10 text-slate-900 dark:text-white"
+            >
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/60">
+                {item.label}
+              </p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">
+                {item.value}
+              </p>
+              <p className="text-sm text-slate-700 dark:text-white/70">{item.desc}</p>
+              <div className="mt-4 h-1.5 rounded-full bg-slate-200/70 dark:bg-white/5 overflow-hidden">
+                <span
+                  className="block h-full rounded-full bg-gradient-to-r from-[#5EA2EF] to-[#0072F5]"
+                  style={{ width: `${item.progress}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
+          className="mt-10"
+        >
+          <div className="mockup-window rounded-[28px] p-6 md:p-8 border border-white/15">
+            <div className="flex items-center justify-between pb-5 border-b border-white/10 flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80 shadow-[0_0_0_4px_rgba(16,192,103,0.14)]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-300/80 shadow-[0_0_0_4px_rgba(251,191,36,0.16)]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-400/80 shadow-[0_0_0_4px_rgba(244,114,182,0.12)]" />
+                </div>
+                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/60">
+                  LifeLog dashboard
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="glass-chip px-3 py-1 text-[11px] text-slate-900 dark:text-white/85 border border-white/15">
+                  Real-time sync
+                </span>
+                <span className="glass-chip px-3 py-1 text-[11px] text-[#0a66d1] dark:text-[#5EA2EF] border border-white/15">
+                  Focus mode
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-[0.95fr,1.05fr] items-start mt-6">
+              <div className="space-y-4">
+                <div className="glass-panel-soft rounded-2xl p-4 border border-white/10">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">
+                        Today
+                      </p>
+                      <p className="text-sm text-white/80">Pinned + due soon</p>
+                    </div>
+                    <span className="px-3 py-1 text-[11px] rounded-full border border-white/10 bg-white/5 text-white/80">
+                      Drag to reorder
+                    </span>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    {mockupTimeline.map((item) => (
+                      <div
+                        key={item.title}
+                        className="flex items-start justify-between gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-3"
+                      >
+                        <div className="space-y-1 text-left">
+                          <p className="text-sm font-semibold text-white">
+                            {item.title}
+                          </p>
+                          <p className="text-xs text-white/70">{item.meta}</p>
+                        </div>
+                        <span
+                          className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${
+                            toneStyles[item.tone]
+                          }`}
+                        >
+                          {item.tone === "emerald"
+                            ? "Pinned"
+                            : item.tone === "blue"
+                            ? "Reminder"
+                            : "Due soon"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="glass-panel-soft rounded-2xl p-4 border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">
+                      Filters
+                    </p>
+                    <span className="text-xs text-[#5EA2EF]">One tap</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {mockupFilters.map((filter) => (
+                      <span
+                        key={filter}
+                        className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-white/80 hover:border-[#5EA2EF]/50 hover:text-white transition-colors"
+                      >
+                        #{filter}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-panel-soft rounded-2xl p-5 border border-white/10">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">
+                      LifeLog overview
+                    </p>
+                    <p className="text-lg font-semibold text-white mt-1">
+                      Dashboard snapshot
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {mockupInsights.map((insight) => (
+                      <div
+                        key={insight.label}
+                        className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-left"
+                      >
+                        <p className="text-[11px] uppercase tracking-wide text-white/60">
+                          {insight.label}
+                        </p>
+                        <p className="text-lg font-semibold text-white">
+                          {insight.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-5 gap-3">
+                  {mockupBars.map((height, idx) => (
+                    <div
+                      key={height + idx}
+                      className="flex flex-col justify-end gap-2"
+                    >
+                      <div className="h-28 w-full rounded-xl bg-white/5 border border-white/5 flex items-end p-1">
+                        <div
+                          className="w-full rounded-lg bg-gradient-to-b from-[#5EA2EF] to-[#0072F5]"
+                          style={{ height: `${height}%` }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-white/60 text-center">
+                        Day {idx + 1}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 grid sm:grid-cols-3 gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-left">
+                    <p className="text-xs text-white/70">Next reminder</p>
+                    <p className="text-sm font-semibold text-white mt-1">
+                      6:30p – Outline LifeLog updates
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-left">
+                    <p className="text-xs text-white/70">Last modified</p>
+                    <p className="text-sm font-semibold text-white mt-1">
+                      Pinned notes refreshed 2m ago
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-left">
+                    <p className="text-xs text-white/70">Current streak</p>
+                    <p className="text-sm font-semibold text-white mt-1">
+                      12 days in flow
                     </p>
                   </div>
                 </div>
               </div>
-            ))}
-          </motion.div>
+            </div>
+          </div>
+        </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.6, ease: "easeOut" }}
-            className="mt-14 grid gap-8 lg:grid-cols-[1.1fr,0.9fr] text-left items-start"
-          >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.6, ease: "easeOut" }}
+          className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 text-left"
+        >
+          {highlights.map((item) => (
+            <div
+              key={item.title}
+              className="glass-panel-soft rounded-2xl p-5 border border-white/10 hover:-translate-y-1 transition-all hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)] text-slate-900 dark:text-white"
+            >
+              <div className="flex items-start gap-4">
+                <span className="glow-icon w-12 h-12 flex items-center justify-center shrink-0">
+                  <Image src={item.icon} alt={item.title} className="w-7 h-7 object-contain" />
+                </span>
+                <div className="space-y-1">
+                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                    {item.title}
+                  </h2>
+                  <p className="text-sm text-slate-700 dark:text-white/75 leading-relaxed">
+                    {item.body}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
+          className="mt-14 glass-panel rounded-3xl p-8 border border-white/15 text-left"
+        >
+          <div className="grid gap-8 lg:grid-cols-[1.05fr,0.95fr] items-start">
             <div className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-500 dark:text-slate-200/70">Why LifeLog</p>
-              <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white">
+              <p className="text-[11px] uppercase tracking-[0.25em] text-white/70">
+                Why LifeLog
+              </p>
+              <h2 className="text-2xl md:text-3xl font-semibold text-white">
                 Run your day with clarity, not clutter.
               </h2>
-              <p className="text-sm md:text-base text-slate-700 dark:text-slate-200/85 leading-relaxed">
-                A balanced workspace that lets you capture ideas, set intent, and see exactly what needs attention next.
-                No loud colors, no card overload—just a calm, modern surface with the right signals.
+              <p className="text-sm md:text-base text-white/80 leading-relaxed">
+                A balanced workspace that lets you capture ideas, set intent,
+                and see exactly what needs attention next. No loud colors, no
+                card overload—just a calm, modern surface with the right
+                signals.
               </p>
-              <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-200/85">
+              <ul className="space-y-2 text-sm text-white/80">
                 {[
                   "Smart tags, pins, and due times keep priorities visible everywhere.",
                   "Workspace adapts to light and dark without sacrificing contrast.",
                   "Built for speed: instant search, drag filters, and real-time sync.",
                 ].map((item) => (
                   <li key={item} className="flex gap-2 items-start">
-                    <span className="mt-0.5 text-[#0072F5]">•</span>
+                    <span className="mt-0.5 text-[#5EA2EF]">•</span>
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
               <div className="flex gap-3 flex-wrap">
                 <Link to="/home">
-                  <Button size="sm" color="primary" className="px-5 shadow-lg shadow-[#0072F5]/30">
+                  <Button
+                    size="sm"
+                    color="primary"
+                    className="px-5 shadow-[0_15px_40px_rgba(0,114,245,0.35)]"
+                  >
                     Jump in
                   </Button>
                 </Link>
@@ -210,7 +431,7 @@ function Content() {
                     <Button
                       size="sm"
                       variant="flat"
-                      className="px-5 border border-slate-300 text-slate-900 bg-white/90 shadow-sm shadow-slate-200/60 hover:bg-white dark:bg-white/10 dark:border-white/20 dark:text-white dark:shadow-black/20"
+                      className="px-5 glass-chip border border-white/20 text-white/90"
                     >
                       Create account
                     </Button>
@@ -219,20 +440,24 @@ function Content() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               {pillars.map((pillar) => (
                 <div
                   key={pillar.title}
-                  className="p-5 rounded-2xl bg-white/85 border border-slate-200/80 shadow-md shadow-slate-200/50 dark:bg-white/5 dark:border-white/10 dark:shadow-black/20"
+                  className="glass-panel-soft rounded-2xl p-5 border border-white/10"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xl">{pillar.accent}</span>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{pillar.title}</h3>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="glow-icon w-11 h-11 flex items-center justify-center text-lg">
+                      {pillar.accent}
+                    </span>
+                    <h3 className="text-lg font-semibold text-white">
+                      {pillar.title}
+                    </h3>
                   </div>
-                  <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-200/85">
+                  <ul className="space-y-2 text-sm text-white/75">
                     {pillar.points.map((point) => (
                       <li key={point} className="flex gap-2 items-start">
-                        <span className="mt-0.5 text-emerald-500">●</span>
+                        <span className="mt-0.5 text-[#5EA2EF]">•</span>
                         <span>{point}</span>
                       </li>
                     ))}
@@ -240,7 +465,8 @@ function Content() {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -248,7 +474,7 @@ function Content() {
           transition={{ delay: 0.35, duration: 0.6, ease: "easeOut" }}
           className="mt-10 w-full overflow-hidden"
         >
-          <div className="ticker flex gap-3 text-sm text-slate-700 dark:text-white/80">
+          <div className="ticker flex gap-3 text-sm text-white/80">
             {[
               "🌟 Tag & drag to focus fast",
               "⚡ Instant search + pinning",
@@ -258,7 +484,7 @@ function Content() {
             ].map((item) => (
               <span
                 key={item}
-                className="px-3 py-1 rounded-full bg-white/85 border border-slate-200/80 text-slate-700 backdrop-blur-sm whitespace-nowrap hover:bg-white dark:bg-white/10 dark:border-white/10 dark:text-white/80 hover:dark:bg-white/15 transition-colors shadow-sm"
+                className="px-3 py-1 rounded-full glass-chip border border-white/10 whitespace-nowrap"
               >
                 {item}
               </span>
@@ -267,7 +493,6 @@ function Content() {
         </motion.div>
       </div>
     </div>
-  </>
   );
 }
 
