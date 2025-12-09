@@ -11,15 +11,13 @@ body {
 }
 
 :root {
-  /* Shared palettes for light/dark */
-  --app-bg-light: radial-gradient(circle at 18% 18%, rgba(94, 162, 239, 0.16), transparent 35%),
-                  radial-gradient(circle at 82% 8%, rgba(0, 114, 245, 0.12), transparent 40%),
-                  linear-gradient(145deg, #e9f1ff 0%, #d9e7ff 28%, #c7d8f5 100%);
-  --app-bg-dark: radial-gradient(circle at 20% 20%, rgba(94, 162, 239, 0.12), transparent 35%),
-                  radial-gradient(circle at 80% 10%, rgba(0, 114, 245, 0.12), transparent 38%),
-                  linear-gradient(145deg, #0a1f3f 0%, #0b1e3a 35%, #0a274f 100%);
+  /* Shared palettes for light/dark - keep smooth, single-pass gradients to avoid banding lines */
+  --app-bg-light: linear-gradient(180deg, #dce7ff 0%, #cfdcfa 100%);
+  --app-bg-dark: linear-gradient(180deg, #0b1f3f 0%, #0b1f3f 100%);
   --app-bg: var(--app-bg-light);
   --nav-bg: transparent;
+  --text-primary: #0f1f3f;
+  --text-secondary: #1f2f53;
 }
 
 html.dark {
@@ -31,12 +29,25 @@ body,
 #root {
   min-height: 100%;
   background: var(--app-bg) !important;
+  color: var(--text-primary);
 }
 
 html.dark,
 html.dark body,
 html.dark #root {
   background: var(--app-bg) !important;
+}
+
+/* Light-mode text defaults for better readability */
+html:not(.dark) body {
+  color: var(--text-primary);
+}
+
+html:not(.dark) .text-slate-500,
+html:not(.dark) .text-slate-400,
+html:not(.dark) .text-gray-500,
+html:not(.dark) .text-gray-400 {
+  color: var(--text-secondary) !important;
 }
 
 /* Subtle marquee for landing badges */

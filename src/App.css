@@ -100,3 +100,99 @@ html.dark {
   opacity: 0.75;
   pointer-events: none;
 }
+
+/* Profile background + cards */
+.profile-shell {
+  position: relative;
+  background: var(--app-bg);
+  /* Match landing glass palette */
+  --profile-surface: var(--glass-soft-bg);
+  --profile-surface-strong: var(--glass-strong-bg);
+  --profile-border: var(--glass-border);
+  --profile-shadow: var(--glass-shadow);
+  --profile-filter: blur(14px) saturate(135%);
+}
+
+html.dark .profile-shell {
+  --profile-surface: var(--glass-soft-bg);
+  --profile-surface-strong: var(--glass-strong-bg);
+  --profile-border: var(--glass-border);
+  --profile-shadow: var(--glass-shadow);
+  --profile-filter: blur(14px) saturate(135%);
+}
+
+.profile-card {
+  background: var(--profile-surface-strong);
+  border: 1px solid var(--profile-border);
+  box-shadow: var(--profile-shadow);
+  backdrop-filter: var(--profile-filter);
+  -webkit-backdrop-filter: var(--profile-filter);
+}
+
+/* Keep glass surfaces on profile close to the page background to avoid visible seams */
+.profile-shell .glass-panel,
+.profile-shell .glass-panel-soft {
+  background: var(--profile-surface);
+  border: 1px solid var(--profile-border);
+  box-shadow: var(--profile-shadow);
+  backdrop-filter: var(--profile-filter);
+  -webkit-backdrop-filter: var(--profile-filter);
+}
+
+.profile-shell .glass-panel-soft {
+  background: var(--profile-surface);
+}
+
+.profile-shell .glass-chip {
+  background: var(--profile-surface);
+  border: 1px solid var(--profile-border);
+  box-shadow: var(--profile-shadow);
+}
+
+.profile-surface {
+  background: var(--profile-surface);
+  border: 1px solid var(--profile-border);
+  box-shadow: var(--profile-shadow);
+  backdrop-filter: var(--profile-filter);
+  -webkit-backdrop-filter: var(--profile-filter);
+}
+
+.profile-surface-strong {
+  background: var(--profile-surface-strong);
+  border: 1px solid var(--profile-border);
+  box-shadow: var(--profile-shadow);
+  backdrop-filter: var(--profile-filter);
+  -webkit-backdrop-filter: var(--profile-filter);
+}
+
+.profile-chip {
+  background: var(--profile-surface);
+  border: 1px solid var(--profile-border);
+  box-shadow: var(--profile-shadow);
+}
+
+/* Footer */
+.footer-panel {
+  position: relative;
+  background: var(--glass-strong-bg);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--glass-shadow-strong);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  color: #0f1f3f;
+}
+
+html.dark .footer-panel {
+  background: var(--glass-strong-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  color: #e7edf8;
+}
+
+.footer-muted {
+  color: rgba(15, 31, 63, 0.68);
+}
+
+html.dark .footer-muted {
+  color: rgba(231, 237, 248, 0.82);
+}

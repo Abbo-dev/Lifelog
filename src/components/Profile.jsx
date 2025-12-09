@@ -308,16 +308,18 @@ function Profile() {
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center text-slate-900 dark:text-gray-100" style={{ background: "var(--app-bg)" }}>
-        <p className="text-lg text-slate-700 dark:text-gray-200">Please sign in to view your profile.</p>
-        <Button onPress={() => navigate("/signin")}>Go to Sign In</Button>
+      <div className="profile-shell relative overflow-hidden flex flex-col items-center justify-center min-h-screen gap-4 text-center text-slate-900 dark:text-gray-100">
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <p className="text-lg text-slate-700 dark:text-gray-200">Please sign in to view your profile.</p>
+          <Button onPress={() => navigate("/signin")}>Go to Sign In</Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-slate-900 dark:text-gray-100" style={{ background: "var(--app-bg)" }}>
-      <div className="relative max-w-4xl mx-auto px-4 py-16">
+    <div className="profile-shell relative min-h-screen overflow-hidden text-slate-900 dark:text-gray-100">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-16">
         <div className="flex items-center justify-between mb-10">
           <div>
             <p className="text-sm uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">Profile</p>
@@ -341,7 +343,7 @@ function Profile() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: statCards.indexOf(item) * 0.08 }}
             >
-              <Card className="bg-white/70 dark:bg-slate-900/80 border border-slate-200 dark:border-gray-800 shadow-xl shadow-black/10">
+              <Card className="profile-card">
                 <CardBody className="p-5">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">{item.label}</p>
                   <p className="text-3xl font-semibold mt-2">{stats[item.key]}</p>
@@ -355,9 +357,9 @@ function Profile() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.45 }}
-          className="mt-10 glass-panel rounded-3xl p-5 md:p-6 text-white border border-white/10 shadow-2xl shadow-black/40 overflow-hidden"
+          className="mt-10 profile-surface-strong rounded-3xl p-5 md:p-6 text-white overflow-hidden"
         >
-          <div className="flex items-center justify-between gap-3 flex-wrap pb-4 border-b border-white/10">
+          <div className="flex items-center justify-between gap-3 flex-wrap pb-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.25em] text-white/70">
                 Dashboard snapshot
@@ -368,10 +370,10 @@ function Profile() {
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="glass-chip px-3 py-1 text-[11px] border border-white/15">
+              <span className="profile-chip px-3 py-1 text-[11px]">
                 Pinned {dashboardStats.pinned}
               </span>
-              <span className="glass-chip px-3 py-1 text-[11px] text-[#5EA2EF] border border-white/15">
+              <span className="profile-chip px-3 py-1 text-[11px] text-[#5EA2EF]">
                 Upcoming {dashboardStats.upcoming}
               </span>
             </div>
@@ -379,7 +381,7 @@ function Profile() {
 
           <div className="grid gap-5 lg:grid-cols-[1.05fr,0.95fr] items-start mt-5">
             <div className="space-y-4">
-              <div className="glass-panel-soft rounded-2xl p-4 border border-white/10">
+              <div className="profile-surface rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div>
                     <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
@@ -389,7 +391,7 @@ function Profile() {
                       Real notes from your workspace
                     </p>
                   </div>
-                  <span className="px-3 py-1 text-[11px] rounded-full border border-white/10 bg-white/5 text-white/80">
+                  <span className="px-3 py-1 text-[11px] rounded-full profile-chip text-white/80">
                     {priorityNotes.length
                       ? `${priorityNotes.length} highlighted`
                       : "No priority notes yet"}
@@ -404,7 +406,7 @@ function Profile() {
                     priorityNotes.map((note) => (
                       <div
                         key={note.id}
-                        className="flex items-start justify-between gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-3"
+                        className="flex items-start justify-between gap-3 rounded-xl profile-surface px-3 py-3"
                       >
                         <div className="space-y-1 text-left">
                           <p className="text-sm font-semibold text-white line-clamp-2">
@@ -419,7 +421,7 @@ function Profile() {
                               {note.tags.slice(0, 3).map((tag) => (
                                 <span
                                   key={tag}
-                                  className="px-2 py-0.5 rounded-full text-[11px] border border-white/15 bg-white/5 text-white/80"
+                                  className="px-2 py-0.5 rounded-full text-[11px] profile-chip text-white/80"
                                 >
                                   #{tag}
                                 </span>
@@ -439,7 +441,7 @@ function Profile() {
                 </div>
               </div>
 
-              <div className="glass-panel-soft rounded-2xl p-4 border border-white/10">
+              <div className="profile-surface rounded-2xl p-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
                     { label: "Total notes", value: dashboardStats.total },
@@ -449,7 +451,7 @@ function Profile() {
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className="rounded-2xl border border-white/10 bg-white/5 p-3 text-left"
+                      className="rounded-2xl profile-surface p-3 text-left"
                     >
                       <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">
                         {stat.label}
@@ -464,11 +466,11 @@ function Profile() {
             </div>
 
             <div className="space-y-4">
-              <div className="glass-panel-soft rounded-2xl p-4 border border-white/10">
+              <div className="profile-surface rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-2">
                   <button
                     onClick={() => handleMonthChange(-1)}
-                    className="text-lg px-2 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                    className="text-lg px-2 py-1 rounded-full profile-chip transition-colors"
                   >
                     ‹
                   </button>
@@ -477,7 +479,7 @@ function Profile() {
                   </div>
                   <button
                     onClick={() => handleMonthChange(1)}
-                    className="text-lg px-2 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                    className="text-lg px-2 py-1 rounded-full profile-chip transition-colors"
                   >
                     ›
                   </button>
@@ -503,12 +505,12 @@ function Profile() {
                       <button
                         key={key}
                         onClick={() => handleDateSelect(day)}
-                        className={`relative h-12 rounded-xl border text-xs transition-all ${
+                        className={`relative h-12 rounded-xl text-xs transition-all ${
                           selected
-                            ? "border-[#5EA2EF] bg-[#5EA2EF]/20 text-white shadow-[0_0_0_1px_rgba(94,162,239,0.2)]"
+                            ? "profile-chip text-white shadow-[0_0_0_1px_rgba(94,162,239,0.2)]"
                             : inMonth
-                            ? "border-white/10 bg-white/5 text-white/80 hover:border-[#5EA2EF]/40"
-                            : "border-white/5 bg-white/5 text-white/40"
+                            ? "profile-surface text-white/80 hover:shadow-[0_0_0_1px_rgba(94,162,239,0.18)]"
+                            : "profile-surface text-white/40 opacity-70"
                         }`}
                       >
                         <span className="absolute top-1 left-1 text-[11px]">
@@ -525,7 +527,7 @@ function Profile() {
                   })}
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+                <div className="mt-4 rounded-2xl profile-surface p-3">
                   <div className="flex items-center justify-between">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
                       {format(selectedDate, "MMM d, yyyy")}
@@ -543,7 +545,7 @@ function Profile() {
                       selectedDateNotes.map((note) => (
                         <div
                           key={note.id}
-                          className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                          className="flex items-center justify-between gap-2 rounded-xl profile-surface px-3 py-2"
                         >
                           <div className="space-y-0.5 text-left">
                             <p className="text-sm font-semibold text-white line-clamp-1">
@@ -555,7 +557,7 @@ function Profile() {
                           </div>
                           <Chip
                             size="sm"
-                            className="bg-[#5EA2EF]/15 text-white border border-white/10"
+                            className="profile-chip text-white"
                             variant="flat"
                           >
                             {note.tags?.[0] ? `#${note.tags[0]}` : "Scheduled"}
@@ -576,7 +578,7 @@ function Profile() {
           transition={{ delay: 0.2 }}
           className="mt-8 grid gap-4 md:grid-cols-2"
         >
-          <Card className="bg-white/70 dark:bg-slate-900/80 border border-slate-200 dark:border-gray-800 shadow-xl shadow-black/10">
+          <Card className="profile-card">
             <CardBody className="p-5 space-y-2">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 Mood board <span>🌈</span>
@@ -593,7 +595,7 @@ function Profile() {
               </div>
             </CardBody>
           </Card>
-          <Card className="bg-white/70 dark:bg-slate-900/80 border border-slate-200 dark:border-gray-800 shadow-xl shadow-black/10">
+          <Card className="profile-card">
             <CardBody className="p-5 space-y-3">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 Quick actions <span>⚡</span>
@@ -633,7 +635,7 @@ function Profile() {
             transition={{ delay: 0.1 }}
             className="mt-8 grid gap-4 md:grid-cols-2"
           >
-            <Card className="bg-white/70 dark:bg-slate-900/80 border border-slate-200 dark:border-gray-800 shadow-xl shadow-black/10">
+            <Card className="profile-card">
               <CardBody className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Update email</h3>
@@ -688,7 +690,7 @@ function Profile() {
               </CardBody>
             </Card>
 
-            <Card className="bg-white/70 dark:bg-slate-900/80 border border-slate-200 dark:border-gray-800 shadow-xl shadow-black/10">
+            <Card className="profile-card">
               <CardBody className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Update password</h3>

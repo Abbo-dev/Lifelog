@@ -5,9 +5,9 @@ import Logo from "../assets/logo2.png";
 const Footer = () => {
   return (
     <footer className="w-full mt-16 px-4 md:px-6 pb-12 text-slate-200 dark:text-white/80">
-      <div className="max-w-6xl mx-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-5 md:px-8 py-9 glass-panel-soft shadow-[0_25px_60px_rgba(0,0,0,0.25)] relative overflow-hidden">
+      <div className="max-w-6xl mx-auto rounded-2xl footer-panel px-5 md:px-8 py-9 shadow-[0_25px_60px_rgba(0,0,0,0.25)] relative overflow-hidden">
         <div
-          className="pointer-events-none absolute inset-0 opacity-35"
+          className="pointer-events-none absolute inset-0 opacity-25"
           style={{
             background:
               "radial-gradient(circle at 22% 20%, rgba(94,162,239,0.24), transparent 42%), radial-gradient(circle at 82% 12%, rgba(0,114,245,0.18), transparent 46%)",
@@ -21,14 +21,14 @@ const Footer = () => {
                 alt="LifeLog"
                 className="w-[120px] sm:w-[140px] mx-auto sm:mx-0 dark:invert transition-all"
               />
-              <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-slate-200/70 dark:text-white/60 px-3 py-1 rounded-full border border-white/15 bg-white/5">
+              <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] footer-muted px-3 py-1 rounded-full border border-white/15 bg-white/5">
                 Calm workspace
               </span>
-              <p className="text-sm text-slate-200/80 dark:text-white/70 leading-relaxed">
+              <p className="text-sm footer-muted leading-relaxed">
                 Calm, consistent space to capture your notes, routines, and
                 wins—designed to stay out of your way.
               </p>
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px] uppercase tracking-[0.2em] text-slate-200/70 dark:text-white/60">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px] uppercase tracking-[0.2em] footer-muted">
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/5">
                   Minimal distraction
                 </span>
@@ -39,7 +39,7 @@ const Footer = () => {
             </div>
 
             <div className="space-y-4 text-center sm:text-left">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-200/70 dark:text-white/60">
+              <p className="text-xs uppercase tracking-[0.2em] footer-muted">
                 Navigate
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-1 gap-3 justify-items-center sm:justify-items-start text-sm font-medium">
@@ -71,7 +71,7 @@ const Footer = () => {
             </div>
 
             <div className="space-y-4 text-center sm:text-left">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-200/70 dark:text-white/60">
+              <p className="text-xs uppercase tracking-[0.2em] footer-muted">
                 Help
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-1 gap-3 justify-items-center sm:justify-items-start text-sm font-medium">
@@ -94,13 +94,13 @@ const Footer = () => {
                   Privacy
                 </Link>
               </div>
-              <p className="text-xs text-slate-200/70 dark:text-white/60">
+              <p className="text-xs footer-muted">
                 Thoughtful support for calm workflows.
               </p>
             </div>
           </div>
 
-          <div className="border-t border-white/10 pt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-200/70 dark:text-white/60">
+          <div className="border-t border-white/10 pt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs footer-muted">
             <div className="flex flex-wrap justify-center sm:justify-start gap-2">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/5 uppercase tracking-[0.18em]">
                 Built for focus
