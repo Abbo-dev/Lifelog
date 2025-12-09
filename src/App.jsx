@@ -5,6 +5,8 @@ import SignIn from './components/SignIn'
 import SignUp from './components/SignUp'
 import ForgetPassword from './components/ForgetPassword'
 import Profile from './components/Profile'
+import Terms from './components/Terms'
+import Privacy from './components/Privacy'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { HeroUIProvider } from '@heroui/react'
@@ -25,6 +27,8 @@ function App() {
               <Route path="/signup" element={<SignUp />} />
               <Route path="/forgetpassword" element={<ForgetPassword />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
             </Routes>
             <Footer />
           </div>

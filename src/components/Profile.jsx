@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardBody } from "@heroui/card";
 import { Button, Avatar, Chip } from "@heroui/react";
-import { auth, db } from "../firebase";
+import { auth, db, storage } from "../firebase";
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updateEmail,
   updatePassword,
+  updateProfile,
 } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   format,
   startOfMonth,
@@ -49,6 +51,9 @@ function Profile() {
   const [notes, setNotes] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarStatus, setAvatarStatus] = useState("");
+  const avatarInputRef = useRef(null);
   const user = auth.currentUser;
 
   const toDateValue = (value) => {
@@ -217,6 +222,37 @@ function Profile() {
     }
   };
 
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!user) {
+      setAvatarStatus("Sign in again to update your photo.");
+      return;
+    }
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setAvatarStatus("Please upload an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarStatus("Image must be under 5MB.");
+      return;
+    }
+    try {
+      setAvatarUploading(true);
+      setAvatarStatus("Uploading...");
+      const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}-${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      await updateProfile(user, { photoURL: url });
+      setAvatarStatus("Photo updated.");
+    } catch (error) {
+      setAvatarStatus(error?.message || "Unable to update photo.");
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
   const formatDue = (note) => {
     const due = toDateValue(note?.dueDate);
     return due ? format(due, "EEE, MMM d • h:mma") : "No due date";
@@ -328,12 +364,35 @@ function Profile() {
             </h1>
             <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">{user.email}</p>
           </div>
-          <Avatar
-            className="w-16 h-16 text-xl ring-4 ring-[#0072F5]/20"
-            src={user.photoURL}
-            name={user.displayName?.[0]?.toUpperCase() || "U"}
-          />
+          <div className="relative">
+            <Avatar
+              className="w-16 h-16 text-xl ring-4 ring-[#0072F5]/20"
+              src={user.photoURL}
+              name={user.displayName?.[0]?.toUpperCase() || "U"}
+            />
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="absolute -right-1 -bottom-1 w-8 h-8 rounded-full bg-[#0072F5] text-white flex items-center justify-center text-sm shadow-lg shadow-[#0072F5]/40 border border-white/30 hover:scale-105 transition"
+              aria-label="Upload profile photo"
+              disabled={avatarUploading}
+            >
+              ✎
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
+          </div>
         </div>
+        {avatarStatus && (
+          <div className="mb-6 text-xs text-slate-600 dark:text-gray-300">
+            {avatarStatus}
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-3">
           {statCards.map((item) => (

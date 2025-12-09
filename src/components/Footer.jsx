@@ -14,8 +14,8 @@ const Footer = () => {
           }}
         />
         <div className="relative flex flex-col gap-10">
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.1fr,0.9fr,0.9fr] items-start">
-            <div className="space-y-4 text-center sm:text-left max-w-xl mx-auto sm:mx-0">
+          <div className="grid gap-10 grid-cols-2 lg:grid-cols-[1.1fr,0.9fr,0.9fr] items-start">
+            <div className="space-y-4 flex flex-col items-center sm:items-start text-center sm:text-left max-w-xl mx-auto sm:mx-0 col-span-2 lg:col-span-1">
               <Image
                 src={Logo}
                 alt="LifeLog"
@@ -38,7 +38,7 @@ const Footer = () => {
               </div>
             </div>
 
-            <div className="space-y-4 text-center sm:text-left">
+            <div className="space-y-4 text-center sm:text-left col-span-1">
               <p className="text-xs uppercase tracking-[0.2em] footer-muted">
                 Navigate
               </p>
@@ -70,7 +70,7 @@ const Footer = () => {
               </div>
             </div>
 
-            <div className="space-y-4 text-center sm:text-left">
+            <div className="space-y-4 text-center sm:text-left col-span-1">
               <p className="text-xs uppercase tracking-[0.2em] footer-muted">
                 Help
               </p>

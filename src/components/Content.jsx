@@ -219,6 +219,17 @@ function Content() {
           transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
           className="mt-16"
         >
+          <div className="text-left mb-5 space-y-1">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/65">
+              In-app preview
+            </p>
+            <p className="text-lg font-semibold text-slate-900 dark:text-white">
+              See how LifeLog keeps pins, filters, and reminders together.
+            </p>
+            <p className="text-sm text-slate-700 dark:text-white/70 max-w-2xl">
+              This mockup shows the dashboard snapshot: pinned notes, quick filters, insights, and upcoming reminders—all in one place.
+            </p>
+          </div>
           <div className="mockup-window rounded-[28px] p-6 md:p-8 border border-white/15">
             <div className="flex items-center justify-between pb-5 border-b border-white/10 flex-wrap gap-3">
               <div className="flex items-center gap-3">
