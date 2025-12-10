@@ -154,7 +154,11 @@ function Home() {
   const toDateValue = (value) => {
     if (!value) return null;
     if (value instanceof Date) return value;
-    if (typeof value === "object" && "seconds" in value && "nanoseconds" in value) {
+    if (
+      typeof value === "object" &&
+      "seconds" in value &&
+      "nanoseconds" in value
+    ) {
       return new Date(
         value.seconds * 1000 + Math.floor(value.nanoseconds / 1_000_000)
       );
@@ -193,8 +197,10 @@ function Home() {
         return due && due >= now && due <= soon;
       })
       .sort((a, b) => {
-        const aTime = toDateValue(a.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
-        const bTime = toDateValue(b.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        const aTime =
+          toDateValue(a.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        const bTime =
+          toDateValue(b.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
         return aTime - bTime;
       })
       .slice(0, 5);
@@ -346,7 +352,7 @@ function Home() {
             className="w-full flex flex-col gap-4 mb-6"
           >
             <div className="flex items-center justify-between gap-3 text-xs text-slate-700 dark:text-gray-300">
-              <span className="uppercase tracking-[0.2em]">
+              <span className="uppercase tracking-[0.2em] pb-2">
                 Snapshot {showSnapshot ? "visible" : "hidden"}
               </span>
               <button
@@ -461,19 +467,21 @@ function Home() {
             )}
 
             {showSnapshot && (
-              <div className="w-full grid gap-4 lg:grid-cols-[1.05fr,0.95fr]">
+              <div className="w-full grid gap-4 lg:grid-cols-[1fr,0.7fr]">
                 <motion.section
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="hidden lg:block glass-panel-soft rounded-2xl p-4 md:p-5 text-white border border-white/10 shadow-2xl shadow-black/30 overflow-hidden"
+                  className="hidden lg:block glass-panel-soft rounded-2xl p-4 md:p-5 text-white border border-white/10 shadow-2xl shadow-black/30 overflow-hidden max-w-[520px] justify-self-end"
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap pb-3 border-b border-white/10">
                     <div className="space-y-1">
                       <p className="text-[11px] uppercase tracking-[0.25em] text-white/70">
                         Snapshot summary
                       </p>
-                      <h2 className="text-lg font-semibold">Stay on track at a glance</h2>
+                      <h2 className="text-lg font-semibold">
+                        Stay on track at a glance
+                      </h2>
                       <p className="text-xs text-white/70">
                         Full dashboard snapshot lives here on desktop.
                       </p>
@@ -516,7 +524,9 @@ function Home() {
                           Priority notes
                         </p>
                         <span className="text-[11px] text-white/70">
-                          {priorityNotes.length ? `${priorityNotes.length} active` : "None yet"}
+                          {priorityNotes.length
+                            ? `${priorityNotes.length} active`
+                            : "None yet"}
                         </span>
                       </div>
                       <div className="mt-2 space-y-2">
