@@ -3,6 +3,7 @@ import ReactConfetti from "react-confetti";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
+import { Button, Input, Select, SelectItem } from "@heroui/react";
 import Search from "../assets/search.svg";
 import NoteList from "./NoteList";
 import {
@@ -38,6 +39,12 @@ function Home() {
   const [viewMode, setViewMode] = useState("grid");
   const [isTagDropActive, setIsTagDropActive] = useState(false);
   const [showSnapshot, setShowSnapshot] = useState(false);
+  const sortOptions = [
+    { value: "lastModified", label: "Last Modified" },
+    { value: "createdAt", label: "Created Date" },
+    { value: "title", label: "Title" },
+    { value: "dueDate", label: "Due Date" },
+  ];
 
   const handleCloseModal = (open) => {
     setShowHomeModal(open);
@@ -355,12 +362,14 @@ function Home() {
               <span className="uppercase tracking-[0.2em] pb-2">
                 Snapshot {showSnapshot ? "visible" : "hidden"}
               </span>
-              <button
-                onClick={() => setShowSnapshot((prev) => !prev)}
-                className="px-3 py-1.5 rounded-full border border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 hover:-translate-y-0.5 transition-all shadow-sm"
+              <Button
+                size="sm"
+                variant="flat"
+                className="border border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 hover:-translate-y-0.5 transition-all shadow-sm"
+                onPress={() => setShowSnapshot((prev) => !prev)}
               >
                 {showSnapshot ? "Hide snapshot" : "Show snapshot"}
-              </button>
+              </Button>
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -374,61 +383,96 @@ function Home() {
               </div>
 
               <div className="flex-1 max-w-[600px]">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search notes... 🔍"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-300 border border-slate-200 dark:border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors shadow-sm"
-                  />
-                  <img
-                    src={Search}
-                    alt="search"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-60"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 text-xs"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
+                <Input
+                  value={searchQuery}
+                  onValueChange={setSearchQuery}
+                  placeholder="Search notes... 🔍"
+                  startContent={
+                    <img
+                      src={Search}
+                      alt="search"
+                      className="w-4 h-4 opacity-60"
+                    />
+                  }
+                  endContent={
+                    searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="text-gray-400 hover:text-gray-300 text-xs"
+                      >
+                        ✕
+                      </button>
+                    ) : null
+                  }
+                  className="w-full"
+                  classNames={{
+                    inputWrapper:
+                      "bg-white/80 dark:bg-[#2a2a2a] border border-slate-200 dark:border-gray-700 shadow-sm",
+                    input: "text-slate-800 dark:text-gray-300",
+                  }}
+                  size="sm"
+                />
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-300 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors shadow-sm"
+                <Select
+                  selectedKeys={[sortBy]}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0];
+                    if (value) setSortBy(value.toString());
+                  }}
+                  size="sm"
+                  className="min-w-[150px]"
+                  classNames={{
+                    trigger:
+                      "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
+                  }}
+                  aria-label="Sort notes"
                 >
-                  <option value="lastModified">Last Modified</option>
-                  <option value="createdAt">Created Date</option>
-                  <option value="title">Title</option>
-                  <option value="dueDate">Due Date</option>
-                </select>
-                <select
-                  value={filterTag}
-                  onChange={(e) => setFilterTag(e.target.value)}
-                  className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-300 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors shadow-sm"
-                >
-                  <option value="">All Tags</option>
-                  {allTags.map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
-                    </option>
+                  {sortOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
-                </select>
-                <button
-                  onClick={() =>
+                </Select>
+
+                <Select
+                  selectedKeys={filterTag ? [filterTag] : []}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0];
+                    setFilterTag(value ? value.toString() : "");
+                  }}
+                  allowEmptySelection
+                  placeholder="All tags"
+                  size="sm"
+                  className="min-w-[140px]"
+                  classNames={{
+                    trigger:
+                      "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
+                  }}
+                  aria-label="Filter by tag"
+                >
+                  <SelectItem key="" value="">
+                    All tags
+                  </SelectItem>
+                  {allTags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </Select>
+
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                  onPress={() =>
                     setViewMode(viewMode === "grid" ? "list" : "grid")
                   }
-                  className="px-2.5 py-2 bg-white/80 hover:bg-white dark:bg-[#2a2a2a] dark:hover:bg-[#3a3a3a] text-slate-800 dark:text-gray-300 text-xs rounded-lg transition-colors border border-slate-200 dark:border-gray-700 shadow-sm"
                 >
                   {viewMode === "grid" ? "List" : "Grid"}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -467,12 +511,12 @@ function Home() {
             )}
 
             {showSnapshot && (
-              <div className="w-full grid gap-4 lg:grid-cols-[1fr,0.7fr]">
+              <div className="w-full flex flex-col gap-4">
                 <motion.section
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="hidden lg:block glass-panel-soft rounded-2xl p-4 md:p-5 text-white border border-white/10 shadow-2xl shadow-black/30 overflow-hidden max-w-[520px] justify-self-end"
+                  className="hidden md:block glass-panel-soft rounded-3xl p-5 lg:p-6 text-white border border-white/10 shadow-2xl shadow-black/30 overflow-hidden w-full"
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap pb-3 border-b border-white/10">
                     <div className="space-y-1">
@@ -487,16 +531,18 @@ function Home() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => navigate("/profile")}
+                      <Button
+                        size="sm"
+                        variant="flat"
                         className="px-3 py-2 text-[12px] rounded-full border border-white/15 bg-white/10 text-white hover:bg-white/15 transition-colors"
+                        onPress={() => navigate("/profile")}
                       >
                         View full snapshot
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
                     {[
                       { label: "Total", value: dashboardStats.total },
                       { label: "Pinned", value: dashboardStats.pinned },
@@ -517,8 +563,8 @@ function Home() {
                     ))}
                   </div>
 
-                  <div className="mt-4 grid gap-3 md:grid-cols-[1.1fr,0.9fr]">
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  <div className="mt-5 grid gap-4 md:grid-cols-[1.1fr,0.9fr]">
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
                           Priority notes
@@ -529,7 +575,7 @@ function Home() {
                             : "None yet"}
                         </span>
                       </div>
-                      <div className="mt-2 space-y-2">
+                      <div className="mt-3 space-y-3">
                         {priorityNotes.length === 0 ? (
                           <p className="text-sm text-white/60">
                             Pin or set due dates to see them here.
@@ -549,19 +595,21 @@ function Home() {
                                   {formatDue(note)}
                                 </p>
                               </div>
-                              <button
-                                onClick={() => handleEdit(note)}
-                                className="text-[11px] px-2.5 py-1 rounded-full border border-white/15 bg-[#5EA2EF]/20 text-white hover:bg-[#5EA2EF]/30 transition-colors"
-                              >
-                                Open
-                              </button>
-                            </div>
-                          ))
-                        )}
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              className="text-[11px] px-2.5 py-1 rounded-full border border-white/15 bg-[#5EA2EF]/20 text-white hover:bg-[#5EA2EF]/30 transition-colors"
+                              onPress={() => handleEdit(note)}
+                            >
+                              Open
+                            </Button>
+                          </div>
+                        ))
+                      )}
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
                           Next due
@@ -613,12 +661,14 @@ function Home() {
                       </p>
                       <p className="text-sm text-white/80">Quick glance</p>
                     </div>
-                    <button
-                      onClick={() => navigate("/profile")}
+                    <Button
+                      size="sm"
+                      variant="flat"
                       className="px-3 py-1.5 text-[12px] rounded-full border border-white/15 bg-white/10 text-white hover:bg-white/15 transition-colors"
+                      onPress={() => navigate("/profile")}
                     >
                       Open profile
-                    </button>
+                    </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     {[
@@ -650,18 +700,54 @@ function Home() {
         )}
 
         {notesLoaded && notes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center w-full py-16">
-            <h1 className="text-xl text-center text-slate-800 dark:text-gray-200 mb-3">
-              Welcome to your personal LifeLog 🎉
-            </h1>
-            <h2 className="text-2xl bg-gradient-to-b from-[#5EA2EF] to-[#0072F5] bg-clip-text text-transparent">
-              {auth.currentUser?.displayName?.charAt(0).toUpperCase() +
-                auth.currentUser?.displayName?.slice(1)}
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-gray-400 mt-3 text-center">
-              Start by creating your first note!
-            </p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="flex flex-col items-center justify-center w-full py-16"
+          >
+            <div className="relative">
+              <div className="absolute inset-0 blur-3xl bg-gradient-to-r from-[#5EA2EF]/30 to-[#0072F5]/20 rounded-full -z-10" />
+              <div className="absolute -top-6 -right-8 w-12 h-12 rounded-full bg-white/30 dark:bg-white/10 blur-2xl animate-pulse" />
+            </div>
+
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+              className="text-center space-y-3"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-chip border border-white/20 shadow-[0_15px_40px_rgba(0,114,245,0.25)]">
+                <span className="text-xs uppercase tracking-[0.25em] text-slate-700 dark:text-gray-200">
+                  Welcome aboard
+                </span>
+                <span className="text-lg">🎉</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-semibold text-slate-800 dark:text-gray-100">
+                A calm space just for you
+              </h1>
+              <p className="text-lg md:text-xl bg-gradient-to-b from-[#5EA2EF] to-[#0072F5] bg-clip-text text-transparent font-semibold">
+                {auth.currentUser?.displayName
+                  ? auth.currentUser.displayName
+                  : "New lifelogger"}
+              </p>
+              <p className="text-sm text-slate-600 dark:text-gray-300 max-w-md mx-auto">
+                Create your first note to pin milestones, add reminders, and keep your flow streak going.
+              </p>
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25, duration: 0.45, ease: "easeOut" }}
+                className="flex items-center justify-center gap-3 pt-2"
+              >
+                <div className="h-2 w-2 rounded-full bg-[#5EA2EF] animate-pulse" />
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-600 dark:text-gray-300">
+                  Start by creating your first note
+                </p>
+                <div className="h-2 w-2 rounded-full bg-[#0072F5] animate-pulse" />
+              </motion.div>
+            </motion.div>
+          </motion.div>
         ) : (
           <div
             className={`w-full ${viewMode === "list" ? "max-w-[900px]" : ""}`}
