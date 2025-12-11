@@ -1,4 +1,4 @@
-import HomeModal from "./HomeModal";
+﻿import HomeModal from "./HomeModal";
 import ReactConfetti from "react-confetti";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { motion } from "framer-motion";
-import { format, addDays } from "date-fns";
+import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
 
 function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -39,11 +39,35 @@ function Home() {
   const [viewMode, setViewMode] = useState("grid");
   const [isTagDropActive, setIsTagDropActive] = useState(false);
   const [showSnapshot, setShowSnapshot] = useState(false);
+  const [smartFolders, setSmartFolders] = useState([]);
+  const [activeSmartFolderId, setActiveSmartFolderId] = useState("");
+  const [smartFolderDraft, setSmartFolderDraft] = useState({
+    name: "",
+    type: "tag",
+    value: "",
+    color: "#5EA2EF",
+  });
+  const [isSmartDrawerOpen, setIsSmartDrawerOpen] = useState(true);
   const sortOptions = [
     { value: "lastModified", label: "Last Modified" },
     { value: "createdAt", label: "Created Date" },
     { value: "title", label: "Title" },
     { value: "dueDate", label: "Due Date" },
+  ];
+  const smartFolderOptions = [
+    { value: "tag", label: "Tag contains" },
+    { value: "pinned", label: "Pinned notes" },
+    { value: "dueToday", label: "Due today" },
+    { value: "dueSoon", label: "Due in next 7 days" },
+    { value: "dated", label: "Has a due date" },
+  ];
+  const smartFolderColors = [
+    "#5EA2EF",
+    "#00C48C",
+    "#F5A524",
+    "#F31260",
+    "#9353D3",
+    "#1B2333",
   ];
 
   const handleCloseModal = (open) => {
@@ -187,7 +211,90 @@ function Home() {
 
   const formatDue = (note) => {
     const due = toDateValue(note.dueDate);
-    return due ? format(due, "EEE, MMM d • h:mma") : "No due date";
+    return due ? format(due, "EEE, MMM d 'at' h:mma") : "No due date";
+  };
+
+  const matchesSmartFolder = (note, folder) => {
+    if (!folder) return true;
+    switch (folder.type) {
+      case "tag": {
+        const tags = Array.isArray(note.tags) ? note.tags : [];
+        return tags.some((tag) =>
+          normalizeText(tag).includes(normalizeText(folder.value))
+        );
+      }
+      case "pinned":
+        return !!note.isPinned;
+      case "dueToday": {
+        const due = toDateValue(note.dueDate);
+        return due ? isSameDay(due, new Date()) : false;
+      }
+      case "dueSoon": {
+        const due = toDateValue(note.dueDate);
+        if (!due) return false;
+        const now = new Date();
+        const soon = addDays(startOfDay(now), 7);
+        return due >= startOfDay(now) && due <= endOfDay(soon);
+      }
+      case "dated":
+        return !!toDateValue(note.dueDate);
+      default:
+        return true;
+    }
+  };
+
+  const describeSmartFolder = (folder) => {
+    if (!folder) return "";
+    switch (folder.type) {
+      case "tag":
+        return `Tag contains "${folder.value}"`;
+      case "pinned":
+        return "Pinned notes";
+      case "dueToday":
+        return "Due today";
+      case "dueSoon":
+        return "Due in next 7 days";
+      case "dated":
+        return "Has a due date";
+      default:
+        return "";
+    }
+  };
+
+  const createSmartFolderId = () =>
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `smart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  const handleCreateSmartFolder = () => {
+    const trimmedName = smartFolderDraft.name.trim();
+    if (!trimmedName) return;
+    if (smartFolderDraft.type === "tag" && !smartFolderDraft.value.trim()) {
+      return;
+    }
+    const newFolder = {
+      id: createSmartFolderId(),
+      ...smartFolderDraft,
+      name: trimmedName,
+      value:
+        smartFolderDraft.type === "tag"
+          ? smartFolderDraft.value.trim()
+          : "",
+    };
+    setSmartFolders((prev) => [...prev, newFolder]);
+    setSmartFolderDraft((prev) => ({
+      name: "",
+      type: "tag",
+      value: "",
+      color: prev.color,
+    }));
+  };
+
+  const handleDeleteSmartFolder = (id) => {
+    setSmartFolders((prev) => prev.filter((folder) => folder.id !== id));
+    if (activeSmartFolderId === id) {
+      setActiveSmartFolderId("");
+    }
   };
 
   const pinnedNotes = useMemo(
@@ -232,9 +339,27 @@ function Home() {
     return { total, pinned, upcoming, dated };
   }, [notes, pinnedNotes, upcomingNotes]);
   const nextDue = upcomingNotes[0];
+  const smartFoldersWithCounts = useMemo(
+    () =>
+      smartFolders.map((folder) => ({
+        ...folder,
+        count: notes.filter((note) => matchesSmartFolder(note, folder)).length,
+      })),
+    [notes, smartFolders]
+  );
+  const activeSmartFolder = useMemo(
+    () => smartFolders.find((folder) => folder.id === activeSmartFolderId),
+    [activeSmartFolderId, smartFolders]
+  );
 
   const filteredAndSortedNotes = useMemo(() => {
     let filtered = [...notes];
+
+    if (activeSmartFolder) {
+      filtered = filtered.filter((note) =>
+        matchesSmartFolder(note, activeSmartFolder)
+      );
+    }
 
     if (searchQuery) {
       const queryText = searchQuery.toLowerCase();
@@ -285,7 +410,7 @@ function Home() {
     });
 
     return filtered;
-  }, [notes, searchQuery, filterTag, sortBy]);
+  }, [notes, searchQuery, filterTag, sortBy, activeSmartFolder]);
 
   const allTags = useMemo(() => {
     const tags = new Set();
@@ -296,6 +421,33 @@ function Home() {
     });
     return Array.from(tags);
   }, [notes]);
+
+  useEffect(() => {
+    if (!auth.currentUser) {
+      setSmartFolders([]);
+      setActiveSmartFolderId("");
+      return;
+    }
+    const saved = localStorage.getItem(
+      `smartFolders_${auth.currentUser.uid}`
+    );
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSmartFolders(Array.isArray(parsed) ? parsed : []);
+      } catch (err) {
+        console.error("Failed to parse smart folders", err);
+      }
+    }
+  }, [auth.currentUser]);
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    localStorage.setItem(
+      `smartFolders_${auth.currentUser.uid}`,
+      JSON.stringify(smartFolders)
+    );
+  }, [smartFolders, auth.currentUser]);
 
   if (loading) {
     return (
@@ -476,6 +628,307 @@ function Home() {
               </div>
             </div>
 
+            {isSmartDrawerOpen ? (
+              <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f172a] shadow-sm p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                      Smart folders
+                    </p>
+                    <p className="text-sm text-slate-700 dark:text-gray-200">
+                      Auto-updating filters by tags, dates, pins, or due today.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {activeSmartFolder && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-slate-900/5 dark:bg-white/5 text-slate-700 dark:text-gray-200">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: activeSmartFolder.color }}
+                        />
+                        {activeSmartFolder.name}
+                      </span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      className="text-xs bg-white/80 dark:bg-[#2a2a2a] border border-slate-200 dark:border-gray-700"
+                      onPress={() => setIsSmartDrawerOpen(false)}
+                    >
+                      Collapse
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 lg:grid-cols-[1.1fr,0.9fr]">
+                  <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white/80 dark:bg-[#111827] p-3 space-y-3">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <input
+                        type="text"
+                        value={smartFolderDraft.name}
+                        onChange={(e) =>
+                          setSmartFolderDraft((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                        placeholder="Folder name"
+                        className="w-full bg-white/90 dark:bg-[#1f2937] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/20"
+                      />
+                      <select
+                        value={smartFolderDraft.type}
+                        onChange={(e) =>
+                          setSmartFolderDraft((prev) => ({
+                            ...prev,
+                            type: e.target.value,
+                            value: e.target.value === "tag" ? prev.value : "",
+                          }))
+                        }
+                        className="w-full bg-white/90 dark:bg-[#1f2937] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/20"
+                      >
+                        {smartFolderOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {smartFolderDraft.type === "tag" ? (
+                      <input
+                        type="text"
+                        value={smartFolderDraft.value}
+                        onChange={(e) =>
+                          setSmartFolderDraft((prev) => ({
+                            ...prev,
+                            value: e.target.value,
+                          }))
+                        }
+                        placeholder="Tag contains..."
+                        className="w-full bg-white/90 dark:bg-[#1f2937] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/20"
+                      />
+                    ) : (
+                      <p className="text-xs text-slate-500 dark:text-gray-400">
+                        This folder will auto-update as matching notes change.
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-slate-500 dark:text-gray-400">
+                        Color
+                      </span>
+                      {smartFolderColors.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() =>
+                            setSmartFolderDraft((prev) => ({
+                              ...prev,
+                              color,
+                            }))
+                          }
+                          className={`w-8 h-8 rounded-full border-2 transition-transform ${
+                            smartFolderDraft.color === color
+                              ? "ring-2 ring-[#0072F5] scale-[1.05]"
+                              : "hover:scale-[1.05]"
+                          }`}
+                          style={{ backgroundColor: color }}
+                          aria-label={`Choose ${color}`}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[11px] text-slate-500 dark:text-gray-400">
+                        Create a folder to quick-filter matching notes.
+                      </p>
+                      <Button
+                        size="sm"
+                        className="bg-[#0072F5] hover:bg-[#0052CC] text-white text-xs font-medium rounded-lg transition-colors px-4 py-2"
+                        onPress={handleCreateSmartFolder}
+                      >
+                        Save smart folder
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white/80 dark:bg-[#111827] p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                        Your smart folders
+                      </p>
+                      <span className="text-[11px] text-slate-500 dark:text-gray-400">
+                        {smartFoldersWithCounts.length} total
+                      </span>
+                    </div>
+
+                    {smartFoldersWithCounts.length === 0 ? (
+                      <p className="text-sm text-slate-600 dark:text-gray-300">
+                        No smart folders yet. Add one to auto-organize.
+                      </p>
+                    ) : (
+                      <div className="flex gap-3 overflow-x-auto pb-2">
+                        {smartFoldersWithCounts.map((folder) => {
+                          const isActive = activeSmartFolderId === folder.id;
+                          const description = describeSmartFolder(folder);
+                          return (
+                            <button
+                              key={folder.id}
+                              type="button"
+                              onClick={() =>
+                                setActiveSmartFolderId(
+                                  isActive ? "" : folder.id
+                                )
+                              }
+                              className={`group min-w-[230px] text-left rounded-xl border bg-white/90 dark:bg-[#0b1220] px-3 py-3 transition-all ${
+                                isActive
+                                  ? "shadow-lg shadow-[#0072F5]/20"
+                                  : "hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10"
+                              }`}
+                              style={{
+                                borderColor: folder.color,
+                                backgroundColor: isActive
+                                  ? `${folder.color}1A`
+                                  : undefined,
+                              }}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full"
+                                    style={{ backgroundColor: folder.color }}
+                                  />
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 line-clamp-1">
+                                      {folder.name}
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 dark:text-gray-400 line-clamp-1">
+                                      {description || "Live filter"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className="text-[11px] text-slate-500 dark:text-gray-400">
+                                  {folder.count} notes
+                                </span>
+                              </div>
+
+                              <div className="flex items-center justify-between mt-3">
+                                <span
+                                  className={`text-[11px] font-medium ${
+                                    isActive
+                                      ? "text-slate-900 dark:text-gray-100"
+                                      : "text-slate-500 dark:text-gray-400"
+                                  }`}
+                                >
+                                  {isActive ? "Active" : "Tap to apply"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSmartFolder(folder.id);
+                                  }}
+                                  className="text-[11px] text-red-500 hover:text-red-400"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f172a] shadow-sm p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                      Smart folders
+                    </p>
+                    {activeSmartFolder ? (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-slate-900/5 dark:bg-white/5 text-slate-700 dark:text-gray-200">
+                        <span
+                          className="w-2 h-2 rounded-full animate-pulse"
+                          style={{ backgroundColor: activeSmartFolder.color }}
+                        />
+                        {activeSmartFolder.name}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-500 dark:text-gray-400">
+                        None active
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {activeSmartFolder && (
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        className="text-xs bg-white/80 dark:bg-[#2a2a2a] border border-slate-200 dark:border-gray-700"
+                        onPress={() => setActiveSmartFolderId("")}
+                      >
+                        Clear
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      className="bg-[#0072F5] text-white text-xs"
+                      onPress={() => setIsSmartDrawerOpen(true)}
+                    >
+                      Open drawer
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {smartFoldersWithCounts.length === 0 ? (
+                    <span className="text-xs text-slate-500 dark:text-gray-400">
+                      No smart folders yet.
+                    </span>
+                  ) : (
+                    smartFoldersWithCounts.map((folder) => {
+                      const isActive = activeSmartFolderId === folder.id;
+                      return (
+                        <button
+                          key={folder.id}
+                          type="button"
+                          onClick={() =>
+                            setActiveSmartFolderId(
+                              isActive ? "" : folder.id
+                            )
+                          }
+                          className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${
+                            isActive
+                              ? "shadow-md shadow-[#0072F5]/15"
+                              : "hover:-translate-y-0.5 hover:shadow"
+                          }`}
+                          style={{
+                            borderColor: folder.color,
+                            backgroundColor: `${folder.color}12`,
+                          }}
+                        >
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              isActive ? "animate-pulse" : "animate-pulse"
+                            }`}
+                            style={{ backgroundColor: folder.color }}
+                          />
+                          <span className="text-slate-800 dark:text-gray-100 font-semibold">
+                            {folder.name}
+                          </span>
+                          <span className="text-[11px] text-slate-600 dark:text-gray-300">
+                            {folder.count} notes
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
             {allTags.length > 0 && (
               <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
                 <div className="flex flex-wrap gap-2 items-center">
@@ -595,17 +1048,17 @@ function Home() {
                                   {formatDue(note)}
                                 </p>
                               </div>
-                            <Button
-                              size="sm"
-                              variant="flat"
-                              className="text-[11px] px-2.5 py-1 rounded-full border border-white/15 bg-[#5EA2EF]/20 text-white hover:bg-[#5EA2EF]/30 transition-colors"
-                              onPress={() => handleEdit(note)}
-                            >
-                              Open
-                            </Button>
-                          </div>
-                        ))
-                      )}
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                className="text-[11px] px-2.5 py-1 rounded-full border border-white/15 bg-[#5EA2EF]/20 text-white hover:bg-[#5EA2EF]/30 transition-colors"
+                                onPress={() => handleEdit(note)}
+                              >
+                                Open
+                              </Button>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
 
@@ -647,53 +1100,6 @@ function Home() {
                     </div>
                   </div>
                 </motion.section>
-
-                <motion.section
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35 }}
-                  className="lg:hidden glass-panel-soft rounded-2xl p-4 text-white border border-white/10 shadow-2xl shadow-black/30"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.25em] text-white/70">
-                        Snapshot
-                      </p>
-                      <p className="text-sm text-white/80">Quick glance</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      className="px-3 py-1.5 text-[12px] rounded-full border border-white/15 bg-white/10 text-white hover:bg-white/15 transition-colors"
-                      onPress={() => navigate("/profile")}
-                    >
-                      Open profile
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    {[
-                      { label: "Total", value: dashboardStats.total },
-                      { label: "Pinned", value: dashboardStats.pinned },
-                      { label: "Upcoming", value: dashboardStats.upcoming },
-                      { label: "With dates", value: dashboardStats.dated },
-                    ].map((stat) => (
-                      <div
-                        key={stat.label}
-                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left"
-                      >
-                        <p className="text-[11px] uppercase tracking-wide text-white/60">
-                          {stat.label}
-                        </p>
-                        <p className="text-base font-semibold text-white">
-                          {stat.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-white/65 mt-3">
-                    Full bars and reminders show on larger screens.
-                  </p>
-                </motion.section>
               </div>
             )}
           </motion.div>
@@ -732,7 +1138,8 @@ function Home() {
                   : "New lifelogger"}
               </p>
               <p className="text-sm text-slate-600 dark:text-gray-300 max-w-md mx-auto">
-                Create your first note to pin milestones, add reminders, and keep your flow streak going.
+                Create your first note to pin milestones, add reminders, and
+                keep your flow streak going.
               </p>
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
@@ -767,3 +1174,5 @@ function Home() {
 }
 
 export default Home;
+
+
