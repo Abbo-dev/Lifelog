@@ -1,4 +1,5 @@
 /* eslint-disable react/prop-types */
+import { useState } from "react";
 import { format } from "date-fns";
 import { 
   MapPinIcon as PinIcon,
@@ -9,6 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
+  const [openNote, setOpenNote] = useState(null);
   const toDateValue = (value) => {
     if (!value) return null;
     if (value instanceof Date) return value;
@@ -36,6 +38,12 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
     const date = toDateValue(value);
     return date ? format(date, pattern) : "";
   };
+  const openNoteDueLabel = openNote
+    ? formatDateValue(openNote.dueDate, "MMM d, h:mm a")
+    : "";
+  const openNoteLastModifiedLabel = openNote
+    ? formatDateValue(openNote.lastModified || openNote.createdAt, "MMM d, h:mm a")
+    : "";
 
   const NoteCard = ({ note }) => {
     const dueDateLabel = formatDateValue(note.dueDate, "MMM d, h:mm a");
@@ -47,9 +55,10 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
     return (
       <div
         key={note.id}
+        onClick={() => setOpenNote(note)}
         className={`group relative bg-white/80 dark:bg-slate-900/90 border border-slate-200/70 dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#0072F5]/15 ${
           note.isPinned ? "border-[#0072F5]" : ""
-        }`}
+        } cursor-pointer`}
       >
         <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: note.color || "#0072F5" }} />
         
@@ -131,16 +140,72 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
   };
 
   return (
-    <div className={`grid gap-3 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}>
-      {notes.map((note) => (
-        <NoteCard key={note.id} note={note} />
-      ))}
-      {notes.length === 0 && (
-        <div className="col-span-full text-center py-8 text-xs text-gray-500">
-          No notes found. Create your first note!
+    <>
+      <div className={`grid gap-3 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}>
+        {notes.map((note) => (
+          <NoteCard key={note.id} note={note} />
+        ))}
+        {notes.length === 0 && (
+          <div className="col-span-full text-center py-8 text-xs text-gray-500">
+            No notes found. Create your first note!
+          </div>
+        )}
+      </div>
+
+      {openNote && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-3">
+          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-2xl overflow-hidden">
+            <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-200 dark:border-gray-800">
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                  Note preview
+                </p>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">
+                  {openNote.title || "Untitled note"}
+                </h3>
+                <div className="text-[11px] text-slate-500 dark:text-gray-400 flex flex-wrap gap-2">
+                  {openNote.tags?.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 rounded-full border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#111827] text-slate-600 dark:text-gray-300"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                  {openNoteDueLabel && (
+                    <span className="flex items-center gap-1">
+                      <CalendarIcon className="w-3 h-3" />
+                      {openNoteDueLabel}
+                    </span>
+                  )}
+                  {openNoteLastModifiedLabel && (
+                    <span className="flex items-center gap-1">
+                      <ClockIcon className="w-3 h-3" />
+                      {openNoteLastModifiedLabel}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800"
+                  onClick={() => setOpenNote(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="p-4 max-h-[70vh] overflow-y-auto">
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none text-slate-800 dark:text-gray-100"
+                dangerouslySetInnerHTML={{ __html: openNote.content || "" }}
+              />
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

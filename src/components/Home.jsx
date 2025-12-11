@@ -48,6 +48,9 @@ function Home() {
     color: "#5EA2EF",
   });
   const [isSmartDrawerOpen, setIsSmartDrawerOpen] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState(
+    auth.currentUser?.uid || ""
+  );
   const sortOptions = [
     { value: "lastModified", label: "Last Modified" },
     { value: "createdAt", label: "Created Date" },
@@ -91,9 +94,9 @@ function Home() {
   };
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!currentUserId) return;
     const docRef = collection(db, "notes");
-    const q = query(docRef, where("userId", "==", auth.currentUser.uid));
+    const q = query(docRef, where("userId", "==", currentUserId));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const notesData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -103,7 +106,7 @@ function Home() {
       setNotesLoaded(true);
     });
     return unsubscribe;
-  }, [auth.currentUser]);
+  }, [currentUserId]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -114,12 +117,14 @@ function Home() {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setIsAuthenticated(true);
+        setCurrentUserId(user.uid);
         setConfetti(true);
         setTimeout(() => {
           setConfetti(false);
         }, 4000);
       } else {
         setIsAuthenticated(false);
+        setCurrentUserId("");
         setShowCard(true);
         setNotes([]);
         setNotesLoaded(false);
@@ -423,14 +428,12 @@ function Home() {
   }, [notes]);
 
   useEffect(() => {
-    if (!auth.currentUser) {
+    if (!currentUserId) {
       setSmartFolders([]);
       setActiveSmartFolderId("");
       return;
     }
-    const saved = localStorage.getItem(
-      `smartFolders_${auth.currentUser.uid}`
-    );
+    const saved = localStorage.getItem(`smartFolders_${currentUserId}`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -439,15 +442,15 @@ function Home() {
         console.error("Failed to parse smart folders", err);
       }
     }
-  }, [auth.currentUser]);
+  }, [currentUserId]);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!currentUserId) return;
     localStorage.setItem(
-      `smartFolders_${auth.currentUser.uid}`,
+      `smartFolders_${currentUserId}`,
       JSON.stringify(smartFolders)
     );
-  }, [smartFolders, auth.currentUser]);
+  }, [smartFolders, currentUserId]);
 
   if (loading) {
     return (

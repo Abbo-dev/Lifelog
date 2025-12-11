@@ -29,6 +29,15 @@ function HomeModal({
   const [isPinned, setIsPinned] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [existingTags, setExistingTags] = useState([]);
+  const hasContent = (html) => {
+    if (!html) return false;
+    const text = html
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return text.length > 0;
+  };
 
   const formatDateTimeLocal = (value) => {
     if (!value) return "";
@@ -84,6 +93,10 @@ function HomeModal({
     e.preventDefault();
     if (!title.trim()) {
       alert("Please enter a title");
+      return;
+    }
+    if (!hasContent(content)) {
+      alert("Please add some note content before saving.");
       return;
     }
 
@@ -143,10 +156,10 @@ function HomeModal({
     return (
       <button
         onClick={() => onCloseModal(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-[#0072F5] hover:bg-[#0052CC] text-white text-xs font-medium rounded-lg transition-colors"
+        className="flex items-center gap-2 h-10 px-4 bg-[#0072F5] hover:bg-[#0052CC] text-white text-xs font-medium rounded-lg transition-colors"
       >
-        <span className="text-lg">+</span>
-        <span>New Note</span>
+        <span className="text-lg leading-none">+</span>
+        <span className="leading-none">New Note</span>
       </button>
     );
   }
@@ -156,10 +169,10 @@ function HomeModal({
       {!showHomeModal ? (
         <button
           onClick={() => onCloseModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#0072F5] hover:bg-[#0052CC] text-white text-xs font-medium rounded-lg transition-colors"
+          className="flex items-center gap-2 h-10 px-4 bg-[#0072F5] hover:bg-[#0052CC] text-white text-xs font-medium rounded-lg transition-colors"
         >
-          <span className="text-lg">+</span>
-          <span>New Note</span>
+          <span className="text-lg leading-none">+</span>
+          <span className="leading-none">New Note</span>
         </button>
       ) : (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -242,6 +255,22 @@ function HomeModal({
                     onChange={(e) => setDueDate(e.target.value ? new Date(e.target.value) : null)}
                     className="w-full bg-white/80 dark:bg-[#2a2a2a] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors"
                   />
+                </div>
+                <div className="flex flex-col justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDueDate(new Date())}
+                    className="px-3 py-2 text-xs bg-white/80 dark:bg-[#2a2a2a] border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-white dark:hover:bg-[#3a3a3a] transition-colors text-slate-800 dark:text-gray-200"
+                  >
+                    Set to current time
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDueDate(null)}
+                    className="px-3 py-2 text-xs bg-white/60 dark:bg-[#1f1f1f] border border-slate-200 dark:border-gray-800 rounded-lg hover:bg-white/80 dark:hover:bg-[#2a2a2a] transition-colors text-slate-700 dark:text-gray-300"
+                  >
+                    Clear date
+                  </button>
                 </div>
                 </div>
 

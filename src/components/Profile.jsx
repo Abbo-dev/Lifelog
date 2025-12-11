@@ -4,7 +4,13 @@ import { motion } from "framer-motion";
 import { Card, CardBody } from "@heroui/card";
 import { Button, Avatar, Chip } from "@heroui/react";
 import { auth, db, storage } from "../firebase";
-import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -35,7 +41,12 @@ const statCards = [
 
 function Profile() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ notes: 0, pinned: 0, tags: 0, streak: 0 });
+  const [stats, setStats] = useState({
+    notes: 0,
+    pinned: 0,
+    tags: 0,
+    streak: 0,
+  });
   const [newEmail, setNewEmail] = useState(() => auth.currentUser?.email || "");
   const [authPassword, setAuthPassword] = useState("");
   const [emailStatus, setEmailStatus] = useState("");
@@ -59,7 +70,11 @@ function Profile() {
   const toDateValue = (value) => {
     if (!value) return null;
     if (value instanceof Date) return value;
-    if (typeof value === "object" && "seconds" in value && "nanoseconds" in value) {
+    if (
+      typeof value === "object" &&
+      "seconds" in value &&
+      "nanoseconds" in value
+    ) {
       return new Date(
         value.seconds * 1000 + Math.floor(value.nanoseconds / 1_000_000)
       );
@@ -240,7 +255,10 @@ function Profile() {
     try {
       setAvatarUploading(true);
       setAvatarStatus("Uploading...");
-      const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}-${file.name}`);
+      const storageRef = ref(
+        storage,
+        `avatars/${user.uid}/${Date.now()}-${file.name}`
+      );
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       await updateProfile(user, { photoURL: url });
@@ -272,8 +290,10 @@ function Profile() {
         return due && due >= now && due <= soon;
       })
       .sort((a, b) => {
-        const aTime = toDateValue(a.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
-        const bTime = toDateValue(b.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        const aTime =
+          toDateValue(a.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        const bTime =
+          toDateValue(b.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
         return aTime - bTime;
       });
   }, [notes]);
@@ -346,7 +366,9 @@ function Profile() {
     return (
       <div className="profile-shell relative overflow-hidden flex flex-col items-center justify-center min-h-screen gap-4 text-center text-slate-900 dark:text-gray-100">
         <div className="relative z-10 flex flex-col items-center gap-4">
-          <p className="text-lg text-slate-700 dark:text-gray-200">Please sign in to view your profile.</p>
+          <p className="text-lg text-slate-700 dark:text-gray-200">
+            Please sign in to view your profile.
+          </p>
           <Button onPress={() => navigate("/signin")}>Go to Sign In</Button>
         </div>
       </div>
@@ -358,11 +380,16 @@ function Profile() {
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-16">
         <div className="flex items-center justify-between mb-10">
           <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">Profile</p>
+            <p className="text-sm uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+              Profile
+            </p>
             <h1 className="text-3xl font-bold mt-2 flex items-center gap-2">
-              Hello, {user.displayName || "Explorer"} <span className="text-2xl">👋</span>
+              Hello, {user.displayName || "Explorer"}{" "}
+              <span className="text-2xl">👋</span>
             </h1>
-            <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">{user.email}</p>
+            <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
+              {user.email}
+            </p>
           </div>
           <div className="relative">
             <Avatar
@@ -404,8 +431,12 @@ function Profile() {
             >
               <Card className="profile-card">
                 <CardBody className="p-5">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">{item.label}</p>
-                  <p className="text-3xl font-semibold mt-2">{stats[item.key]}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                    {item.label}
+                  </p>
+                  <p className="text-3xl font-semibold mt-2">
+                    {stats[item.key]}
+                  </p>
                 </CardBody>
               </Card>
             </motion.div>
@@ -576,7 +607,7 @@ function Profile() {
                           {format(day, "d")}
                         </span>
                         {isToday(day) && (
-                          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]" />
+                          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.15)] animate-pulse" />
                         )}
                         {hasNotes && (
                           <span className="absolute bottom-1 left-1 right-1 mx-auto h-1.5 rounded-full bg-gradient-to-r from-[#5EA2EF] to-[#0072F5]" />
@@ -643,11 +674,16 @@ function Profile() {
                 Mood board <span>🌈</span>
               </h3>
               <p className="text-sm text-slate-500 dark:text-gray-400">
-                Craft your vibe by pinning colors and tags that matter most. Drag tags in Home to instantly filter and focus.
+                Craft your vibe by pinning colors and tags that matter most.
+                Drag tags in Home to instantly filter and focus.
               </p>
               <div className="flex flex-wrap gap-2 pt-2">
                 {["Focus", "Gratitude", "Planning", "Ideas"].map((tag) => (
-                  <Chip key={tag} className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]" variant="flat">
+                  <Chip
+                    key={tag}
+                    className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
+                    variant="flat"
+                  >
                     #{tag}
                   </Chip>
                 ))}
@@ -660,7 +696,11 @@ function Profile() {
                 Quick actions <span>⚡</span>
               </h3>
               <div className="flex gap-2 flex-wrap">
-                <Button size="sm" onPress={() => navigate("/home")} className="shadow-md shadow-[#0072F5]/20">
+                <Button
+                  size="sm"
+                  onPress={() => navigate("/home")}
+                  className="shadow-md shadow-[#0072F5]/20"
+                >
                   Open Notes
                 </Button>
                 <Button
@@ -681,7 +721,8 @@ function Profile() {
                 </Button>
               </div>
               <p className="text-xs text-slate-500 dark:text-gray-400">
-                Tip: Switch themes anytime with the sun/moon toggle in the navbar.
+                Tip: Switch themes anytime with the sun/moon toggle in the
+                navbar.
               </p>
             </CardBody>
           </Card>
@@ -698,13 +739,19 @@ function Profile() {
               <CardBody className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Update email</h3>
-                  <Chip size="sm" className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]" variant="flat">
+                  <Chip
+                    size="sm"
+                    className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
+                    variant="flat"
+                  >
                     Secure
                   </Chip>
                 </div>
                 <form className="space-y-3" onSubmit={handleUpdateEmail}>
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-500 dark:text-gray-400">New email</label>
+                    <label className="text-xs text-slate-500 dark:text-gray-400">
+                      New email
+                    </label>
                     <input
                       type="email"
                       value={newEmail}
@@ -714,7 +761,9 @@ function Profile() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-500 dark:text-gray-400">Password (for confirmation)</label>
+                    <label className="text-xs text-slate-500 dark:text-gray-400">
+                      Password (for confirmation)
+                    </label>
                     <input
                       type="password"
                       value={authPassword}
@@ -739,7 +788,9 @@ function Profile() {
                   {emailStatus && (
                     <p
                       className={`text-xs ${
-                        emailStatus.includes("successfully") ? "text-emerald-600" : "text-red-500"
+                        emailStatus.includes("successfully")
+                          ? "text-emerald-600"
+                          : "text-red-500"
                       }`}
                     >
                       {emailStatus}
@@ -753,18 +804,27 @@ function Profile() {
               <CardBody className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Update password</h3>
-                  <Chip size="sm" className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]" variant="flat">
+                  <Chip
+                    size="sm"
+                    className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
+                    variant="flat"
+                  >
                     Secure
                   </Chip>
                 </div>
                 <form className="space-y-3" onSubmit={handleUpdatePassword}>
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-500 dark:text-gray-400">Current password</label>
+                    <label className="text-xs text-slate-500 dark:text-gray-400">
+                      Current password
+                    </label>
                     <input
                       type="password"
                       value={passwordForm.current}
                       onChange={(e) =>
-                        setPasswordForm((prev) => ({ ...prev, current: e.target.value }))
+                        setPasswordForm((prev) => ({
+                          ...prev,
+                          current: e.target.value,
+                        }))
                       }
                       className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
                       placeholder="Current password"
@@ -772,24 +832,34 @@ function Profile() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-500 dark:text-gray-400">New password</label>
+                      <label className="text-xs text-slate-500 dark:text-gray-400">
+                        New password
+                      </label>
                       <input
                         type="password"
                         value={passwordForm.next}
                         onChange={(e) =>
-                          setPasswordForm((prev) => ({ ...prev, next: e.target.value }))
+                          setPasswordForm((prev) => ({
+                            ...prev,
+                            next: e.target.value,
+                          }))
                         }
                         className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
                         placeholder="At least 6 characters"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-500 dark:text-gray-400">Confirm new password</label>
+                      <label className="text-xs text-slate-500 dark:text-gray-400">
+                        Confirm new password
+                      </label>
                       <input
                         type="password"
                         value={passwordForm.confirm}
                         onChange={(e) =>
-                          setPasswordForm((prev) => ({ ...prev, confirm: e.target.value }))
+                          setPasswordForm((prev) => ({
+                            ...prev,
+                            confirm: e.target.value,
+                          }))
                         }
                         className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
                         placeholder="Repeat new password"
@@ -812,7 +882,9 @@ function Profile() {
                   {passwordStatus && (
                     <p
                       className={`text-xs ${
-                        passwordStatus.includes("successfully") ? "text-emerald-600" : "text-red-500"
+                        passwordStatus.includes("successfully")
+                          ? "text-emerald-600"
+                          : "text-red-500"
                       }`}
                     >
                       {passwordStatus}
