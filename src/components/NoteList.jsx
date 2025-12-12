@@ -44,6 +44,9 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
   const openNoteLastModifiedLabel = openNote
     ? formatDateValue(openNote.lastModified || openNote.createdAt, "MMM d, h:mm a")
     : "";
+  const openNoteCreatedLabel = openNote
+    ? formatDateValue(openNote.createdAt, "MMM d, h:mm a")
+    : "";
 
   const NoteCard = ({ note }) => {
     const dueDateLabel = formatDateValue(note.dueDate, "MMM d, h:mm a");
@@ -51,6 +54,7 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
       note.lastModified || note.createdAt,
       "MMM d, h:mm a"
     );
+    const createdLabel = formatDateValue(note.createdAt, "MMM d, h:mm a");
 
     return (
       <div
@@ -125,13 +129,19 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
               {dueDateLabel && (
                 <div className="flex items-center gap-1">
                   <CalendarIcon className="w-3 h-3" />
+                  <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
+                    Due
+                  </span>
                   <span>{dueDateLabel}</span>
                 </div>
               )}
             </div>
             <div className="flex items-center gap-1">
               <ClockIcon className="w-3 h-3" />
-              <span>{lastModifiedLabel || "—"}</span>
+              <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
+                {note.lastModified ? "Updated" : "Created"}
+              </span>
+              <span>{lastModifiedLabel || createdLabel || "-"}</span>
             </div>
           </div>
         </div>
@@ -175,13 +185,19 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
                   {openNoteDueLabel && (
                     <span className="flex items-center gap-1">
                       <CalendarIcon className="w-3 h-3" />
+                      <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
+                        Due
+                      </span>
                       {openNoteDueLabel}
                     </span>
                   )}
                   {openNoteLastModifiedLabel && (
                     <span className="flex items-center gap-1">
                       <ClockIcon className="w-3 h-3" />
-                      {openNoteLastModifiedLabel}
+                      <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
+                        {openNote?.lastModified ? "Updated" : "Created"}
+                      </span>
+                      {openNoteLastModifiedLabel || openNoteCreatedLabel}
                     </span>
                   )}
                 </div>

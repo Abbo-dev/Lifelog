@@ -48,11 +48,12 @@ function Home() {
     value: "",
     color: "#5EA2EF",
   });
-  const [isSmartDrawerOpen, setIsSmartDrawerOpen] = useState(true);
+  const [isSmartDrawerOpen, setIsSmartDrawerOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(
     auth.currentUser?.uid || ""
   );
   const smartFoldersSeededRef = useRef(false);
+  const hasSmartFolderSyncedRef = useRef(false);
   const lastActiveLoadedRef = useRef(false);
   const sortOptions = [
     { value: "lastModified", label: "Last Modified" },
@@ -285,9 +286,7 @@ function Home() {
       ...smartFolderDraft,
       name: trimmedName,
       value:
-        smartFolderDraft.type === "tag"
-          ? smartFolderDraft.value.trim()
-          : "",
+        smartFolderDraft.type === "tag" ? smartFolderDraft.value.trim() : "",
     };
     setSmartFolders((prev) => [...prev, newFolder]);
     setActiveSmartFolderId(newFolder.id);
@@ -451,6 +450,8 @@ function Home() {
 
   useEffect(() => {
     if (!currentUserId) {
+      hasSmartFolderSyncedRef.current = false;
+      smartFoldersSeededRef.current = false;
       const local = localStorage.getItem("smartFolders_anonymous");
       if (local) {
         try {
@@ -488,6 +489,7 @@ function Home() {
           ...docItem.data(),
         }));
         if (
+          !hasSmartFolderSyncedRef.current &&
           list.length === 0 &&
           cachedFolders.length > 0 &&
           !smartFoldersSeededRef.current
@@ -510,6 +512,7 @@ function Home() {
             `smartFolders_${currentUserId}`,
             JSON.stringify(cachedFolders)
           );
+          hasSmartFolderSyncedRef.current = true;
           return;
         }
 
@@ -518,6 +521,7 @@ function Home() {
           `smartFolders_${currentUserId}`,
           JSON.stringify(list)
         );
+        hasSmartFolderSyncedRef.current = true;
       },
       (err) => console.error("Failed to load smart folders", err)
     );
@@ -526,7 +530,10 @@ function Home() {
 
   useEffect(() => {
     if (!currentUserId) {
-      localStorage.setItem("smartFolders_anonymous", JSON.stringify(smartFolders));
+      localStorage.setItem(
+        "smartFolders_anonymous",
+        JSON.stringify(smartFolders)
+      );
     }
     if (currentUserId && smartFolders.length > 0) {
       localStorage.setItem(
@@ -747,7 +754,7 @@ function Home() {
               <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f172a] shadow-sm p-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-0.5">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400 ">
                       Smart folders
                     </p>
                     <p className="text-sm text-slate-700 dark:text-gray-200">
@@ -1011,9 +1018,7 @@ function Home() {
                           key={folder.id}
                           type="button"
                           onClick={() =>
-                            setActiveSmartFolderId(
-                              isActive ? "" : folder.id
-                            )
+                            setActiveSmartFolderId(isActive ? "" : folder.id)
                           }
                           className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${
                             isActive
@@ -1289,5 +1294,3 @@ function Home() {
 }
 
 export default Home;
-
-
