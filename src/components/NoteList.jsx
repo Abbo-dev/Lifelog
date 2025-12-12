@@ -8,6 +8,7 @@ import {
   TrashIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { sanitizeHtmlLinks } from "../utils/linkUtils";
 
 const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
   const [openNote, setOpenNote] = useState(null);
@@ -47,6 +48,7 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
   const openNoteCreatedLabel = openNote
     ? formatDateValue(openNote.createdAt, "MMM d, h:mm a")
     : "";
+  const sanitizedOpenContent = sanitizeHtmlLinks(openNote?.content || "");
 
   const NoteCard = ({ note }) => {
     const dueDateLabel = formatDateValue(note.dueDate, "MMM d, h:mm a");
@@ -55,6 +57,7 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
       "MMM d, h:mm a"
     );
     const createdLabel = formatDateValue(note.createdAt, "MMM d, h:mm a");
+    const sanitizedPreviewContent = sanitizeHtmlLinks(note.content || "");
 
     return (
       <div
@@ -109,7 +112,7 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
           <div className="prose prose-sm dark:prose-invert max-w-none mb-2">
             <div
               className="text-[13px] leading-relaxed text-slate-600 dark:text-gray-300 line-clamp-3"
-              dangerouslySetInnerHTML={{ __html: note.content || "" }}
+              dangerouslySetInnerHTML={{ __html: sanitizedPreviewContent }}
             />
           </div>
 
@@ -215,7 +218,7 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
             <div className="p-4 max-h-[70vh] overflow-y-auto">
               <div
                 className="prose prose-sm dark:prose-invert max-w-none text-slate-800 dark:text-gray-100"
-                dangerouslySetInnerHTML={{ __html: openNote.content || "" }}
+                dangerouslySetInnerHTML={{ __html: sanitizedOpenContent }}
               />
             </div>
           </div>

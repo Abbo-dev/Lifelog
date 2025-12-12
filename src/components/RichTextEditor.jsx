@@ -10,6 +10,7 @@ import TaskItem from '@tiptap/extension-task-item';
 import { Button } from '@heroui/react';
 import { useState, useEffect } from 'react';
 import { HexColorPicker } from 'react-colorful';
+import { ensureProtocol } from '../utils/linkUtils';
 
 const MenuBar = ({ editor }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -32,9 +33,10 @@ const MenuBar = ({ editor }) => {
 
   const addLink = () => {
     const url = window.prompt('Enter URL');
-    if (url) {
-      editor.chain().focus().setLink({ href: url }).run();
-    }
+    if (!url) return;
+
+    const href = ensureProtocol(url);
+    editor.chain().focus().setLink({ href }).run();
   };
 
   return (
@@ -153,6 +155,8 @@ const RichTextEditor = ({ content, onChange }) => {
         openOnClick: false,
         HTMLAttributes: {
           class: 'text-blue-600 dark:text-blue-400 underline',
+          target: '_blank',
+          rel: 'noopener noreferrer',
         },
       }),
       Placeholder.configure({

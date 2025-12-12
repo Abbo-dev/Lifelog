@@ -83,11 +83,11 @@ html:not(.dark) .text-gray-400 {
 }
 
 .ProseMirror ul {
-  @apply list-disc list-inside my-2;
+  @apply list-disc list-outside pl-6 my-2;
 }
 
 .ProseMirror ol {
-  @apply list-decimal list-inside my-2;
+  @apply list-decimal list-outside pl-6 my-2;
 }
 
 .ProseMirror li {

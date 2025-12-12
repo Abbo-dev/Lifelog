@@ -14,6 +14,7 @@ import {
   where,
 } from "firebase/firestore";
 import RichTextEditor from "./RichTextEditor";
+import { sanitizeHtmlLinks } from "../utils/linkUtils";
 
 
 function HomeModal({
@@ -101,9 +102,10 @@ function HomeModal({
     }
 
     try {
+      const normalizedContent = sanitizeHtmlLinks(content);
       const noteData = {
         title: title.trim(),
-        content,
+        content: normalizedContent,
         dueDate: dueDate ? new Date(dueDate) : null,
         tags,
         color,
