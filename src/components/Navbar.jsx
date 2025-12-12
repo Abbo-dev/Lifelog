@@ -58,7 +58,7 @@ const NavbarSide = () => {
   return (
     <header className="fixed inset-x-0 top-0 z-30 w-full text-slate-900 dark:text-white bg-transparent">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center ">
           <Link to="/">
             {loading ? (
               <Skeleton className="w-[140px] rounded-lg" />

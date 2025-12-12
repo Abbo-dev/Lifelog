@@ -751,7 +751,7 @@ function Home() {
             </div>
 
             {isSmartDrawerOpen ? (
-              <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f172a] shadow-sm p-4 space-y-3">
+              <div className="rounded-2xl border border-[#d6e4ff]/80 dark:border-gray-800 bg-[#eef3ff] dark:bg-[#0f172a] shadow-sm p-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-0.5">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400 ">
@@ -783,7 +783,7 @@ function Home() {
                 </div>
 
                 <div className="grid gap-3 lg:grid-cols-[1.1fr,0.9fr]">
-                  <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white/80 dark:bg-[#111827] p-3 space-y-3">
+                  <div className="rounded-xl border border-[#d6e4ff]/80 dark:border-gray-800 bg-[#eef3ff] dark:bg-[#111827] p-3 space-y-3">
                     <div className="grid gap-3 md:grid-cols-2">
                       <input
                         type="text"
@@ -795,7 +795,7 @@ function Home() {
                           }))
                         }
                         placeholder="Folder name"
-                        className="w-full bg-white/90 dark:bg-[#1f2937] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/20"
+                        className="w-full bg-white/90 dark:bg-[#1f2937] text-slate-900 dark:text-gray-100 border border-[#d6e4ff]/80 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/20"
                       />
                       <select
                         value={smartFolderDraft.type}
@@ -806,7 +806,7 @@ function Home() {
                             value: e.target.value === "tag" ? prev.value : "",
                           }))
                         }
-                        className="w-full bg-white/90 dark:bg-[#1f2937] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/20"
+                        className="w-full bg-white/90 dark:bg-[#1f2937] text-slate-900 dark:text-gray-100 border border-[#d6e4ff]/80 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/20"
                       >
                         {smartFolderOptions.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -827,7 +827,7 @@ function Home() {
                           }))
                         }
                         placeholder="Tag contains..."
-                        className="w-full bg-white/90 dark:bg-[#1f2937] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/20"
+                        className="w-full bg-white/90 dark:bg-[#1f2937] text-slate-900 dark:text-gray-100 border border-[#d6e4ff]/80 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/20"
                       />
                     ) : (
                       <p className="text-xs text-slate-500 dark:text-gray-400">
@@ -874,7 +874,7 @@ function Home() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white/80 dark:bg-[#111827] p-3 space-y-3">
+                  <div className="rounded-xl border border-[#d6e4ff]/80 dark:border-gray-800 bg-[#eef3ff] dark:bg-[#111827] p-3 space-y-3">
                     <div className="flex items-center justify-between">
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
                         Your smart folders
@@ -964,7 +964,7 @@ function Home() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f172a] shadow-sm p-4 space-y-3">
+              <div className="rounded-2xl border border-[#d6e4ff]/80 dark:border-gray-800 bg-[#eef3ff] dark:bg-[#0f172a] shadow-sm p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">

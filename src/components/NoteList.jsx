@@ -63,7 +63,7 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
       <div
         key={note.id}
         onClick={() => setOpenNote(note)}
-        className={`group relative bg-white/80 dark:bg-slate-900/90 border border-slate-200/70 dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#0072F5]/15 ${
+        className={`group relative bg-[#eef3ff] dark:bg-slate-900/90 border border-[#d6e4ff]/80 dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#0072F5]/15 ${
           note.isPinned ? "border-[#0072F5]" : ""
         } cursor-pointer`}
       >
@@ -111,7 +111,7 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
 
           <div className="prose prose-sm dark:prose-invert max-w-none mb-2">
             <div
-              className="text-[13px] leading-relaxed text-slate-600 dark:text-gray-300 line-clamp-3"
+              className="note-content text-[13px] leading-relaxed text-slate-600 dark:text-gray-300 line-clamp-3"
               dangerouslySetInnerHTML={{ __html: sanitizedPreviewContent }}
             />
           </div>
@@ -167,7 +167,7 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
 
       {openNote && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-3">
-          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-3xl bg-[#eef3ff] dark:bg-slate-900 rounded-2xl border border-[#d6e4ff]/80 dark:border-gray-800 shadow-2xl overflow-hidden">
             <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-200 dark:border-gray-800">
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
@@ -217,7 +217,7 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
             </div>
             <div className="p-4 max-h-[70vh] overflow-y-auto">
               <div
-                className="prose prose-sm dark:prose-invert max-w-none text-slate-800 dark:text-gray-100"
+                className="note-content prose prose-sm dark:prose-invert max-w-none text-slate-800 dark:text-gray-100"
                 dangerouslySetInnerHTML={{ __html: sanitizedOpenContent }}
               />
             </div>

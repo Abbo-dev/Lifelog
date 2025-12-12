@@ -159,6 +159,24 @@ html:not(.dark) .text-gray-400 {
   @apply bg-yellow-800;
 }
 
+.note-content ul {
+  list-style: disc;
+  list-style-position: outside;
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.note-content ol {
+  list-style: decimal;
+  list-style-position: outside;
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.note-content li {
+  margin: 0.15rem 0;
+}
+
 /* Force Navbar to stay transparent across themes */
 .heroui-navbar,
 .heroui-navbar-wrapper,
