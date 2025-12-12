@@ -2,7 +2,7 @@
 import ReactConfetti from "react-confetti";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Button, Input, Select, SelectItem } from "@heroui/react";
 import Search from "../assets/search.svg";
 import NoteList from "./NoteList";
@@ -15,6 +15,7 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { motion } from "framer-motion";
@@ -51,6 +52,8 @@ function Home() {
   const [currentUserId, setCurrentUserId] = useState(
     auth.currentUser?.uid || ""
   );
+  const smartFoldersSeededRef = useRef(false);
+  const lastActiveLoadedRef = useRef(false);
   const sortOptions = [
     { value: "lastModified", label: "Last Modified" },
     { value: "createdAt", label: "Created Date" },
@@ -287,6 +290,19 @@ function Home() {
           : "",
     };
     setSmartFolders((prev) => [...prev, newFolder]);
+    setActiveSmartFolderId(newFolder.id);
+    if (currentUserId) {
+      const folderRef = doc(
+        db,
+        "users",
+        currentUserId,
+        "smartFolders",
+        newFolder.id
+      );
+      setDoc(folderRef, newFolder).catch((err) =>
+        console.error("Failed to save smart folder", err)
+      );
+    }
     setSmartFolderDraft((prev) => ({
       name: "",
       type: "tag",
@@ -299,6 +315,12 @@ function Home() {
     setSmartFolders((prev) => prev.filter((folder) => folder.id !== id));
     if (activeSmartFolderId === id) {
       setActiveSmartFolderId("");
+    }
+    if (currentUserId) {
+      const folderRef = doc(db, "users", currentUserId, "smartFolders", id);
+      deleteDoc(folderRef).catch((err) =>
+        console.error("Failed to delete smart folder", err)
+      );
     }
   };
 
@@ -429,28 +451,118 @@ function Home() {
 
   useEffect(() => {
     if (!currentUserId) {
-      setSmartFolders([]);
+      const local = localStorage.getItem("smartFolders_anonymous");
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          setSmartFolders(Array.isArray(parsed) ? parsed : []);
+        } catch (err) {
+          console.error("Failed to parse local smart folders", err);
+        }
+      } else {
+        setSmartFolders([]);
+      }
       setActiveSmartFolderId("");
       return;
     }
-    const saved = localStorage.getItem(`smartFolders_${currentUserId}`);
-    if (saved) {
+
+    // Load local cache immediately for UX, then hydrate with Firestore live data.
+    const cached = localStorage.getItem(`smartFolders_${currentUserId}`);
+    let cachedFolders = [];
+    if (cached) {
       try {
-        const parsed = JSON.parse(saved);
-        setSmartFolders(Array.isArray(parsed) ? parsed : []);
+        const parsed = JSON.parse(cached);
+        cachedFolders = Array.isArray(parsed) ? parsed : [];
+        setSmartFolders(cachedFolders);
       } catch (err) {
-        console.error("Failed to parse smart folders", err);
+        console.error("Failed to parse cached smart folders", err);
       }
     }
+
+    const foldersRef = collection(db, "users", currentUserId, "smartFolders");
+    const unsubscribe = onSnapshot(
+      foldersRef,
+      (snapshot) => {
+        const list = snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        }));
+        if (
+          list.length === 0 &&
+          cachedFolders.length > 0 &&
+          !smartFoldersSeededRef.current
+        ) {
+          smartFoldersSeededRef.current = true;
+          cachedFolders.forEach((folder) => {
+            const folderRef = doc(
+              db,
+              "users",
+              currentUserId,
+              "smartFolders",
+              folder.id
+            );
+            setDoc(folderRef, folder).catch((err) =>
+              console.error("Failed to seed smart folder", err)
+            );
+          });
+          setSmartFolders(cachedFolders);
+          localStorage.setItem(
+            `smartFolders_${currentUserId}`,
+            JSON.stringify(cachedFolders)
+          );
+          return;
+        }
+
+        setSmartFolders(list);
+        localStorage.setItem(
+          `smartFolders_${currentUserId}`,
+          JSON.stringify(list)
+        );
+      },
+      (err) => console.error("Failed to load smart folders", err)
+    );
+    return unsubscribe;
   }, [currentUserId]);
 
   useEffect(() => {
-    if (!currentUserId) return;
-    localStorage.setItem(
-      `smartFolders_${currentUserId}`,
-      JSON.stringify(smartFolders)
-    );
+    if (!currentUserId) {
+      localStorage.setItem("smartFolders_anonymous", JSON.stringify(smartFolders));
+    }
+    if (currentUserId && smartFolders.length > 0) {
+      localStorage.setItem(
+        `smartFolders_${currentUserId}`,
+        JSON.stringify(smartFolders)
+      );
+    }
   }, [smartFolders, currentUserId]);
+
+  useEffect(() => {
+    const key = currentUserId
+      ? `activeSmartFolder_${currentUserId}`
+      : "activeSmartFolder_anonymous";
+    if (!lastActiveLoadedRef.current) {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setActiveSmartFolderId(saved);
+      }
+      lastActiveLoadedRef.current = true;
+    }
+    if (activeSmartFolderId) {
+      localStorage.setItem(key, activeSmartFolderId);
+    } else {
+      localStorage.removeItem(key);
+    }
+  }, [activeSmartFolderId, currentUserId]);
+
+  useEffect(() => {
+    if (
+      activeSmartFolderId &&
+      smartFolders.length > 0 &&
+      !smartFolders.some((f) => f.id === activeSmartFolderId)
+    ) {
+      setActiveSmartFolderId("");
+    }
+  }, [smartFolders, activeSmartFolderId]);
 
   if (loading) {
     return (
