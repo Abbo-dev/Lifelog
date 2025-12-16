@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isPremiumUser() {
+      return signedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.plan == 'premium';
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.plan == 'free';
+      allow update, delete: if false;
+
+      match /smartFolders/{folderId} {
+        allow read, write: if isOwner(userId) && isPremiumUser();
+      }
+    }
+
+    match /notes/{noteId} {
+      allow create: if isPremiumUser() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isPremiumUser() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

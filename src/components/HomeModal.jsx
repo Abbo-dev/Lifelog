@@ -2,17 +2,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { MapPinIcon as PinIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
-import { db, auth } from "../firebase";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  updateDoc,
-  doc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
 import RichTextEditor from "./RichTextEditor";
 import { sanitizeHtmlLinks } from "../utils/linkUtils";
 
@@ -21,6 +10,8 @@ function HomeModal({
   noteToEdit,
   onCloseModal,
   showHomeModal,
+  onSaveNote,
+  existingTags: existingTagsProp = [],
 }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -29,7 +20,7 @@ function HomeModal({
   const [color, setColor] = useState("#ffffff");
   const [isPinned, setIsPinned] = useState(false);
   const [newTag, setNewTag] = useState("");
-  const [existingTags, setExistingTags] = useState([]);
+  const [tagSuggestions, setTagSuggestions] = useState([]);
   const hasContent = (html) => {
     if (!html) return false;
     const text = html
@@ -52,11 +43,44 @@ function HomeModal({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
+  const toDateValue = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (
+      typeof value === "object" &&
+      "seconds" in value &&
+      "nanoseconds" in value
+    ) {
+      return new Date(
+        value.seconds * 1000 + Math.floor(value.nanoseconds / 1_000_000)
+      );
+    }
+    if (typeof value?.toDate === "function") {
+      try {
+        return value.toDate();
+      } catch {
+        return null;
+      }
+    }
+    if (typeof value === "string" || typeof value === "number") {
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    setTagSuggestions((prev) => {
+      const merged = new Set([...(existingTagsProp || []), ...(prev || [])]);
+      return Array.from(merged);
+    });
+  }, [existingTagsProp]);
+
   useEffect(() => {
     if (noteToEdit) {
       setTitle(noteToEdit.title || "");
       setContent(noteToEdit.content || "");
-      setDueDate(noteToEdit.dueDate ? noteToEdit.dueDate.toDate() : null);
+      setDueDate(toDateValue(noteToEdit.dueDate));
       setTags(noteToEdit.tags || []);
       setColor(noteToEdit.color || "#ffffff");
       setIsPinned(noteToEdit.isPinned || false);
@@ -69,26 +93,6 @@ function HomeModal({
       setIsPinned(false);
     }
   }, [noteToEdit]);
-
-  // Fetch existing tags
-  useEffect(() => {
-    const fetchTags = async () => {
-      if (!auth.currentUser) {
-        setExistingTags([]);
-        return;
-      }
-      const notesRef = collection(db, "notes");
-      const q = query(notesRef, where("userId", "==", auth.currentUser.uid));
-      const querySnapshot = await getDocs(q);
-      const allTags = new Set();
-      querySnapshot.forEach((doc) => {
-        const noteTags = doc.data().tags || [];
-        noteTags.forEach(tag => allTags.add(tag));
-      });
-      setExistingTags(Array.from(allTags));
-    };
-    fetchTags();
-  }, [auth.currentUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,22 +107,19 @@ function HomeModal({
 
     try {
       const normalizedContent = sanitizeHtmlLinks(content);
-      const noteData = {
+      const noteDraft = {
         title: title.trim(),
         content: normalizedContent,
-        dueDate: dueDate ? new Date(dueDate) : null,
+        dueDate,
         tags,
         color,
         isPinned,
-        userId: auth.currentUser.uid,
-        lastModified: serverTimestamp(),
       };
 
-      if (noteToEdit) {
-        await updateDoc(doc(db, "notes", noteToEdit.id), noteData);
+      if (typeof onSaveNote === "function") {
+        await onSaveNote(noteDraft, noteToEdit);
       } else {
-        noteData.createdAt = serverTimestamp();
-        await addDoc(collection(db, "notes"), noteData);
+        throw new Error("Missing onSaveNote handler");
       }
 
       onCloseModal(false);
@@ -132,7 +133,7 @@ function HomeModal({
     const trimmedTag = newTag.trim();
     if (trimmedTag && !tags.includes(trimmedTag)) {
       setTags((prev) => [...prev, trimmedTag]);
-      setExistingTags((prev) =>
+      setTagSuggestions((prev) =>
         prev.includes(trimmedTag) ? prev : [...prev, trimmedTag]
       );
       setNewTag("");
@@ -214,7 +215,7 @@ function HomeModal({
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {existingTags.map((tag) => (
+                  {tagSuggestions.map((tag) => (
                     <button
                       key={tag}
                       type="button"

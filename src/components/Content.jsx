@@ -33,7 +33,7 @@ const pillars = [
     points: [
       "Quick filters + search to find anything instantly.",
       "Grid or list layouts depending on your flow.",
-      "Real-time sync keeps every device aligned.",
+      "Premium sync keeps every device aligned.",
     ],
   },
   {
@@ -159,7 +159,7 @@ function Content() {
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 dark:text-white/75">
             <span className="px-3 py-1 rounded-full glass-chip border border-white/10 text-slate-700 dark:text-white/80">
-              No clutter. Your notes, synced and secure.
+              No clutter. Your notes, secure—with optional premium sync.
             </span>
             <span className="px-3 py-1 rounded-full glass-chip border border-white/10 text-slate-700 dark:text-white/80">
               Fast search, drag filters, instant pinning.
@@ -244,7 +244,7 @@ function Content() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="glass-chip px-3 py-1 text-[11px] text-slate-900 dark:text-white/85 border border-white/15">
-                  Real-time sync
+                  Premium sync
                 </span>
                 <span className="glass-chip px-3 py-1 text-[11px] text-[#0a66d1] dark:text-[#5EA2EF] border border-white/15">
                   Focus mode

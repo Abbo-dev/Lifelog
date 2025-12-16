@@ -33,7 +33,7 @@ const Footer = () => {
                   Minimal distraction
                 </span>
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/5">
-                  Sync across devices
+                  Premium sync
                 </span>
               </div>
             </div>
@@ -66,6 +66,12 @@ const Footer = () => {
                   className="hover:text-[#5EA2EF] transition-colors"
                 >
                   Get started
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="hover:text-[#5EA2EF] transition-colors"
+                >
+                  Pricing
                 </Link>
               </div>
             </div>

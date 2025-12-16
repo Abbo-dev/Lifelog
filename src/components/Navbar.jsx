@@ -74,6 +74,12 @@ const NavbarSide = () => {
 
         <div className="flex items-center gap-3 md:gap-4 px-3 py-2 rounded-full bg-transparent border border-transparent shadow-none">
           <SwitchTheme />
+          <Link
+            to="/pricing"
+            className="text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white transition-colors hidden sm:inline"
+          >
+            Pricing
+          </Link>
 
           {loading ? (
             <Button className="w-20">

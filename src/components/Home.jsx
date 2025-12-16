@@ -1,12 +1,19 @@
 ﻿import HomeModal from "./HomeModal";
 import ReactConfetti from "react-confetti";
-import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Button, Input, Select, SelectItem } from "@heroui/react";
 import Search from "../assets/search.svg";
 import NoteList from "./NoteList";
+import { useAuth } from "../contexts/AuthContext";
 import {
+  deleteLocalNote,
+  generateLocalNoteId,
+  loadLocalNotes,
+  upsertLocalNote,
+} from "../utils/localNotes";
+import {
+  addDoc,
   collection,
   onSnapshot,
   query,
@@ -22,9 +29,7 @@ import { motion } from "framer-motion";
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
 
 function Home() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showCard, setShowCard] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [confetti, setConfetti] = useState(false);
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
@@ -49,12 +54,13 @@ function Home() {
     color: "#5EA2EF",
   });
   const [isSmartDrawerOpen, setIsSmartDrawerOpen] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState(
-    auth.currentUser?.uid || ""
-  );
+  const { user, isPremium, planLoading } = useAuth();
+  const isAuthenticated = !!user;
+  const currentUserId = user?.uid || "";
   const smartFoldersSeededRef = useRef(false);
   const hasSmartFolderSyncedRef = useRef(false);
   const lastActiveLoadedRef = useRef(false);
+  const lastUserIdRef = useRef("");
   const sortOptions = [
     { value: "lastModified", label: "Last Modified" },
     { value: "createdAt", label: "Created Date" },
@@ -90,6 +96,15 @@ function Home() {
   };
 
   const handleDelete = async (note) => {
+    if (!currentUserId) return;
+    if (!note?.id) return;
+
+    if (!isPremium) {
+      const next = deleteLocalNote(currentUserId, note.id);
+      setNotes(next);
+      return;
+    }
+
     try {
       await deleteDoc(doc(db, "notes", note.id));
     } catch (error) {
@@ -98,45 +113,51 @@ function Home() {
   };
 
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      setNotes([]);
+      setNotesLoaded(false);
+      return undefined;
+    }
+
+    if (planLoading) return undefined;
+
+    if (!isPremium) {
+      const local = loadLocalNotes(currentUserId);
+      setNotes(local);
+      setNotesLoaded(true);
+      return undefined;
+    }
+
     const docRef = collection(db, "notes");
     const q = query(docRef, where("userId", "==", currentUserId));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const notesData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const notesData = querySnapshot.docs.map((docItem) => ({
+        id: docItem.id,
+        ...docItem.data(),
       }));
       setNotes(notesData);
       setNotesLoaded(true);
     });
     return unsubscribe;
-  }, [currentUserId]);
+  }, [currentUserId, isPremium, planLoading]);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isAuthenticated) {
       setShowCard(true);
+      lastUserIdRef.current = "";
+      return;
     }
 
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setIsAuthenticated(true);
-        setCurrentUserId(user.uid);
-        setConfetti(true);
-        setTimeout(() => {
-          setConfetti(false);
-        }, 4000);
-      } else {
-        setIsAuthenticated(false);
-        setCurrentUserId("");
-        setShowCard(true);
-        setNotes([]);
-        setNotesLoaded(false);
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+    setShowCard(false);
+    if (currentUserId && lastUserIdRef.current !== currentUserId) {
+      lastUserIdRef.current = currentUserId;
+      setConfetti(true);
+      setTimeout(() => {
+        setConfetti(false);
+      }, 4000);
+    }
+  }, [isAuthenticated, currentUserId]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -158,6 +179,21 @@ function Home() {
   };
 
   const handlePin = async (note) => {
+    if (!currentUserId) return;
+    if (!note?.id) return;
+
+    if (!isPremium) {
+      const nowIso = new Date().toISOString();
+      const nextNote = {
+        ...note,
+        isPinned: !note.isPinned,
+        lastModified: nowIso,
+      };
+      const next = upsertLocalNote(currentUserId, nextNote);
+      setNotes(next);
+      return;
+    }
+
     try {
       await updateDoc(doc(db, "notes", note.id), {
         isPinned: !note.isPinned,
@@ -165,6 +201,71 @@ function Home() {
       });
     } catch (error) {
       console.error("Error pinning note:", error);
+    }
+  };
+
+  const handleSaveNote = async (noteDraft, existingNote) => {
+    if (!currentUserId) return;
+
+    const base = {
+      title: noteDraft?.title || "",
+      content: noteDraft?.content || "",
+      dueDate: noteDraft?.dueDate || null,
+      tags: Array.isArray(noteDraft?.tags) ? noteDraft.tags : [],
+      color: noteDraft?.color || "#ffffff",
+      isPinned: !!noteDraft?.isPinned,
+    };
+
+    if (!isPremium) {
+      const nowIso = new Date().toISOString();
+      if (existingNote) {
+        const nextNote = {
+          ...existingNote,
+          ...base,
+          dueDate: base.dueDate ? new Date(base.dueDate).toISOString() : null,
+          userId: currentUserId,
+          createdAt: existingNote.createdAt || nowIso,
+          lastModified: nowIso,
+        };
+        const next = upsertLocalNote(currentUserId, nextNote);
+        setNotes(next);
+        setNotesLoaded(true);
+        return;
+      }
+
+      const nextNote = {
+        id: generateLocalNoteId(),
+        ...base,
+        dueDate: base.dueDate ? new Date(base.dueDate).toISOString() : null,
+        userId: currentUserId,
+        createdAt: nowIso,
+        lastModified: nowIso,
+      };
+      const next = upsertLocalNote(currentUserId, nextNote);
+      setNotes(next);
+      setNotesLoaded(true);
+      return;
+    }
+
+    const firestoreNote = {
+      ...base,
+      dueDate: base.dueDate ? new Date(base.dueDate) : null,
+      userId: currentUserId,
+      lastModified: serverTimestamp(),
+    };
+
+    try {
+      if (existingNote?.id) {
+        await updateDoc(doc(db, "notes", existingNote.id), firestoreNote);
+        return;
+      }
+      await addDoc(collection(db, "notes"), {
+        ...firestoreNote,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error saving note:", error);
+      throw error;
     }
   };
 
@@ -290,7 +391,7 @@ function Home() {
     };
     setSmartFolders((prev) => [...prev, newFolder]);
     setActiveSmartFolderId(newFolder.id);
-    if (currentUserId) {
+    if (currentUserId && isPremium) {
       const folderRef = doc(
         db,
         "users",
@@ -315,7 +416,7 @@ function Home() {
     if (activeSmartFolderId === id) {
       setActiveSmartFolderId("");
     }
-    if (currentUserId) {
+    if (currentUserId && isPremium) {
       const folderRef = doc(db, "users", currentUserId, "smartFolders", id);
       deleteDoc(folderRef).catch((err) =>
         console.error("Failed to delete smart folder", err)
@@ -448,6 +549,11 @@ function Home() {
     return Array.from(tags);
   }, [notes]);
 
+  const localOnlyNotesCount = useMemo(() => {
+    if (!currentUserId) return 0;
+    return loadLocalNotes(currentUserId).length;
+  }, [currentUserId]);
+
   useEffect(() => {
     if (!currentUserId) {
       hasSmartFolderSyncedRef.current = false;
@@ -464,6 +570,24 @@ function Home() {
         setSmartFolders([]);
       }
       setActiveSmartFolderId("");
+      return;
+    }
+
+    if (!isPremium) {
+      hasSmartFolderSyncedRef.current = false;
+      smartFoldersSeededRef.current = false;
+      const cached = localStorage.getItem(`smartFolders_${currentUserId}`);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setSmartFolders(Array.isArray(parsed) ? parsed : []);
+        } catch (err) {
+          console.error("Failed to parse cached smart folders", err);
+          setSmartFolders([]);
+        }
+      } else {
+        setSmartFolders([]);
+      }
       return;
     }
 
@@ -526,7 +650,7 @@ function Home() {
       (err) => console.error("Failed to load smart folders", err)
     );
     return unsubscribe;
-  }, [currentUserId]);
+  }, [currentUserId, isPremium]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -571,7 +695,7 @@ function Home() {
     }
   }, [smartFolders, activeSmartFolderId]);
 
-  if (loading) {
+  if (planLoading) {
     return (
       <div className="flex justify-center items-center z-50 fixed top-0 left-0 w-full h-full backdrop-blur-md bg-background">
         <div className="w-full h-full flex justify-center items-center">
@@ -625,6 +749,43 @@ function Home() {
       )}
 
       <div className="relative flex flex-col items-center justify-around mt-2 md:mt-4 pt-6 max-w-[1200px] mx-auto px-4 pb-14">
+        {isAuthenticated && !isPremium && (
+          <div className="w-full mb-5 rounded-2xl border border-amber-300/40 bg-amber-50/80 dark:bg-amber-500/10 dark:border-amber-400/30 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+            <div className="text-sm text-slate-800 dark:text-amber-100">
+              <span className="font-semibold">Free plan:</span> notes are stored
+              locally on this device. Upgrade to sync & back up your notes in
+              the cloud.
+            </div>
+            <Button
+              size="sm"
+              className="bg-[#0072F5] text-white hover:bg-[#0052CC]"
+              onPress={() => navigate("/pricing")}
+            >
+              View pricing
+            </Button>
+          </div>
+        )}
+        {isAuthenticated &&
+          isPremium &&
+          notesLoaded &&
+          notes.length === 0 &&
+          localOnlyNotesCount > 0 && (
+            <div className="w-full mb-5 rounded-2xl border border-emerald-300/35 bg-emerald-50/70 dark:bg-emerald-500/10 dark:border-emerald-400/25 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+              <div className="text-sm text-slate-800 dark:text-emerald-100">
+                <span className="font-semibold">Premium:</span> you have{" "}
+                {localOnlyNotesCount} local note
+                {localOnlyNotesCount === 1 ? "" : "s"} on this device. Import
+                them to the cloud from the pricing page.
+              </div>
+              <Button
+                size="sm"
+                className="bg-emerald-600 text-white hover:bg-emerald-500"
+                onPress={() => navigate("/pricing")}
+              >
+                Import notes
+              </Button>
+            </div>
+          )}
         {isAuthenticated && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -653,6 +814,8 @@ function Home() {
                   noteToEdit={noteToEdit}
                   showHomeModal={showHomeModal}
                   onCloseModal={handleCloseModal}
+                  onSaveNote={handleSaveNote}
+                  existingTags={allTags}
                 />
               </div>
 
@@ -1253,9 +1416,7 @@ function Home() {
                 A calm space just for you
               </h1>
               <p className="text-lg md:text-xl bg-gradient-to-b from-[#5EA2EF] to-[#0072F5] bg-clip-text text-transparent font-semibold">
-                {auth.currentUser?.displayName
-                  ? auth.currentUser.displayName
-                  : "New lifelogger"}
+                {user?.displayName || user?.email?.split("@")?.[0] || "New lifelogger"}
               </p>
               <p className="text-sm text-slate-600 dark:text-gray-300 max-w-md mx-auto">
                 Create your first note to pin milestones, add reminders, and

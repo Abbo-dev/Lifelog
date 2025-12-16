@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 import { Card, CardBody } from "@heroui/card";
 import { Button, Avatar, Chip } from "@heroui/react";
 import { auth, db, storage } from "../firebase";
+import { useAuth } from "../contexts/AuthContext";
+import { loadLocalNotes } from "../utils/localNotes";
 import {
   collection,
-  getDocs,
   onSnapshot,
   query,
   where,
@@ -41,6 +42,7 @@ const statCards = [
 
 function Profile() {
   const navigate = useNavigate();
+  const { user, isPremium, planLoading } = useAuth();
   const [stats, setStats] = useState({
     notes: 0,
     pinned: 0,
@@ -65,7 +67,6 @@ function Profile() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarStatus, setAvatarStatus] = useState("");
   const avatarInputRef = useRef(null);
-  const user = auth.currentUser;
 
   const toDateValue = (value) => {
     if (!value) return null;
@@ -116,38 +117,17 @@ function Profile() {
   };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!user) return;
-      const notesRef = collection(db, "notes");
-      const q = query(notesRef, where("userId", "==", user.uid));
-      const snapshot = await getDocs(q);
-      const tagSet = new Set();
-      let pinnedCount = 0;
-      const activityDays = new Set();
+    if (!user?.uid) {
+      setNotes([]);
+      return undefined;
+    }
+    if (planLoading) return undefined;
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data?.isPinned) pinnedCount += 1;
-        (data?.tags || []).forEach((tag) => tagSet.add(tag));
-        const createdKey = formatDayKey(data?.createdAt || data?.lastModified);
-        const editedKey = formatDayKey(data?.lastModified);
-        if (createdKey) activityDays.add(createdKey);
-        if (editedKey) activityDays.add(editedKey);
-      });
+    if (!isPremium) {
+      setNotes(loadLocalNotes(user.uid));
+      return undefined;
+    }
 
-      setStats({
-        notes: snapshot.size,
-        pinned: pinnedCount,
-        tags: tagSet.size,
-        streak: calculateStreak(activityDays),
-      });
-    };
-
-    fetchStats();
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
     const notesRef = collection(db, "notes");
     const q = query(notesRef, where("userId", "==", user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -158,7 +138,29 @@ function Profile() {
       setNotes(noteData);
     });
     return unsubscribe;
-  }, [user]);
+  }, [user?.uid, isPremium, planLoading]);
+
+  useEffect(() => {
+    const tagSet = new Set();
+    let pinnedCount = 0;
+    const activityDays = new Set();
+
+    notes.forEach((note) => {
+      if (note?.isPinned) pinnedCount += 1;
+      (note?.tags || []).forEach((tag) => tagSet.add(tag));
+      const createdKey = formatDayKey(note?.createdAt || note?.lastModified);
+      const editedKey = formatDayKey(note?.lastModified);
+      if (createdKey) activityDays.add(createdKey);
+      if (editedKey) activityDays.add(editedKey);
+    });
+
+    setStats({
+      notes: notes.length,
+      pinned: pinnedCount,
+      tags: tagSet.size,
+      streak: calculateStreak(activityDays),
+    });
+  }, [notes]);
 
   useEffect(() => {
     setNewEmail(user?.email || "");
