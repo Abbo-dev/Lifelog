@@ -3,6 +3,7 @@ import ReactConfetti from "react-confetti";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Button, Input, Select, SelectItem } from "@heroui/react";
+import { addToast } from "@heroui/toast";
 import Search from "../assets/search.svg";
 import NoteList from "./NoteList";
 import { useAuth } from "../contexts/AuthContext";
@@ -27,6 +28,7 @@ import {
 import { db } from "../firebase";
 import { motion } from "framer-motion";
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
+import { ArrowLeftIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 function Home() {
   const [showCard, setShowCard] = useState(false);
@@ -43,6 +45,8 @@ function Home() {
   const [filterTag, setFilterTag] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
+  const [showTrash, setShowTrash] = useState(false);
+  const [trashSelectMode, setTrashSelectMode] = useState(false);
   const [isTagDropActive, setIsTagDropActive] = useState(false);
   const [showSnapshot, setShowSnapshot] = useState(false);
   const [smartFolders, setSmartFolders] = useState([]);
@@ -97,6 +101,95 @@ function Home() {
   const handleDelete = async (note) => {
     if (!currentUserId) return;
     if (!note?.id) return;
+
+    if (!isPremium) {
+      const nowIso = new Date().toISOString();
+      const nextNote = {
+        ...note,
+        trashedAt: nowIso,
+        lastModified: nowIso,
+      };
+      const next = upsertLocalNote(currentUserId, nextNote);
+      setNotes(next);
+      addToast({
+        title: "Moved to trash",
+        description: nextNote.title || "Untitled note",
+        timeout: 6000,
+        shouldShowTimeoutProgress: true,
+        endContent: (
+          <Button
+            size="sm"
+            variant="flat"
+            className="text-[#0072F5]"
+            onPress={() => handleRestore(nextNote)}
+          >
+            Undo
+          </Button>
+        ),
+      });
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "notes", note.id), {
+        trashedAt: serverTimestamp(),
+        lastModified: serverTimestamp(),
+      });
+      addToast({
+        title: "Moved to trash",
+        description: note.title || "Untitled note",
+        timeout: 6000,
+        shouldShowTimeoutProgress: true,
+        endContent: (
+          <Button
+            size="sm"
+            variant="flat"
+            className="text-[#0072F5]"
+            onPress={() => handleRestore(note)}
+          >
+            Undo
+          </Button>
+        ),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleRestore = async (note) => {
+    if (!currentUserId) return;
+    if (!note?.id) return;
+
+    if (!isPremium) {
+      const nowIso = new Date().toISOString();
+      const nextNote = {
+        ...note,
+        trashedAt: null,
+        lastModified: nowIso,
+      };
+      const next = upsertLocalNote(currentUserId, nextNote);
+      setNotes(next);
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "notes", note.id), {
+        trashedAt: null,
+        lastModified: serverTimestamp(),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleDeleteForever = async (note) => {
+    if (!currentUserId) return;
+    if (!note?.id) return;
+
+    const confirmed = window.confirm(
+      "Delete this note forever? This can't be undone."
+    );
+    if (!confirmed) return;
 
     if (!isPremium) {
       const next = deleteLocalNote(currentUserId, note.id);
@@ -440,82 +533,92 @@ function Home() {
     }));
   };
 
-  const handleDeleteSmartFolder = (id) => {
-    setSmartFolders((prev) => prev.filter((folder) => folder.id !== id));
-    if (activeSmartFolderId === id) {
-      setActiveSmartFolderId("");
-    }
+	  const handleDeleteSmartFolder = (id) => {
+	    setSmartFolders((prev) => prev.filter((folder) => folder.id !== id));
+	    if (activeSmartFolderId === id) {
+	      setActiveSmartFolderId("");
+	    }
     if (currentUserId && isPremium) {
       const folderRef = doc(db, "users", currentUserId, "smartFolders", id);
       deleteDoc(folderRef).catch((err) =>
         console.error("Failed to delete smart folder", err)
       );
-    }
-  };
+	    }
+	  };
 
-  const pinnedNotes = useMemo(
-    () => notes.filter((note) => note.isPinned).slice(0, 4),
+  const activeNotes = useMemo(
+    () => notes.filter((note) => !note?.trashedAt),
     [notes]
   );
 
-  const upcomingNotes = useMemo(() => {
-    const now = new Date();
-    const soon = addDays(now, 14);
-    return notes
-      .filter((note) => {
-        const due = toDateValue(note.dueDate);
-        return due && due >= now && due <= soon;
-      })
+  const trashedNotes = useMemo(
+    () => notes.filter((note) => !!note?.trashedAt),
+    [notes]
+  );
+
+	  const pinnedNotes = useMemo(
+	    () => activeNotes.filter((note) => note.isPinned).slice(0, 4),
+	    [activeNotes]
+	  );
+	
+	  const upcomingNotes = useMemo(() => {
+	    const now = new Date();
+	    const soon = addDays(now, 14);
+	    return activeNotes
+	      .filter((note) => {
+	        const due = toDateValue(note.dueDate);
+	        return due && due >= now && due <= soon;
+	      })
       .sort((a, b) => {
         const aTime =
           toDateValue(a.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
         const bTime =
           toDateValue(b.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
         return aTime - bTime;
-      })
-      .slice(0, 5);
-  }, [notes]);
-
-  const priorityNotes = useMemo(() => {
-    const map = new Map();
-    pinnedNotes.forEach((note) => map.set(note.id, note));
+	      })
+	      .slice(0, 5);
+	  }, [activeNotes]);
+	
+	  const priorityNotes = useMemo(() => {
+	    const map = new Map();
+	    pinnedNotes.forEach((note) => map.set(note.id, note));
     upcomingNotes.forEach((note) => {
       if (!map.has(note.id)) {
         map.set(note.id, note);
       }
     });
     return Array.from(map.values()).slice(0, 6);
-  }, [pinnedNotes, upcomingNotes]);
-
-  const dashboardStats = useMemo(() => {
-    const total = notes.length;
-    const pinned = pinnedNotes.length;
-    const upcoming = upcomingNotes.length;
-    const dated = notes.filter((note) => !!toDateValue(note.dueDate)).length;
-    return { total, pinned, upcoming, dated };
-  }, [notes, pinnedNotes, upcomingNotes]);
-  const nextDue = upcomingNotes[0];
-  const smartFoldersWithCounts = useMemo(
-    () =>
-      smartFolders.map((folder) => ({
-        ...folder,
-        count: notes.filter((note) => matchesSmartFolder(note, folder)).length,
-      })),
-    [notes, smartFolders]
-  );
-  const activeSmartFolder = useMemo(
-    () => smartFolders.find((folder) => folder.id === activeSmartFolderId),
-    [activeSmartFolderId, smartFolders]
-  );
-
-  const filteredAndSortedNotes = useMemo(() => {
-    let filtered = [...notes];
-
-    if (activeSmartFolder) {
-      filtered = filtered.filter((note) =>
-        matchesSmartFolder(note, activeSmartFolder)
-      );
-    }
+	  }, [pinnedNotes, upcomingNotes]);
+	
+	  const dashboardStats = useMemo(() => {
+	    const total = activeNotes.length;
+	    const pinned = pinnedNotes.length;
+	    const upcoming = upcomingNotes.length;
+	    const dated = activeNotes.filter((note) => !!toDateValue(note.dueDate)).length;
+	    return { total, pinned, upcoming, dated };
+	  }, [activeNotes, pinnedNotes, upcomingNotes]);
+	  const nextDue = upcomingNotes[0];
+	  const smartFoldersWithCounts = useMemo(
+	    () =>
+	      smartFolders.map((folder) => ({
+	        ...folder,
+	        count: activeNotes.filter((note) => matchesSmartFolder(note, folder)).length,
+	      })),
+	    [activeNotes, smartFolders]
+	  );
+	  const activeSmartFolder = useMemo(
+	    () => smartFolders.find((folder) => folder.id === activeSmartFolderId),
+	    [activeSmartFolderId, smartFolders]
+	  );
+	
+	  const filteredAndSortedNotes = useMemo(() => {
+	    let filtered = showTrash ? [...trashedNotes] : [...activeNotes];
+	
+	    if (!showTrash && activeSmartFolder) {
+	      filtered = filtered.filter((note) =>
+	        matchesSmartFolder(note, activeSmartFolder)
+	      );
+	    }
 
     if (searchQuery) {
       const queryText = searchQuery.toLowerCase();
@@ -527,18 +630,18 @@ function Home() {
           tags.some((tag) => normalizeText(tag).includes(queryText))
         );
       });
-    }
-
-    if (filterTag) {
-      filtered = filtered.filter(
-        (note) => note.tags && note.tags.includes(filterTag)
-      );
-    }
-
-    filtered.sort((a, b) => {
-      if (a.isPinned !== b.isPinned) {
-        return b.isPinned ? 1 : -1;
-      }
+	    }
+	
+	    if (!showTrash && filterTag) {
+	      filtered = filtered.filter(
+	        (note) => note.tags && note.tags.includes(filterTag)
+	      );
+	    }
+	
+	    filtered.sort((a, b) => {
+	      if (!showTrash && a.isPinned !== b.isPinned) {
+	        return b.isPinned ? 1 : -1;
+	      }
 
       switch (sortBy) {
         case "title":
@@ -565,23 +668,32 @@ function Home() {
       }
     });
 
-    return filtered;
-  }, [notes, searchQuery, filterTag, sortBy, activeSmartFolder]);
+	    return filtered;
+	  }, [
+	    activeNotes,
+	    trashedNotes,
+	    showTrash,
+	    searchQuery,
+	    filterTag,
+	    sortBy,
+	    activeSmartFolder,
+	  ]);
 
-  const allTags = useMemo(() => {
-    const tags = new Set();
-    notes.forEach((note) => {
-      if (note.tags) {
-        note.tags.forEach((tag) => tags.add(tag));
-      }
-    });
-    return Array.from(tags);
-  }, [notes]);
+	  const allTags = useMemo(() => {
+	    const tags = new Set();
+	    activeNotes.forEach((note) => {
+	      if (note.tags) {
+	        note.tags.forEach((tag) => tags.add(tag));
+	      }
+	    });
+	    return Array.from(tags);
+	  }, [activeNotes]);
 
-  const localOnlyNotesCount = useMemo(() => {
-    if (!currentUserId) return 0;
-    return loadLocalNotes(currentUserId).length;
-  }, [currentUserId]);
+	  const localOnlyNotesCount = useMemo(() => {
+	    if (!currentUserId) return 0;
+	    return loadLocalNotes(currentUserId).filter((note) => !note?.trashedAt)
+	      .length;
+	  }, [currentUserId]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -794,12 +906,12 @@ function Home() {
             </Button>
           </div>
         )}
-        {isAuthenticated &&
-          isPremium &&
-          notesLoaded &&
-          notes.length === 0 &&
-          localOnlyNotesCount > 0 && (
-            <div className="w-full mb-5 rounded-2xl border border-emerald-300/35 bg-emerald-50/70 dark:bg-emerald-500/10 dark:border-emerald-400/25 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+	        {isAuthenticated &&
+	          isPremium &&
+	          notesLoaded &&
+	          activeNotes.length === 0 &&
+	          localOnlyNotesCount > 0 && (
+	            <div className="w-full mb-5 rounded-2xl border border-emerald-300/35 bg-emerald-50/70 dark:bg-emerald-500/10 dark:border-emerald-400/25 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
               <div className="text-sm text-slate-800 dark:text-emerald-100">
                 <span className="font-semibold">Premium:</span> you have{" "}
                 {localOnlyNotesCount} local note
@@ -822,31 +934,52 @@ function Home() {
             transition={{ duration: 0.4 }}
             className="w-full flex flex-col gap-4 mb-6"
           >
-            <div className="flex items-center justify-between gap-3 text-xs text-slate-700 dark:text-gray-300">
-              <span className="uppercase tracking-[0.2em] pb-2">
-                Snapshot {showSnapshot ? "visible" : "hidden"}
-              </span>
-              <Button
-                size="sm"
-                variant="flat"
-                className="border border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 hover:-translate-y-0.5 transition-all shadow-sm"
-                onPress={() => setShowSnapshot((prev) => !prev)}
-              >
-                {showSnapshot ? "Hide snapshot" : "Show snapshot"}
-              </Button>
-            </div>
+            {!showTrash && !trashSelectMode && (
+              <div className="flex items-center justify-between gap-3 text-xs text-slate-700 dark:text-gray-300">
+                <span className="uppercase tracking-[0.2em] pb-2">
+                  Snapshot {showSnapshot ? "visible" : "hidden"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="border border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 hover:-translate-y-0.5 transition-all shadow-sm"
+                  onPress={() => setShowSnapshot((prev) => !prev)}
+                >
+                  {showSnapshot ? "Hide snapshot" : "Show snapshot"}
+                </Button>
+              </div>
+            )}
+
+            {trashSelectMode && (
+              <div className="w-full rounded-2xl border border-rose-300/35 bg-rose-50/80 dark:bg-rose-500/10 dark:border-rose-400/25 px-4 py-3 flex items-center justify-between gap-3 shadow-sm">
+                <div className="text-sm text-slate-800 dark:text-rose-100">
+                  <span className="font-semibold">Trash mode:</span> click the
+                  trash icon on a note to move it to the trash.
+                </div>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-200"
+                  onPress={() => setTrashSelectMode(false)}
+                >
+                  Done
+                </Button>
+              </div>
+            )}
 
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex-shrink-0">
-                <HomeModal
-                  className="z-20"
-                  noteToEdit={noteToEdit}
-                  showHomeModal={showHomeModal}
-                  onCloseModal={handleCloseModal}
-                  onSaveNote={handleSaveNote}
-                  existingTags={allTags}
-                />
-              </div>
+              {!trashSelectMode && (
+                <div className="flex-shrink-0">
+                  <HomeModal
+                    className="z-20"
+                    noteToEdit={noteToEdit}
+                    showHomeModal={showHomeModal}
+                    onCloseModal={handleCloseModal}
+                    onSaveNote={handleSaveNote}
+                    existingTags={allTags}
+                  />
+                </div>
+              )}
 
               <div className="flex-1 max-w-[600px]">
                 <Input
@@ -903,46 +1036,113 @@ function Home() {
                   ))}
                 </Select>
 
-                <Select
-                  selectedKeys={filterTag ? [filterTag] : []}
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0];
-                    setFilterTag(value ? value.toString() : "");
-                  }}
-                  allowEmptySelection
-                  placeholder="All tags"
-                  size="sm"
-                  className="min-w-[140px]"
-                  classNames={{
-                    trigger:
-                      "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
-                  }}
-                  aria-label="Filter by tag"
-                >
-                  <SelectItem key="" value="">
-                    All tags
-                  </SelectItem>
-                  {allTags.map((tag) => (
-                    <SelectItem key={tag} value={tag}>
-                      {tag}
+                {!showTrash && (
+                  <Select
+                    selectedKeys={filterTag ? [filterTag] : []}
+                    onSelectionChange={(keys) => {
+                      const value = Array.from(keys)[0];
+                      setFilterTag(value ? value.toString() : "");
+                    }}
+                    allowEmptySelection
+                    placeholder="All tags"
+                    size="sm"
+                    className="min-w-[140px]"
+                    classNames={{
+                      trigger:
+                        "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
+                    }}
+                    aria-label="Filter by tag"
+                  >
+                    <SelectItem key="" value="">
+                      All tags
                     </SelectItem>
-                  ))}
-                </Select>
+                    {allTags.map((tag) => (
+                      <SelectItem key={tag} value={tag}>
+                        {tag}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                )}
+
+                {!showTrash && (
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                    onPress={() =>
+                      setViewMode(viewMode === "grid" ? "list" : "grid")
+                    }
+                  >
+                    {viewMode === "grid" ? "List" : "Grid"}
+                  </Button>
+                )}
 
                 <Button
                   size="sm"
-                  variant="flat"
-                  className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                  variant={trashSelectMode ? "solid" : "flat"}
+                  className={
+                    trashSelectMode
+                      ? "bg-rose-500 text-white shadow-sm"
+                      : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                  }
                   onPress={() =>
-                    setViewMode(viewMode === "grid" ? "list" : "grid")
+                    setTrashSelectMode((prev) => {
+                      const next = !prev;
+                      if (next) {
+                        setShowTrash(false);
+                        setShowSnapshot(false);
+                        setIsSmartDrawerOpen(false);
+                      }
+                      return next;
+                    })
                   }
                 >
-                  {viewMode === "grid" ? "List" : "Grid"}
+                  {trashSelectMode ? "Done" : "Trash"}
                 </Button>
-              </div>
-            </div>
 
-            {isSmartDrawerOpen ? (
+	                <Button
+	                  size="sm"
+	                  variant={showTrash ? "solid" : "flat"}
+	                  className={
+	                    showTrash
+	                      ? "bg-slate-900 text-white shadow-sm"
+	                      : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm min-w-[40px] px-2"
+	                  }
+	                  aria-label={showTrash ? "Back" : "Trash bin"}
+	                  onPress={() =>
+	                    setShowTrash((prev) => {
+	                      const next = !prev;
+	                      if (next) {
+                        setTrashSelectMode(false);
+                        setFilterTag("");
+                        setActiveSmartFolderId("");
+                        setShowSnapshot(false);
+                        setIsSmartDrawerOpen(false);
+                      }
+	                      return next;
+	                    })
+	                  }
+	                >
+	                  {showTrash ? (
+	                    <span className="inline-flex items-center gap-1">
+	                      <ArrowLeftIcon className="w-4 h-4" />
+	                      <span>Back</span>
+	                    </span>
+	                  ) : (
+		                    <span className="relative inline-flex items-center justify-center">
+		                      <TrashIcon className="w-5 h-5" />
+		                      {trashedNotes.length > 0 && (
+		                        <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-semibold flex items-center justify-center leading-none ring-1 ring-white dark:ring-slate-900">
+		                          {trashedNotes.length > 99 ? "99+" : trashedNotes.length}
+		                        </span>
+		                      )}
+		                    </span>
+		                  )}
+	                </Button>
+	              </div>
+	            </div>
+
+            {!showTrash && !trashSelectMode && (isSmartDrawerOpen ? (
               <div className="rounded-2xl border border-[#d6e4ff]/80 dark:border-gray-800 bg-[#eef3ff] dark:bg-[#0f172a] shadow-sm p-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-0.5">
@@ -1237,16 +1437,16 @@ function Home() {
                         </button>
                       );
                     })
-                  )}
-                </div>
-              </div>
-            )}
-            {allTags.length > 0 && (
+	                  )}
+	                </div>
+	              </div>
+	            ))}
+            {!showTrash && !trashSelectMode && allTags.length > 0 && (
               <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-[0.2em]">
                     Drag a tag ➜
-                  </span>
+	                  </span>
                   {allTags.map((tag) => (
                     <button
                       key={tag}
@@ -1271,11 +1471,11 @@ function Home() {
                   {filterTag
                     ? `Filtering by #${filterTag} ✨`
                     : "Drop a tag here to filter 🔖"}
-                </div>
-              </div>
-            )}
+	                </div>
+	              </div>
+	            )}
 
-            {showSnapshot && (
+            {!showTrash && !trashSelectMode && showSnapshot && (
               <div className="w-full flex flex-col gap-4">
                 <motion.section
                   initial={{ opacity: 0, y: 14 }}
@@ -1417,7 +1617,33 @@ function Home() {
           </motion.div>
         )}
 
-        {notesLoaded && notes.length === 0 ? (
+        {showTrash ? (
+          notesLoaded && trashedNotes.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="flex flex-col items-center justify-center w-full py-16 text-center"
+            >
+              <p className="text-sm text-slate-600 dark:text-gray-300">
+                Trash is empty.
+              </p>
+              <p className="text-xs text-slate-500 dark:text-gray-400 mt-2">
+                Deleted notes show up here until you restore or delete forever.
+              </p>
+            </motion.div>
+          ) : (
+            <div className="w-full max-w-[900px]">
+              <NoteList
+                mode="trash"
+                notes={filteredAndSortedNotes}
+                onRestore={handleRestore}
+                onDeleteForever={handleDeleteForever}
+                viewMode="list"
+              />
+            </div>
+          )
+        ) : notesLoaded && activeNotes.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1466,18 +1692,19 @@ function Home() {
             </motion.div>
           </motion.div>
         ) : (
-          <div
-            className={`w-full ${viewMode === "list" ? "max-w-[900px]" : ""}`}
-          >
-            <NoteList
-              notes={filteredAndSortedNotes}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onPin={handlePin}
-              viewMode={viewMode}
-            />
-          </div>
-        )}
+	          <div
+	            className={`w-full ${viewMode === "list" ? "max-w-[900px]" : ""}`}
+	          >
+	            <NoteList
+	              mode={trashSelectMode ? "trashSelect" : "active"}
+	              notes={filteredAndSortedNotes}
+	              onEdit={handleEdit}
+	              onDelete={handleDelete}
+	              onPin={handlePin}
+	              viewMode={viewMode}
+	            />
+	          </div>
+	        )}
       </div>
     </div>
   );

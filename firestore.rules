@@ -26,7 +26,11 @@ service cloud.firestore {
 
     match /notes/{noteId} {
       allow create: if isPremiumUser() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isPremiumUser() && resource.data.userId == request.auth.uid;
+      allow read, delete: if isPremiumUser() && resource.data.userId == request.auth.uid;
+      allow update: if isPremiumUser()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
     }
   }
 }

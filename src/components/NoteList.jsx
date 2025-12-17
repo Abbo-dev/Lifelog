@@ -1,7 +1,8 @@
 /* eslint-disable react/prop-types */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { 
+  ArrowUturnLeftIcon as RestoreIcon,
   MapPinIcon as PinIcon,
   CalendarIcon,
   PencilIcon,
@@ -10,8 +11,23 @@ import {
 } from "@heroicons/react/24/outline";
 import { sanitizeHtmlLinks } from "../utils/linkUtils";
 
-const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
+const NoteList = ({
+  notes,
+  onEdit,
+  onDelete,
+  onPin,
+  onRestore,
+  onDeleteForever,
+  viewMode = "grid",
+  mode = "active",
+}) => {
   const [openNote, setOpenNote] = useState(null);
+  useEffect(() => {
+    if (mode === "trashSelect") {
+      setOpenNote(null);
+    }
+  }, [mode]);
+
   const toDateValue = (value) => {
     if (!value) return null;
     if (value instanceof Date) return value;
@@ -58,14 +74,16 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
     );
     const createdLabel = formatDateValue(note.createdAt, "MMM d, h:mm a");
     const sanitizedPreviewContent = sanitizeHtmlLinks(note.content || "");
+    const isTrashMode = mode === "trash";
+    const isTrashSelectMode = mode === "trashSelect";
 
     return (
       <div
         key={note.id}
-        onClick={() => setOpenNote(note)}
+        onClick={isTrashSelectMode ? undefined : () => setOpenNote(note)}
         className={`group relative bg-[#eef3ff] dark:bg-slate-900/90 border border-[#d6e4ff]/80 dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#0072F5]/15 ${
-          note.isPinned ? "border-[#0072F5]" : ""
-        } cursor-pointer`}
+          !isTrashMode && note.isPinned ? "border-[#0072F5]" : ""
+        } ${isTrashSelectMode ? "cursor-default" : "cursor-pointer"}`}
       >
         <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: note.color || "#0072F5" }} />
         
@@ -75,37 +93,73 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
               {note.title}
             </h3>
             <div className="flex items-center gap-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPin(note);
-                }}
-                className={`p-1 rounded-lg transition-colors ${
-                  note.isPinned
-                    ? "text-[#0072F5] hover:bg-[#0072F5]/10"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800"
-                }`}
-              >
-                <PinIcon className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(note);
-                }}
-                className="p-1 text-gray-500 hover:text-gray-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <PencilIcon className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(note);
-                }}
-                className="p-1 text-gray-500 hover:text-red-500 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <TrashIcon className="w-3.5 h-3.5" />
-              </button>
+              {isTrashMode ? (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRestore?.(note);
+                    }}
+                    className="p-1 text-gray-500 hover:text-emerald-600 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-emerald-400 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    aria-label="Restore note"
+                    type="button"
+                  >
+                    <RestoreIcon className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteForever?.(note);
+                    }}
+                    className="p-1 text-gray-500 hover:text-red-500 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    aria-label="Delete forever"
+                    type="button"
+                  >
+                    <TrashIcon className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : isTrashSelectMode ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.(note);
+                  }}
+                  className="p-1 text-gray-500 hover:text-red-500 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  aria-label="Move to trash"
+                  type="button"
+                >
+                  <TrashIcon className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPin?.(note);
+                    }}
+                    className={`p-1 rounded-lg transition-colors ${
+                      note.isPinned
+                        ? "text-[#0072F5] hover:bg-[#0072F5]/10"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800"
+                    }`}
+                    aria-label="Pin note"
+                    type="button"
+                  >
+                    <PinIcon className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit?.(note);
+                    }}
+                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    aria-label="Edit note"
+                    type="button"
+                  >
+                    <PencilIcon className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -160,7 +214,9 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
         ))}
         {notes.length === 0 && (
           <div className="col-span-full text-center py-8 text-xs text-gray-500">
-            No notes found. Create your first note!
+            {mode === "trash"
+              ? "No notes in trash."
+              : "No notes found. Create your first note!"}
           </div>
         )}
       </div>
@@ -206,6 +262,30 @@ const NoteList = ({ notes, onEdit, onDelete, onPin, viewMode = "grid" }) => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {mode === "trash" ? (
+                  <>
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 text-xs rounded-lg border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                      onClick={() => {
+                        onRestore?.(openNote);
+                        setOpenNote(null);
+                      }}
+                    >
+                      Restore
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 text-xs rounded-lg border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40"
+                      onClick={() => {
+                        onDeleteForever?.(openNote);
+                        setOpenNote(null);
+                      }}
+                    >
+                      Delete forever
+                    </button>
+                  </>
+                ) : null}
                 <button
                   type="button"
                   className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800"

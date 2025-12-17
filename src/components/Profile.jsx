@@ -5,13 +5,26 @@ import { Card, CardBody } from "@heroui/card";
 import { Button, Avatar, Chip } from "@heroui/react";
 import { auth, db, storage } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
-import { loadLocalNotes } from "../utils/localNotes";
+import {
+  generateLocalNoteId,
+  loadLocalNotes,
+  saveLocalNotes,
+} from "../utils/localNotes";
 import {
   collection,
+  doc,
   onSnapshot,
   query,
+  serverTimestamp,
+  writeBatch,
   where,
 } from "firebase/firestore";
+import {
+  buildNotesJsonExport,
+  buildNotesMarkdownExport,
+  parseNotesJsonImport,
+  parseNotesMarkdownImport,
+} from "../utils/notePortability";
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -144,11 +157,19 @@ function Profile() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [notes, setNotes] = useState([]);
+  const activeNotes = useMemo(
+    () => notes.filter((note) => !note?.trashedAt),
+    [notes]
+  );
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarStatus, setAvatarStatus] = useState("");
   const avatarInputRef = useRef(null);
+  const importJsonInputRef = useRef(null);
+  const importMarkdownInputRef = useRef(null);
+  const [dataBusy, setDataBusy] = useState(false);
+  const [dataStatus, setDataStatus] = useState("");
 
   const toDateValue = (value) => {
     if (!value) return null;
@@ -227,7 +248,7 @@ function Profile() {
     let pinnedCount = 0;
     const activityDays = new Set();
 
-    notes.forEach((note) => {
+    activeNotes.forEach((note) => {
       if (note?.isPinned) pinnedCount += 1;
       (note?.tags || []).forEach((tag) => tagSet.add(tag));
       const createdKey = formatDayKey(note?.createdAt || note?.lastModified);
@@ -237,12 +258,12 @@ function Profile() {
     });
 
     setStats({
-      notes: notes.length,
+      notes: activeNotes.length,
       pinned: pinnedCount,
       tags: tagSet.size,
       streak: calculateStreak(activityDays),
     });
-  }, [notes]);
+  }, [activeNotes]);
 
   useEffect(() => {
     setNewEmail(user?.email || "");
@@ -364,14 +385,14 @@ function Profile() {
   };
 
   const pinnedNotes = useMemo(
-    () => notes.filter((note) => note.isPinned).slice(0, 6),
-    [notes]
+    () => activeNotes.filter((note) => note.isPinned).slice(0, 6),
+    [activeNotes]
   );
 
   const upcomingNotes = useMemo(() => {
     const now = new Date();
     const soon = addDays(now, 21);
-    return notes
+    return activeNotes
       .filter((note) => {
         const due = toDateValue(note.dueDate);
         return due && due >= now && due <= soon;
@@ -383,7 +404,7 @@ function Profile() {
           toDateValue(b.dueDate)?.getTime() || Number.MAX_SAFE_INTEGER;
         return aTime - bTime;
       });
-  }, [notes]);
+  }, [activeNotes]);
 
   const priorityNotes = useMemo(() => {
     const map = new Map();
@@ -397,16 +418,16 @@ function Profile() {
   }, [pinnedNotes, upcomingNotes]);
 
   const dashboardStats = useMemo(() => {
-    const total = notes.length;
+    const total = activeNotes.length;
     const pinned = pinnedNotes.length;
     const upcoming = upcomingNotes.length;
-    const dated = notes.filter((note) => !!toDateValue(note.dueDate)).length;
+    const dated = activeNotes.filter((note) => !!toDateValue(note.dueDate)).length;
     return { total, pinned, upcoming, dated };
-  }, [notes, pinnedNotes, upcomingNotes]);
+  }, [activeNotes, pinnedNotes, upcomingNotes]);
 
   const notesByDate = useMemo(() => {
     const map = {};
-    notes.forEach((note) => {
+    activeNotes.forEach((note) => {
       const due = toDateValue(note.dueDate);
       if (!due) return;
       const key = format(due, "yyyy-MM-dd");
@@ -421,7 +442,7 @@ function Profile() {
       )
     );
     return map;
-  }, [notes]);
+  }, [activeNotes]);
 
   const selectedDateNotes = useMemo(() => {
     const key = format(selectedDate, "yyyy-MM-dd");
@@ -447,6 +468,193 @@ function Profile() {
   const handleDateSelect = (day) => {
     setSelectedDate(day);
     setCalendarMonth(day);
+  };
+
+  const downloadTextFile = (filename, contents, mimeType) => {
+    try {
+      const blob = new Blob([contents], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download failed", error);
+      setDataStatus("Download failed. Please try again.");
+    }
+  };
+
+  const handleExportJson = () => {
+    const exportPayload = buildNotesJsonExport(notes);
+    const filename = `lifelog-notes-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
+    downloadTextFile(
+      filename,
+      JSON.stringify(exportPayload, null, 2),
+      "application/json"
+    );
+    setDataStatus(`Exported ${notes.length} note(s) as JSON.`);
+  };
+
+  const handleExportMarkdown = () => {
+    const markdown = buildNotesMarkdownExport(notes);
+    const filename = `lifelog-notes-${new Date()
+      .toISOString()
+      .slice(0, 10)}.md`;
+    downloadTextFile(filename, markdown, "text/markdown");
+    setDataStatus(`Exported ${notes.length} note(s) as Markdown.`);
+  };
+
+  const importNotesToLocal = (importedNotes, { preserveIds }) => {
+    if (!user?.uid) return { imported: 0 };
+    const nowIso = new Date().toISOString();
+
+    const existing = loadLocalNotes(user.uid);
+    const byId = new Map(
+      existing.filter((note) => typeof note?.id === "string").map((note) => [note.id, note])
+    );
+
+    let imported = 0;
+    for (const raw of importedNotes) {
+      const rawId = typeof raw?.id === "string" ? raw.id.trim() : "";
+      const id = preserveIds && rawId ? rawId : generateLocalNoteId();
+      const createdAt = toDateValue(raw?.createdAt);
+      const lastModified = toDateValue(raw?.lastModified);
+      const dueDate = toDateValue(raw?.dueDate);
+      const trashedAt = toDateValue(raw?.trashedAt);
+
+      byId.set(id, {
+        id,
+        title: typeof raw?.title === "string" ? raw.title : "",
+        content: typeof raw?.content === "string" ? raw.content : "",
+        dueDate: dueDate ? dueDate.toISOString() : null,
+        tags: Array.isArray(raw?.tags)
+          ? raw.tags.filter((tag) => typeof tag === "string")
+          : [],
+        color: typeof raw?.color === "string" ? raw.color : "#ffffff",
+        isPinned: !!raw?.isPinned,
+        userId: user.uid,
+        createdAt: createdAt ? createdAt.toISOString() : nowIso,
+        lastModified: lastModified ? lastModified.toISOString() : nowIso,
+        trashedAt: trashedAt ? trashedAt.toISOString() : null,
+      });
+      imported += 1;
+    }
+
+    const merged = Array.from(byId.values());
+    saveLocalNotes(user.uid, merged);
+    setNotes(merged);
+    return { imported };
+  };
+
+  const importNotesToCloud = async (importedNotes, { preserveIds }) => {
+    if (!user?.uid) return { imported: 0 };
+    let imported = 0;
+
+    let batch = writeBatch(db);
+    let batchCount = 0;
+    const notesCollection = collection(db, "notes");
+
+    for (const raw of importedNotes) {
+      const rawId = typeof raw?.id === "string" ? raw.id.trim() : "";
+      const ref = preserveIds && rawId ? doc(db, "notes", rawId) : doc(notesCollection);
+
+      const createdAt = toDateValue(raw?.createdAt);
+      const lastModified = toDateValue(raw?.lastModified);
+      const dueDate = toDateValue(raw?.dueDate);
+      const trashedAt = toDateValue(raw?.trashedAt);
+
+      batch.set(ref, {
+        title: typeof raw?.title === "string" ? raw.title : "",
+        content: typeof raw?.content === "string" ? raw.content : "",
+        dueDate: dueDate || null,
+        tags: Array.isArray(raw?.tags)
+          ? raw.tags.filter((tag) => typeof tag === "string")
+          : [],
+        color: typeof raw?.color === "string" ? raw.color : "#ffffff",
+        isPinned: !!raw?.isPinned,
+        userId: user.uid,
+        createdAt: createdAt || serverTimestamp(),
+        lastModified: lastModified || serverTimestamp(),
+        trashedAt: trashedAt || null,
+      });
+      imported += 1;
+      batchCount += 1;
+
+      if (batchCount >= 450) {
+        await batch.commit();
+        batch = writeBatch(db);
+        batchCount = 0;
+      }
+    }
+
+    if (batchCount > 0) {
+      await batch.commit();
+    }
+
+    return { imported };
+  };
+
+  const handleImportJson = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setDataBusy(true);
+    setDataStatus("");
+
+    try {
+      const text = await file.text();
+      const parsed = parseNotesJsonImport(text);
+      const importedNotes = Array.isArray(parsed.notes) ? parsed.notes : [];
+      const preserveIds = parsed.isLifeLogExport;
+
+      if (isPremium) {
+        const result = await importNotesToCloud(importedNotes, { preserveIds });
+        setDataStatus(`Imported ${result.imported} note(s) to the cloud.`);
+      } else {
+        const result = importNotesToLocal(importedNotes, { preserveIds });
+        setDataStatus(`Imported ${result.imported} note(s) to this device.`);
+      }
+    } catch (error) {
+      console.error("Import failed", error);
+      setDataStatus(error?.message || "Import failed.");
+    } finally {
+      setDataBusy(false);
+    }
+  };
+
+  const handleImportMarkdown = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setDataBusy(true);
+    setDataStatus("");
+
+    try {
+      const text = await file.text();
+      const parsed = parseNotesMarkdownImport(text, {
+        fallbackTitle: file.name.replace(/\.[^/.]+$/, ""),
+      });
+      const importedNotes = Array.isArray(parsed.notes) ? parsed.notes : [];
+      const preserveIds = parsed.isLifeLogExport;
+
+      if (isPremium) {
+        const result = await importNotesToCloud(importedNotes, { preserveIds });
+        setDataStatus(`Imported ${result.imported} note(s) to the cloud.`);
+      } else {
+        const result = importNotesToLocal(importedNotes, { preserveIds });
+        setDataStatus(`Imported ${result.imported} note(s) to this device.`);
+      }
+    } catch (error) {
+      console.error("Import failed", error);
+      setDataStatus(error?.message || "Import failed.");
+    } finally {
+      setDataBusy(false);
+    }
   };
 
   if (!user) {
@@ -810,6 +1018,99 @@ function Profile() {
               <p className="text-xs text-slate-500 dark:text-gray-400">
                 Tip: Switch themes anytime with the sun/moon toggle in the
                 navbar.
+              </p>
+            </CardBody>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mt-4"
+        >
+          <Card className="profile-card">
+            <CardBody className="p-5 space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <h3 className="text-lg font-semibold">Export & import</h3>
+                  <p className="text-sm text-slate-500 dark:text-gray-400">
+                    Download your notes (JSON/Markdown) or import them back
+                    anytime.
+                  </p>
+                </div>
+                <Chip
+                  size="sm"
+                  className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
+                  variant="flat"
+                >
+                  {isPremium ? "Cloud" : "Local"}
+                </Chip>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="border border-slate-200 dark:border-gray-700"
+                  isDisabled={dataBusy}
+                  onPress={handleExportJson}
+                >
+                  Export JSON
+                </Button>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="border border-slate-200 dark:border-gray-700"
+                  isDisabled={dataBusy}
+                  onPress={handleExportMarkdown}
+                >
+                  Export Markdown
+                </Button>
+                <Button
+                  size="sm"
+                  variant="bordered"
+                  className="border-slate-200 dark:border-gray-700"
+                  isDisabled={dataBusy}
+                  onPress={() => importJsonInputRef.current?.click()}
+                >
+                  Import JSON
+                </Button>
+                <input
+                  ref={importJsonInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  className="hidden"
+                  onChange={handleImportJson}
+                />
+                <Button
+                  size="sm"
+                  variant="bordered"
+                  className="border-slate-200 dark:border-gray-700"
+                  isDisabled={dataBusy}
+                  onPress={() => importMarkdownInputRef.current?.click()}
+                >
+                  Import Markdown
+                </Button>
+                <input
+                  ref={importMarkdownInputRef}
+                  type="file"
+                  accept="text/markdown,.md"
+                  className="hidden"
+                  onChange={handleImportMarkdown}
+                />
+              </div>
+
+              {dataStatus && (
+                <p className="text-xs text-slate-600 dark:text-gray-300">
+                  {dataStatus}
+                </p>
+              )}
+
+              <p className="text-xs text-slate-500 dark:text-gray-400">
+                {isPremium
+                  ? "Premium: imports will sync to your cloud notes."
+                  : "Free plan: imports stay on this device (local-only)."}
               </p>
             </CardBody>
           </Card>

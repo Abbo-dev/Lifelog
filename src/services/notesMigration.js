@@ -35,6 +35,7 @@ export const importLocalNotesToCloud = async (userId) => {
     const createdAt = toDateValue(note.createdAt);
     const lastModified = toDateValue(note.lastModified);
     const dueDate = toDateValue(note.dueDate);
+    const trashedAt = toDateValue(note.trashedAt);
 
     await setDoc(doc(db, "notes", note.id), {
       title: note.title || "",
@@ -46,10 +47,10 @@ export const importLocalNotesToCloud = async (userId) => {
       userId,
       createdAt: createdAt || serverTimestamp(),
       lastModified: lastModified || serverTimestamp(),
+      trashedAt: trashedAt || null,
     });
     imported += 1;
   }
 
   return { imported };
 };
-
