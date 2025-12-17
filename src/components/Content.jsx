@@ -92,19 +92,27 @@ const mockupBars = [82, 58, 91, 66, 74];
 const mockupFilters = ["Pinned", "Due soon", "Ideas", "Personal", "Work"];
 
 function Content() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authUser, setAuthUser] = useState(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      setIsAuthenticated(!!user);
+      setAuthUser(user);
     });
     return unsubscribe;
   }, []);
 
-  const primaryCtaLabel = isAuthenticated ? "Open dashboard" : "Get Started";
+  const isAuthenticated = !!authUser;
+  const displayName = authUser?.displayName?.trim();
+
+  const primaryCta = isAuthenticated
+    ? { label: "Go to the app", to: "/home" }
+    : { label: "Get Started", to: "/signup" };
+
   const secondaryCta = isAuthenticated
-    ? { label: "Add another note", to: "/home" }
-    : { label: "Create Account", to: "/signup" };
+    ? { label: "View profile", to: "/profile" }
+    : { label: "Sign in", to: "/signin" };
+
+  const tertiaryCta = { label: "See pricing", to: "/pricing" };
 
   const toneStyles = {
     emerald:
@@ -126,7 +134,9 @@ function Content() {
         >
           <div className="flex justify-center">
             <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-slate-700 dark:text-white/80 px-4 py-2 rounded-full glass-chip">
-              Your life, beautifully logged
+              {isAuthenticated
+                ? `Welcome back${displayName ? `, ${displayName}` : ""}`
+                : "Your life, beautifully logged"}
             </p>
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
@@ -136,16 +146,17 @@ function Content() {
             </span>
           </h1>
           <p className="text-base md:text-lg text-slate-700 dark:text-white/80 max-w-2xl mx-auto">
-            A playful, powerful space to capture thoughts, build routines, and
-            celebrate progress—day after day.
+            {isAuthenticated
+              ? "Pick up where you left off—your notes and routines are waiting."
+              : "A playful, powerful space to capture thoughts, build routines, and celebrate progress—day after day."}
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link to="/home">
+            <Link to={primaryCta.to}>
               <Button
                 color="primary"
                 className="px-5 py-3 text-base font-semibold shadow-[0_15px_40px_rgba(0,114,245,0.35)] hover:-translate-y-0.5 hover:scale-[1.02] transition-transform"
               >
-                {primaryCtaLabel}
+                {primaryCta.label}
               </Button>
             </Link>
             <Link to={secondaryCta.to}>
@@ -155,6 +166,12 @@ function Content() {
               >
                 {secondaryCta.label}
               </Button>
+            </Link>
+            <Link
+              to={tertiaryCta.to}
+              className="text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              {tertiaryCta.label}
             </Link>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 dark:text-white/75">
