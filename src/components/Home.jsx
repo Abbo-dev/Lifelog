@@ -60,7 +60,6 @@ function Home() {
   const smartFoldersSeededRef = useRef(false);
   const hasSmartFolderSyncedRef = useRef(false);
   const lastActiveLoadedRef = useRef(false);
-  const lastUserIdRef = useRef("");
   const sortOptions = [
     { value: "lastModified", label: "Last Modified" },
     { value: "createdAt", label: "Created Date" },
@@ -145,20 +144,50 @@ function Home() {
   useEffect(() => {
     if (!isAuthenticated) {
       setShowCard(true);
-      lastUserIdRef.current = "";
+      setConfetti(false);
       return;
     }
 
     setShowCard(false);
-    if (currentUserId && lastUserIdRef.current !== currentUserId) {
-      lastUserIdRef.current = currentUserId;
-      setConfetti(true);
-      setTimeout(() => {
-        setConfetti(false);
-      }, 4000);
-    }
-  }, [isAuthenticated, currentUserId]);
+  }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (!user?.uid) return undefined;
+
+    const storageKey = `welcomeConfettiShown_${user.uid}`;
+    try {
+      if (localStorage.getItem(storageKey) === "1") {
+        return undefined;
+      }
+    } catch {
+      // ignore storage errors (private mode / blocked storage)
+    }
+
+    const creationTime = user.metadata?.creationTime;
+    const lastSignInTime = user.metadata?.lastSignInTime;
+    const createdAtMs = creationTime ? new Date(creationTime).getTime() : NaN;
+    const lastSignInAtMs = lastSignInTime
+      ? new Date(lastSignInTime).getTime()
+      : NaN;
+
+    const isFirstSignIn =
+      Number.isFinite(createdAtMs) &&
+      Number.isFinite(lastSignInAtMs) &&
+      Math.abs(lastSignInAtMs - createdAtMs) < 60_000;
+
+    if (!isFirstSignIn) return undefined;
+
+    try {
+      localStorage.setItem(storageKey, "1");
+    } catch {
+      // ignore storage errors (private mode / blocked storage)
+    }
+
+    setConfetti(true);
+    const timeoutId = window.setTimeout(() => setConfetti(false), 4000);
+    return () => window.clearTimeout(timeoutId);
+  }, [user?.uid, user?.metadata?.creationTime, user?.metadata?.lastSignInTime]);
+  
   useEffect(() => {
     const handleResize = () => {
       setWindowSize({ width: window.innerWidth, height: window.innerHeight });

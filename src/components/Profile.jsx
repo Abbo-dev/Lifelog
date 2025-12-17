@@ -40,6 +40,88 @@ const statCards = [
   { label: "Daily streak", key: "streak" },
 ];
 
+const AVATAR_MAX_DIMENSION = 512;
+const AVATAR_OUTPUT_QUALITY = 0.82;
+const AVATAR_OUTPUT_MIME_TYPE = "image/webp";
+
+const canvasToBlob = (canvas, mimeType, quality) =>
+  new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("Unable to process image."));
+          return;
+        }
+        resolve(blob);
+      },
+      mimeType,
+      quality
+    );
+  });
+
+const loadImageSource = async (file) => {
+  if (typeof createImageBitmap === "function") {
+    return createImageBitmap(file);
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    return await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Unable to load the image."));
+      image.src = objectUrl;
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+};
+
+const prepareAvatarBlob = async (file) => {
+  const source = await loadImageSource(file);
+  const sourceWidth =
+    "naturalWidth" in source ? source.naturalWidth : source.width || 0;
+  const sourceHeight =
+    "naturalHeight" in source ? source.naturalHeight : source.height || 0;
+
+  if (!sourceWidth || !sourceHeight) {
+    if (typeof source.close === "function") source.close();
+    throw new Error("Unable to read image dimensions.");
+  }
+
+  const scale = Math.min(
+    1,
+    AVATAR_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight)
+  );
+  const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+  const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    if (typeof source.close === "function") source.close();
+    throw new Error("Unable to create canvas context.");
+  }
+
+  context.drawImage(source, 0, 0, targetWidth, targetHeight);
+  if (typeof source.close === "function") source.close();
+
+  let blob = await canvasToBlob(
+    canvas,
+    AVATAR_OUTPUT_MIME_TYPE,
+    AVATAR_OUTPUT_QUALITY
+  );
+
+  if (blob.type === "image/png" && file.type !== "image/png") {
+    blob = await canvasToBlob(canvas, "image/jpeg", AVATAR_OUTPUT_QUALITY);
+  }
+
+  return blob;
+};
+
 function Profile() {
   const navigate = useNavigate();
   const { user, isPremium, planLoading } = useAuth();
@@ -250,20 +332,23 @@ function Profile() {
       setAvatarStatus("Please upload an image file.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setAvatarStatus("Image must be under 5MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      setAvatarStatus("Image must be under 10MB.");
       return;
     }
     try {
       setAvatarUploading(true);
+      setAvatarStatus("Optimizing...");
+      const optimizedBlob = await prepareAvatarBlob(file);
+
       setAvatarStatus("Uploading...");
-      const storageRef = ref(
-        storage,
-        `avatars/${user.uid}/${Date.now()}-${file.name}`
-      );
-      await uploadBytes(storageRef, file);
+      const storageRef = ref(storage, `avatars/${user.uid}/avatar`);
+      await uploadBytes(storageRef, optimizedBlob, {
+        contentType: optimizedBlob.type || file.type,
+      });
       const url = await getDownloadURL(storageRef);
-      await updateProfile(user, { photoURL: url });
+      const cacheBustedUrl = `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+      await updateProfile(user, { photoURL: cacheBustedUrl });
       setAvatarStatus("Photo updated.");
     } catch (error) {
       setAvatarStatus(error?.message || "Unable to update photo.");

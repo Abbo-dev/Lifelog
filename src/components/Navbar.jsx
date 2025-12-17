@@ -74,13 +74,14 @@ const NavbarSide = () => {
 
         <div className="flex items-center gap-3 md:gap-4 px-3 py-2 rounded-full bg-transparent border border-transparent shadow-none">
           <SwitchTheme />
+          {/** 
           <Link
             to="/pricing"
             className="text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white transition-colors hidden sm:inline"
           >
             Pricing
-          </Link>
-
+              </Link>
+              */}
           {loading ? (
             <Button className="w-20">
               <Skeleton />
@@ -108,6 +109,11 @@ const NavbarSide = () => {
 
                 {isMenuOpen && (
                   <div className="absolute right-0 mt-3 w-44 rounded-2xl border border-white/15 bg-white/10 dark:bg-black/30 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-2 glass-panel-soft">
+                    <h1 className="px-3 py-2 text-sm font-medium">
+                      Hey, {userName.at(0).toUpperCase() + userName.slice(1)}
+                    </h1>
+                    <hr className="my-2 border-white/10" />
+
                     <Link
                       to="/profile"
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-white/10"
@@ -117,7 +123,7 @@ const NavbarSide = () => {
                     </Link>
                     <button
                       type="button"
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-left hover:bg-white/10"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-left hover:bg-red-600/20 hover:text-red-400"
                       onClick={handleSignOut}
                     >
                       Log Out
@@ -126,13 +132,14 @@ const NavbarSide = () => {
                 )}
               </div>
 
-              <Link
+              {/*}  <Link
                 to="/profile"
                 className="text-sm font-medium text-slate-900 dark:text-white hidden sm:inline"
                 onClick={() => setIsMenuOpen(false)}
               >
                 {userName}
-              </Link>
+                </Link>
+              */}
               <Button className="w-20" onPress={handleSignOut}>
                 Log Out
               </Button>

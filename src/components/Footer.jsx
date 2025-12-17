@@ -1,8 +1,31 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Image } from "@heroui/react";
 import Logo from "../assets/logo2.png";
 
+const prefersReducedMotion = () => {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+};
+
 const Footer = () => {
+  const { pathname } = useLocation();
+
+  const handleSameRouteScroll = (to) => (event) => {
+    if (pathname !== to) return;
+    event.preventDefault();
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  };
+
   return (
     <footer className="w-full mt-16 px-4 md:px-6 pb-12 text-slate-200 dark:text-white/80">
       <div className="max-w-6xl mx-auto rounded-2xl footer-panel px-5 md:px-8 py-9 shadow-[0_25px_60px_rgba(0,0,0,0.25)] relative overflow-hidden">
@@ -46,30 +69,35 @@ const Footer = () => {
                 <Link
                   to="/"
                   className="hover:text-[#5EA2EF] transition-colors"
+                  onClick={handleSameRouteScroll("/")}
                 >
                   Home
                 </Link>
                 <Link
-                  to="/profile"
+                  to="/home"
                   className="hover:text-[#5EA2EF] transition-colors"
+                  onClick={handleSameRouteScroll("/home")}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/profile"
                   className="hover:text-[#5EA2EF] transition-colors"
+                  onClick={handleSameRouteScroll("/profile")}
                 >
                   Profile
                 </Link>
                 <Link
                   to="/signup"
                   className="hover:text-[#5EA2EF] transition-colors"
+                  onClick={handleSameRouteScroll("/signup")}
                 >
                   Get started
                 </Link>
                 <Link
                   to="/pricing"
                   className="hover:text-[#5EA2EF] transition-colors"
+                  onClick={handleSameRouteScroll("/pricing")}
                 >
                   Pricing
                 </Link>
@@ -90,12 +118,14 @@ const Footer = () => {
                 <Link
                   to="/terms"
                   className="hover:text-[#5EA2EF] transition-colors"
+                  onClick={handleSameRouteScroll("/terms")}
                 >
                   Terms
                 </Link>
                 <Link
                   to="/privacy"
                   className="hover:text-[#5EA2EF] transition-colors"
+                  onClick={handleSameRouteScroll("/privacy")}
                 >
                   Privacy
                 </Link>

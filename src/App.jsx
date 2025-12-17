@@ -13,10 +13,12 @@ import { AuthProvider } from './contexts/AuthContext'
 import { HeroUIProvider } from '@heroui/react'
 import NavbarSide from './components/Navbar'
 import Footer from './components/Footer'
+import ScrollToTop from './components/ScrollToTop'
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AuthProvider>
         <HeroUIProvider>
           <div className="min-h-screen pt-24 pb-14">
