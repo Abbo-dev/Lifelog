@@ -47,6 +47,7 @@ function Home() {
   const [notesLoaded, setNotesLoaded] = useState(false);
   const [noteToEdit, setNoteToEdit] = useState(null);
   const [showHomeModal, setShowHomeModal] = useState(false);
+  const [initialDraft, setInitialDraft] = useState(null);
   const [sortBy, setSortBy] = useState("lastModified");
   const [filterTag, setFilterTag] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,13 +100,98 @@ function Home() {
     setShowHomeModal(open);
     if (!open) {
       setNoteToEdit(null);
+      setInitialDraft(null);
     }
   };
 
   const handleEdit = async (note) => {
     setNoteToEdit(note);
+    setInitialDraft(null);
     setShowHomeModal(true);
   };
+
+  const openNewNote = (draft = null) => {
+    setNoteToEdit(null);
+    setInitialDraft(draft);
+    setShowHomeModal(true);
+  };
+
+  const starterTemplates = useMemo(() => {
+    const todayLabel = format(new Date(), "MMM d");
+    return [
+      {
+        label: "Daily log",
+        draft: {
+          title: `Daily log • ${todayLabel}`,
+          content:
+            "<h2>Top 3</h2><ul><li></li><li></li><li></li></ul><h2>Notes</h2><p></p><h2>Wins</h2><ul><li></li></ul>",
+          tags: ["daily"],
+          color: "#5EA2EF",
+          isPinned: false,
+          dueDate: null,
+        },
+      },
+      {
+        label: "Meeting notes",
+        draft: {
+          title: `Meeting • ${todayLabel}`,
+          content:
+            "<h2>Agenda</h2><ul><li></li></ul><h2>Notes</h2><p></p><h2>Action items</h2><ul><li></li></ul>",
+          tags: ["work"],
+          color: "#ffffff",
+          isPinned: false,
+          dueDate: null,
+        },
+      },
+      {
+        label: "Task dump",
+        draft: {
+          title: "Task dump",
+          content:
+            "<h2>To do</h2><ul><li></li><li></li><li></li></ul><h2>Next</h2><ul><li></li></ul>",
+          tags: ["tasks"],
+          color: "#ffffff",
+          isPinned: false,
+          dueDate: null,
+        },
+      },
+    ];
+  }, []);
+
+  useEffect(() => {
+    const isTextInputFocused = () => {
+      const element = document.activeElement;
+      if (!element) return false;
+      const tagName = element.tagName?.toLowerCase?.() || "";
+      if (tagName === "input" || tagName === "textarea" || tagName === "select") {
+        return true;
+      }
+      return !!element.isContentEditable;
+    };
+
+    const handler = (event) => {
+      const key = (event.key || "").toLowerCase();
+
+      if ((event.ctrlKey || event.metaKey) && key === "k") {
+        if (isTextInputFocused() || showHomeModal) return;
+        event.preventDefault();
+        const input = document.getElementById("notes-search");
+        if (input && typeof input.focus === "function") input.focus();
+        return;
+      }
+
+      if (event.altKey && !event.ctrlKey && !event.metaKey && key === "n") {
+        if (isTextInputFocused() || showHomeModal || showTrash) return;
+        event.preventDefault();
+        setNoteToEdit(null);
+        setInitialDraft(null);
+        setShowHomeModal(true);
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showHomeModal, showTrash]);
 
   const handleDelete = async (note) => {
     if (!currentUserId) return;
@@ -1106,6 +1192,7 @@ function Home() {
                   <HomeModal
                     className="z-20"
                     noteToEdit={noteToEdit}
+                    initialDraft={initialDraft}
                     showHomeModal={showHomeModal}
                     onCloseModal={handleCloseModal}
                     onSaveNote={handleSaveNote}
@@ -1116,15 +1203,17 @@ function Home() {
                 </div>
               )}
 
-              <div className="flex-1 max-w-[600px]">
-                <Input
-                  value={searchQuery}
-                  onValueChange={setSearchQuery}
-                  placeholder="Search notes... 🔍"
-                  startContent={
-                    <img
-                      src={Search}
-                      alt="search"
+	              <div className="flex-1 max-w-[600px]">
+	                <Input
+	                  id="notes-search"
+	                  value={searchQuery}
+	                  onValueChange={setSearchQuery}
+	                  placeholder="Search notes... 🔍"
+	                  aria-label="Search notes"
+	                  startContent={
+	                    <img
+	                      src={Search}
+	                      alt="search"
                       className="w-4 h-4 opacity-60"
                     />
                   }
@@ -1823,21 +1912,53 @@ function Home() {
                 Create your first note to pin milestones, add reminders, and
                 keep your flow streak going.
               </p>
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25, duration: 0.45, ease: "easeOut" }}
-                className="flex items-center justify-center gap-3 pt-2"
-              >
-                <div className="h-2 w-2 rounded-full bg-[#5EA2EF] animate-pulse" />
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-600 dark:text-gray-300">
-                  Start by creating your first note
-                </p>
-                <div className="h-2 w-2 rounded-full bg-[#0072F5] animate-pulse" />
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        ) : (
+	              <motion.div
+	                initial={{ opacity: 0, y: 6 }}
+	                animate={{ opacity: 1, y: 0 }}
+	                transition={{ delay: 0.25, duration: 0.45, ease: "easeOut" }}
+	                className="flex items-center justify-center gap-3 pt-2"
+	              >
+	                <div className="h-2 w-2 rounded-full bg-[#5EA2EF] animate-pulse" />
+	                <p className="text-xs uppercase tracking-[0.2em] text-slate-600 dark:text-gray-300">
+	                  Start by creating your first note
+	                </p>
+	                <div className="h-2 w-2 rounded-full bg-[#0072F5] animate-pulse" />
+	              </motion.div>
+	
+	              <motion.div
+	                initial={{ opacity: 0, y: 10 }}
+	                animate={{ opacity: 1, y: 0 }}
+	                transition={{ delay: 0.35, duration: 0.5, ease: "easeOut" }}
+	                className="mt-8 flex flex-col items-center gap-3"
+	              >
+	                <div className="flex flex-wrap items-center justify-center gap-2">
+	                  <Button
+	                    size="sm"
+	                    color="primary"
+	                    className="px-5 shadow-[0_15px_40px_rgba(0,114,245,0.35)]"
+	                    onPress={() => openNewNote(null)}
+	                  >
+	                    New note
+	                  </Button>
+	                  {starterTemplates.map((template) => (
+	                    <Button
+	                      key={template.label}
+	                      size="sm"
+	                      variant="flat"
+	                      className="px-5 glass-chip border border-white/20 text-slate-900 dark:text-white"
+	                      onPress={() => openNewNote(template.draft)}
+	                    >
+	                      {template.label}
+	                    </Button>
+	                  ))}
+	                </div>
+	                <p className="text-xs text-slate-500 dark:text-gray-400">
+	                  Start blank or pick a template to save time.
+	                </p>
+	              </motion.div>
+	            </motion.div>
+	          </motion.div>
+	        ) : (
 	          <div
 	            className={`w-full ${viewMode === "list" ? "max-w-[900px]" : ""}`}
 	          >

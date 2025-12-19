@@ -19,6 +19,7 @@ const NOTE_COLORS = [
 
 function HomeModal({
   noteToEdit,
+  initialDraft = null,
   onCloseModal,
   showHomeModal,
   onSaveNote,
@@ -91,6 +92,8 @@ function HomeModal({
   }, [existingTagsProp]);
 
   useEffect(() => {
+    if (!showHomeModal) return;
+
     if (noteToEdit) {
       setTitle(noteToEdit.title || "");
       setContent(noteToEdit.content || "");
@@ -98,15 +101,26 @@ function HomeModal({
       setTags(noteToEdit.tags || []);
       setColor(noteToEdit.color || "#ffffff");
       setIsPinned(noteToEdit.isPinned || false);
-    } else {
-      setTitle("");
-      setContent("");
-      setDueDate(null);
-      setTags([]);
-      setColor("#ffffff");
-      setIsPinned(false);
+      return;
     }
-  }, [noteToEdit]);
+
+    if (initialDraft) {
+      setTitle(initialDraft.title || "");
+      setContent(initialDraft.content || "");
+      setDueDate(toDateValue(initialDraft.dueDate));
+      setTags(Array.isArray(initialDraft.tags) ? initialDraft.tags : []);
+      setColor(initialDraft.color || "#ffffff");
+      setIsPinned(!!initialDraft.isPinned);
+      return;
+    }
+
+    setTitle("");
+    setContent("");
+    setDueDate(null);
+    setTags([]);
+    setColor("#ffffff");
+    setIsPinned(false);
+  }, [noteToEdit, initialDraft, showHomeModal]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
