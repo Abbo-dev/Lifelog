@@ -30,15 +30,17 @@ const highlights = [
 const pricingTiers = {
   free: [
     "Local-only notes (this device)",
-    "Rich text editor",
-    "Tags, colors, pinning",
-    "Due dates + filters",
+    "Rich text editor (formatting + links)",
+    "Tags + custom tag colors",
+    "Due dates, pinning, and dashboard",
+    "Smart folders + fast search",
   ],
   premium: [
     "Cloud sync across devices",
-    "Automatic backups",
-    "Real-time updates",
-    "Sync smart folders",
+    "Real-time updates + offline cache",
+    "Shareable read-only note links",
+    "Image uploads (Firebase Storage)",
+    "Sync smart folders + tag colors",
   ],
 };
 

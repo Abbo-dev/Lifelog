@@ -8,6 +8,7 @@ import Profile from './components/Profile'
 import Pricing from './components/Pricing'
 import Terms from './components/Terms'
 import Privacy from './components/Privacy'
+import ShareNote from './components/ShareNote'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import NavbarSide from './components/Navbar'
 import Footer from './components/Footer'
@@ -29,6 +30,7 @@ function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/share/:shareId" element={<ShareNote />} />
         </Routes>
         <Footer />
       </div>

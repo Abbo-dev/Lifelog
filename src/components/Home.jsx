@@ -30,6 +30,7 @@ import {
   updateDoc,
   serverTimestamp,
   setDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { motion } from "framer-motion";
@@ -226,10 +227,23 @@ function Home() {
     }
 
     try {
-      await updateDoc(doc(db, "notes", note.id), {
-        trashedAt: serverTimestamp(),
-        lastModified: serverTimestamp(),
-      });
+      if (note?.shareId) {
+        const batch = writeBatch(db);
+        batch.delete(doc(db, "publicNotes", note.shareId));
+        batch.update(doc(db, "notes", note.id), {
+          trashedAt: serverTimestamp(),
+          lastModified: serverTimestamp(),
+          shareId: null,
+          isShared: false,
+          sharedAt: null,
+        });
+        await batch.commit();
+      } else {
+        await updateDoc(doc(db, "notes", note.id), {
+          trashedAt: serverTimestamp(),
+          lastModified: serverTimestamp(),
+        });
+      }
       addToast({
         title: "Moved to trash",
         description: note.title || "Untitled note",
@@ -293,7 +307,14 @@ function Home() {
     }
 
     try {
-      await deleteDoc(doc(db, "notes", note.id));
+      if (note?.shareId) {
+        const batch = writeBatch(db);
+        batch.delete(doc(db, "publicNotes", note.shareId));
+        batch.delete(doc(db, "notes", note.id));
+        await batch.commit();
+      } else {
+        await deleteDoc(doc(db, "notes", note.id));
+      }
     } catch (error) {
       console.log(error);
     }
@@ -421,6 +442,75 @@ function Home() {
     }
   };
 
+  const createShareId = () =>
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `share-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  const buildPublicNotePayload = (note, noteId) => ({
+    noteId,
+    title: note?.title || "",
+    content: note?.content || "",
+    tags: Array.isArray(note?.tags) ? note.tags : [],
+    color: note?.color || "#ffffff",
+    dueDate: note?.dueDate || null,
+    lastModified: serverTimestamp(),
+  });
+
+  const handleShareNote = async (note) => {
+    if (!currentUserId) return null;
+    if (!isPremium) return null;
+    if (!note?.id) return null;
+
+    if (note.shareId) return note.shareId;
+
+    const shareId = createShareId();
+    const noteRef = doc(db, "notes", note.id);
+    const publicRef = doc(db, "publicNotes", shareId);
+
+    try {
+      const batch = writeBatch(db);
+      batch.set(publicRef, {
+        ...buildPublicNotePayload(note, note.id),
+        createdAt: serverTimestamp(),
+      });
+      batch.update(noteRef, {
+        shareId,
+        isShared: true,
+        sharedAt: serverTimestamp(),
+      });
+      await batch.commit();
+      return shareId;
+    } catch (error) {
+      console.error("Error sharing note:", error);
+      return null;
+    }
+  };
+
+  const handleUnshareNote = async (note) => {
+    if (!currentUserId) return;
+    if (!isPremium) return;
+    if (!note?.id) return;
+    if (!note?.shareId) return;
+
+    const shareId = note.shareId;
+    const noteRef = doc(db, "notes", note.id);
+    const publicRef = doc(db, "publicNotes", shareId);
+
+    try {
+      const batch = writeBatch(db);
+      batch.delete(publicRef);
+      batch.update(noteRef, {
+        shareId: null,
+        isShared: false,
+        sharedAt: null,
+      });
+      await batch.commit();
+    } catch (error) {
+      console.error("Error unsharing note:", error);
+    }
+  };
+
   const handleSaveNote = async (noteDraft, existingNote) => {
     if (!currentUserId) return;
 
@@ -473,7 +563,31 @@ function Home() {
 
     try {
       if (existingNote?.id) {
-        await updateDoc(doc(db, "notes", existingNote.id), firestoreNote);
+        const noteRef = doc(db, "notes", existingNote.id);
+        const batch = writeBatch(db);
+        batch.update(noteRef, firestoreNote);
+
+        const shareId =
+          typeof existingNote.shareId === "string" ? existingNote.shareId : "";
+        if (shareId) {
+          const publicRef = doc(db, "publicNotes", shareId);
+          batch.set(
+            publicRef,
+            buildPublicNotePayload(
+              {
+                title: base.title,
+                content: base.content,
+                tags: base.tags,
+                color: base.color,
+                dueDate: firestoreNote.dueDate,
+              },
+              existingNote.id
+            ),
+            { merge: true }
+          );
+        }
+
+        await batch.commit();
         return;
       }
       await addDoc(collection(db, "notes"), {
@@ -1968,6 +2082,8 @@ function Home() {
 	              onEdit={handleEdit}
 	              onDelete={handleDelete}
 	              onPin={handlePin}
+                  onShare={isPremium ? handleShareNote : undefined}
+                  onUnshare={isPremium ? handleUnshareNote : undefined}
                   tagColors={tagColors}
 	              viewMode={viewMode}
 	            />

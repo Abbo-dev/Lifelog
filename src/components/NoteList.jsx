@@ -8,6 +8,7 @@ import {
   PencilIcon,
   TrashIcon,
   ClockIcon,
+  LinkIcon,
 } from "@heroicons/react/24/outline";
 import { sanitizeHtmlLinks } from "../utils/linkUtils";
 import { hexToRgba, resolveTagColor } from "../utils/tagColors";
@@ -17,6 +18,8 @@ const NoteList = ({
   onEdit,
   onDelete,
   onPin,
+  onShare,
+  onUnshare,
   onRestore,
   onDeleteForever,
   tagColors = {},
@@ -24,11 +27,21 @@ const NoteList = ({
   mode = "active",
 }) => {
   const [openNote, setOpenNote] = useState(null);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [copiedShareId, setCopiedShareId] = useState("");
   useEffect(() => {
     if (mode === "trashSelect") {
       setOpenNote(null);
     }
   }, [mode]);
+
+  useEffect(() => {
+    if (!openNote?.id) return;
+    const updated = notes.find((note) => note?.id === openNote.id);
+    if (updated) {
+      setOpenNote(updated);
+    }
+  }, [notes, openNote?.id]);
 
   const toDateValue = (value) => {
     if (!value) return null;
@@ -67,6 +80,79 @@ const NoteList = ({
     ? formatDateValue(openNote.createdAt, "MMM d, h:mm a")
     : "";
   const sanitizedOpenContent = sanitizeHtmlLinks(openNote?.content || "");
+  const shareEnabled = typeof onShare === "function";
+  const shareUrl = openNote?.shareId
+    ? `${window.location.origin}/share/${openNote.shareId}`
+    : "";
+
+  const copyText = async (text) => {
+    if (!text) return false;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // fall back
+    }
+
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.top = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return ok;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    if (!openNote?.shareId) return;
+    const ok = await copyText(`${window.location.origin}/share/${openNote.shareId}`);
+    if (!ok) return;
+    setCopiedShareId(openNote.shareId);
+    window.setTimeout(() => setCopiedShareId(""), 1400);
+  };
+
+  const handleShareAction = async () => {
+    if (!openNote) return;
+    if (!shareEnabled) return;
+
+    if (openNote.shareId) {
+      await handleCopyShareLink();
+      return;
+    }
+
+    setShareBusy(true);
+    try {
+      const shareId = await onShare(openNote);
+      if (!shareId) return;
+      const ok = await copyText(`${window.location.origin}/share/${shareId}`);
+      if (!ok) return;
+      setCopiedShareId(shareId);
+      window.setTimeout(() => setCopiedShareId(""), 1400);
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const handleUnshareAction = async () => {
+    if (!openNote?.shareId) return;
+    if (typeof onUnshare !== "function") return;
+    setShareBusy(true);
+    try {
+      await onUnshare(openNote);
+      setCopiedShareId("");
+    } finally {
+      setShareBusy(false);
+    }
+  };
 
   const NoteCard = ({ note }) => {
     const dueDateLabel = formatDateValue(note.dueDate, "MMM d, h:mm a");
@@ -301,6 +387,42 @@ const NoteList = ({
                       Delete forever
                     </button>
                   </>
+                ) : null}
+                {mode === "active" && shareEnabled ? (
+                  openNote?.shareId ? (
+                    <>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border border-[#0072F5]/30 text-[#0052CC] dark:text-[#5EA2EF] hover:bg-[#0072F5]/10 disabled:opacity-60 disabled:cursor-not-allowed"
+                        onClick={handleCopyShareLink}
+                        disabled={shareBusy}
+                        title={shareUrl}
+                      >
+                        <LinkIcon className="w-3.5 h-3.5" />
+                        {copiedShareId === openNote.shareId ? "Copied" : "Copy link"}
+                      </button>
+                      {typeof onUnshare === "function" ? (
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 text-xs rounded-lg border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-60 disabled:cursor-not-allowed"
+                          onClick={handleUnshareAction}
+                          disabled={shareBusy}
+                        >
+                          Unshare
+                        </button>
+                      ) : null}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border border-[#0072F5]/30 text-[#0052CC] dark:text-[#5EA2EF] hover:bg-[#0072F5]/10 disabled:opacity-60 disabled:cursor-not-allowed"
+                      onClick={handleShareAction}
+                      disabled={shareBusy}
+                    >
+                      <LinkIcon className="w-3.5 h-3.5" />
+                      {shareBusy ? "Sharing…" : "Share link"}
+                    </button>
+                  )
                 ) : null}
                 <button
                   type="button"

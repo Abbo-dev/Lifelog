@@ -28,6 +28,28 @@ service cloud.firestore {
       }
     }
 
+    match /publicNotes/{shareId} {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if isPremiumUser()
+        && request.resource.data.noteId is string
+        && get(/databases/$(database)/documents/notes/$(request.resource.data.noteId)).data.userId == request.auth.uid;
+
+      allow update: if isPremiumUser()
+        && resource.data.noteId == request.resource.data.noteId
+        && get(/databases/$(database)/documents/notes/$(resource.data.noteId)).data.userId == request.auth.uid;
+
+      allow delete: if isPremiumUser()
+        && (
+          !exists(/databases/$(database)/documents/publicNotes/$(shareId))
+          || (
+            resource.data.noteId is string
+            && get(/databases/$(database)/documents/notes/$(resource.data.noteId)).data.userId == request.auth.uid
+          )
+        );
+    }
+
     match /notes/{noteId} {
       allow create: if isPremiumUser() && request.resource.data.userId == request.auth.uid;
       allow read, delete: if isPremiumUser() && resource.data.userId == request.auth.uid;
