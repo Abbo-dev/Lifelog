@@ -2,7 +2,7 @@ import HomeModal from "./HomeModal";
 import ReactConfetti from "react-confetti";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Button, Input, Select, SelectItem } from "@heroui/react";
+import { Button, Input, Select, SelectItem, Skeleton } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import Search from "../assets/search.svg";
 import NoteList from "./NoteList";
@@ -1169,11 +1169,62 @@ function Home() {
     }
   }, [smartFolders, activeSmartFolderId]);
 
+  const NotesSkeleton = ({ viewMode: mode = "grid" }) => {
+    const skeletonCount = mode === "list" ? 5 : 6;
+    const gridClass =
+      mode === "grid"
+        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+        : "grid-cols-1";
+
+    return (
+      <div className={`grid gap-3 ${gridClass}`}>
+        {Array.from({ length: skeletonCount }).map((_, index) => (
+          <div
+            key={`note-skeleton-${index}`}
+            className="relative bg-[#eef3ff] dark:bg-slate-900/90 border border-[#d6e4ff]/80 dark:border-gray-800 rounded-2xl overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#0072F5]/40" />
+            <div className="p-4 space-y-3">
+              <Skeleton className="h-4 w-2/3 rounded-lg" />
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-full rounded-lg" />
+                <Skeleton className="h-3 w-5/6 rounded-lg" />
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-5 w-12 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <Skeleton className="h-3 w-24 rounded-lg" />
+                <Skeleton className="h-3 w-28 rounded-lg" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   if (planLoading) {
     return (
-      <div className="flex justify-center items-center z-50 fixed top-0 left-0 w-full h-full backdrop-blur-md bg-background">
-        <div className="w-full h-full flex justify-center items-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-500 dark:border-gray-300"></div>
+      <div
+        className="relative min-h-screen overflow-hidden text-slate-900 dark:text-gray-100"
+        style={{ background: "var(--app-bg)" }}
+      >
+        <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 py-10">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <Skeleton className="h-10 w-32 rounded-lg" />
+            <Skeleton className="h-10 w-full md:max-w-[600px] rounded-lg" />
+            <div className="flex items-center justify-end gap-2">
+              <Skeleton className="h-10 w-28 rounded-lg" />
+              <Skeleton className="h-10 w-28 rounded-lg" />
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <NotesSkeleton viewMode="grid" />
+          </div>
         </div>
       </div>
     );
@@ -1965,8 +2016,14 @@ function Home() {
           </motion.div>
         )}
 
-        {showTrash ? (
-          notesLoaded && trashedNotes.length === 0 ? (
+        {!notesLoaded ? (
+          <div
+            className={`w-full ${viewMode === "list" ? "max-w-[900px]" : ""}`}
+          >
+            <NotesSkeleton viewMode={showTrash ? "list" : viewMode} />
+          </div>
+        ) : showTrash ? (
+          trashedNotes.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1992,7 +2049,7 @@ function Home() {
               />
             </div>
           )
-        ) : notesLoaded && activeNotes.length === 0 ? (
+        ) : activeNotes.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

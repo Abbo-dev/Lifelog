@@ -1,4 +1,4 @@
-import { Button, Card, CardBody, Chip } from "@heroui/react";
+import { Button, Card, CardBody, Chip, Skeleton } from "@heroui/react";
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -28,9 +28,19 @@ const features = {
 function Pricing() {
   const { user, plan, isPremium, refreshPlan, planLoading } = useAuth();
   const navigate = useNavigate();
-  const checkoutUrl = import.meta.env.VITE_CHECKOUT_URL;
+  const checkoutUrlMonthly = import.meta.env.VITE_CHECKOUT_URL;
+  const checkoutUrlAnnual = import.meta.env.VITE_CHECKOUT_URL_ANNUAL;
   const [importing, setImporting] = useState(false);
   const [importStatus, setImportStatus] = useState("");
+  const [billingCycle, setBillingCycle] = useState("monthly");
+
+  const monthlyPrice = 4.99;
+  const annualPrice = 49.99;
+  const annualSavingsPercent = Math.max(
+    0,
+    Math.round(100 - (annualPrice / (monthlyPrice * 12)) * 100)
+  );
+  const annualEffectiveMonthly = (annualPrice / 12).toFixed(2);
 
   const emailLabel = useMemo(() => {
     const email = user?.email || "";
@@ -52,6 +62,13 @@ function Pricing() {
       return false;
     }
   }, [importedFlagKey]);
+
+  const selectedCheckoutUrl =
+    billingCycle === "annual" ? checkoutUrlAnnual : checkoutUrlMonthly;
+  const mailtoUpgradeUrl =
+    billingCycle === "annual"
+      ? "mailto:support@lifelog.app?subject=LifeLog%20Premium%20Annual"
+      : "mailto:support@lifelog.app?subject=LifeLog%20Premium%20Monthly";
 
   return (
     <div
@@ -78,7 +95,7 @@ function Pricing() {
         </motion.div>
 
         {user && (
-          <div className="mt-8 rounded-2xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="mt-8 rounded-2xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-4 flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left gap-3">
             <div className="text-sm text-slate-700 dark:text-white/80">
               Signed in as{" "}
               <span className="font-medium text-slate-900 dark:text-white">
@@ -86,18 +103,22 @@ function Pricing() {
               </span>
               <span className="mx-2 text-slate-400">•</span>
               Current plan{" "}
-              <Chip
-                size="sm"
-                className={
-                  isPremium
-                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-200"
-                    : "bg-slate-900/5 text-slate-700 dark:bg-white/10 dark:text-white/80"
-                }
-              >
-                {isPremium ? "Premium" : plan === "free" ? "Free" : plan}
-              </Chip>
+              {planLoading ? (
+                <Skeleton className="h-6 w-20 rounded-full inline-block align-middle" />
+              ) : (
+                <Chip
+                  size="sm"
+                  className={
+                    isPremium
+                      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-200"
+                      : "bg-slate-900/5 text-slate-700 dark:bg-white/10 dark:text-white/80"
+                  }
+                >
+                  {isPremium ? "Premium" : plan === "free" ? "Free" : plan}
+                </Chip>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-end">
               <Button
                 size="sm"
                 variant="flat"
@@ -117,6 +138,36 @@ function Pricing() {
             </div>
           </div>
         )}
+
+        <div className="mt-8 flex items-center justify-center">
+          <div className="inline-flex items-center rounded-full border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setBillingCycle("monthly")}
+              className={`px-4 py-2 text-xs font-semibold rounded-full transition-colors ${
+                billingCycle === "monthly"
+                  ? "bg-[#0072F5] text-white"
+                  : "text-slate-700 dark:text-white/80 hover:bg-white/70 dark:hover:bg-white/10"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingCycle("annual")}
+              className={`px-4 py-2 text-xs font-semibold rounded-full transition-colors flex items-center gap-2 ${
+                billingCycle === "annual"
+                  ? "bg-[#0072F5] text-white"
+                  : "text-slate-700 dark:text-white/80 hover:bg-white/70 dark:hover:bg-white/10"
+              }`}
+            >
+              Annual
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-200 border border-emerald-300/20">
+                Save {annualSavingsPercent}%
+              </span>
+            </button>
+          </div>
+        </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2">
           <Card className="bg-white/70 dark:bg-black/20 border border-white/10 backdrop-blur-xl">
@@ -161,8 +212,19 @@ function Pricing() {
                   <p className="text-sm uppercase tracking-[0.2em] text-white/70">
                     Premium
                   </p>
-                  <p className="text-3xl font-bold mt-1">$4.99</p>
-                  <p className="text-sm text-white/70">per month</p>
+                  <p className="text-3xl font-bold mt-1">
+                    {billingCycle === "annual"
+                      ? `$${annualPrice.toFixed(2)}`
+                      : `$${monthlyPrice.toFixed(2)}`}
+                  </p>
+                  <p className="text-sm text-white/70">
+                    {billingCycle === "annual" ? "per year" : "per month"}
+                  </p>
+                  {billingCycle === "annual" ? (
+                    <p className="text-xs text-white/70 mt-1">
+                      ${annualEffectiveMonthly}/mo billed yearly
+                    </p>
+                  ) : null}
                 </div>
                 {isPremium && (
                   <Chip
@@ -186,15 +248,24 @@ function Pricing() {
                 <Button
                   className="w-full bg-white text-slate-900 hover:bg-white/90"
                   onPress={() => {
-                    if (checkoutUrl) window.location.href = checkoutUrl;
-                    else window.location.href = "mailto:support@lifelog.app";
+                    if (selectedCheckoutUrl) window.location.href = selectedCheckoutUrl;
+                    else window.location.href = mailtoUpgradeUrl;
                   }}
                 >
-                  {checkoutUrl ? "Upgrade" : "Contact to upgrade"}
+                  {selectedCheckoutUrl
+                    ? billingCycle === "annual"
+                      ? "Upgrade (annual)"
+                      : "Upgrade (monthly)"
+                    : "Contact to upgrade"}
                 </Button>
                 <p className="text-xs text-white/65">
                   After upgrading, click “Refresh plan” to unlock premium sync.
                 </p>
+                {billingCycle === "annual" && !checkoutUrlAnnual ? (
+                  <p className="text-xs text-white/65">
+                    Annual checkout link not set yet — contact to get annual billing.
+                  </p>
+                ) : null}
               </div>
             </CardBody>
           </Card>
@@ -246,16 +317,23 @@ function Pricing() {
 
         <div className="mt-10 rounded-2xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-5 text-sm text-slate-700 dark:text-white/75">
           <p className="font-semibold text-slate-900 dark:text-white mb-2">
-            How premium works (right now)
+            How Premium works
           </p>
           <ul className="space-y-1">
-            <li>1) You purchase Premium (Stripe link or email for now).</li>
-            <li>
-              2) We mark your account as Premium in Firebase (temporary manual
-              step).
-            </li>
-            <li>3) You refresh your plan and syncing turns on.</li>
+            <li>1) Upgrade (monthly or annual).</li>
+            <li>2) Come back to the app.</li>
+            <li>3) Tap “Refresh plan” to unlock sync + premium features.</li>
           </ul>
+          <p className="mt-3 text-xs text-slate-500 dark:text-white/60">
+            If Premium doesn&apos;t unlock within a few minutes, contact{" "}
+            <a
+              className="text-[#0072F5] hover:underline"
+              href="mailto:support@lifelog.app"
+            >
+              support@lifelog.app
+            </a>
+            .
+          </p>
         </div>
       </div>
     </div>

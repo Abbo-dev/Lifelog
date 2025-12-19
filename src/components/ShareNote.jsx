@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Skeleton } from "@heroui/react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { sanitizeHtmlForPublicShare } from "../utils/sanitizeSharedHtml";
@@ -89,12 +90,17 @@ function ShareNote() {
         </div>
 
         {status === "loading" ? (
-          <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur p-6">
-            <div className="h-6 w-48 rounded bg-slate-200/70 dark:bg-white/10 animate-pulse" />
-            <div className="mt-4 space-y-2">
-              <div className="h-3 w-full rounded bg-slate-200/60 dark:bg-white/10 animate-pulse" />
-              <div className="h-3 w-5/6 rounded bg-slate-200/60 dark:bg-white/10 animate-pulse" />
-              <div className="h-3 w-2/3 rounded bg-slate-200/60 dark:bg-white/10 animate-pulse" />
+          <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur p-6 space-y-3">
+            <Skeleton className="h-7 w-56 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full rounded-lg" />
+              <Skeleton className="h-4 w-5/6 rounded-lg" />
+              <Skeleton className="h-4 w-2/3 rounded-lg" />
+            </div>
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-6 w-14 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-full" />
             </div>
           </div>
         ) : status === "not_found" ? (
@@ -162,4 +168,3 @@ function ShareNote() {
 }
 
 export default ShareNote;
-

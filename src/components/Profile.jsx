@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardBody } from "@heroui/card";
-import { Button, Avatar, Chip } from "@heroui/react";
+import { Button, Avatar, Chip, Skeleton } from "@heroui/react";
 import { auth, db, storage } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -157,6 +157,7 @@ function Profile() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [notes, setNotes] = useState([]);
+  const [notesLoaded, setNotesLoaded] = useState(false);
   const activeNotes = useMemo(
     () => notes.filter((note) => !note?.trashedAt),
     [notes]
@@ -222,24 +223,39 @@ function Profile() {
   useEffect(() => {
     if (!user?.uid) {
       setNotes([]);
+      setNotesLoaded(false);
       return undefined;
     }
-    if (planLoading) return undefined;
+    if (planLoading) {
+      setNotesLoaded(false);
+      return undefined;
+    }
+
+    setNotesLoaded(false);
 
     if (!isPremium) {
       setNotes(loadLocalNotes(user.uid));
+      setNotesLoaded(true);
       return undefined;
     }
 
     const notesRef = collection(db, "notes");
     const q = query(notesRef, where("userId", "==", user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const noteData = snapshot.docs.map((docItem) => ({
-        id: docItem.id,
-        ...docItem.data(),
-      }));
-      setNotes(noteData);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const noteData = snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        }));
+        setNotes(noteData);
+        setNotesLoaded(true);
+      },
+      (error) => {
+        console.error("Failed to load notes", error);
+        setNotesLoaded(true);
+      }
+    );
     return unsubscribe;
   }, [user?.uid, isPremium, planLoading]);
 
@@ -729,9 +745,13 @@ function Profile() {
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
                     {item.label}
                   </p>
-                  <p className="text-3xl font-semibold mt-2">
-                    {stats[item.key]}
-                  </p>
+                  {planLoading || !notesLoaded ? (
+                    <Skeleton className="h-9 w-20 rounded-lg mt-3" />
+                  ) : (
+                    <p className="text-3xl font-semibold mt-2">
+                      {stats[item.key]}
+                    </p>
+                  )}
                 </CardBody>
               </Card>
             </motion.div>

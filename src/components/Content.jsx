@@ -245,17 +245,23 @@ function Content() {
 
               <div className="glass-panel-soft rounded-2xl p-5 border border-white/10">
                 <div className="flex items-baseline justify-between gap-4">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
-                      Premium
-                    </p>
-                    <p className="text-2xl font-semibold text-white mt-1">
-                      $4.99<span className="text-sm font-normal text-white/70">/mo</span>
-                    </p>
-                  </div>
-                  <Link to="/pricing">
-                    <Button
-                      size="sm"
+	                  <div>
+	                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
+	                      Premium
+	                    </p>
+	                    <p className="text-2xl font-semibold text-white mt-1">
+	                      $4.99<span className="text-sm font-normal text-white/70">/mo</span>
+	                    </p>
+                      <p className="text-xs text-white/70 mt-1">
+                        or $49.99/yr{" "}
+                        <span className="text-emerald-300 font-semibold">
+                          Save 17%
+                        </span>
+                      </p>
+	                  </div>
+	                  <Link to="/pricing">
+	                    <Button
+	                      size="sm"
                       variant="flat"
                       className="glass-chip border border-white/20 text-white/90"
                     >
