@@ -7,6 +7,7 @@ import { auth } from "../firebase";
 import Calendar from "../assets/calendar.svg";
 import reord from "../assets/reorder.svg";
 import capture from "../assets/capture.svg";
+import PreviewScreenshot from "../assets/preview.png";
 
 const highlights = [
   {
@@ -67,6 +68,9 @@ const statCards = [
     progress: 93,
   },
 ];
+
+const SHOW_SCREENSHOT_PREVIEW = true;
+const PREVIEW_SCREENSHOT_SRC = PreviewScreenshot;
 
 const mockupTimeline = [
   {
@@ -244,10 +248,21 @@ function Content() {
               See how LifeLog keeps pins, filters, and reminders together.
             </p>
             <p className="text-sm text-slate-700 dark:text-white/70 max-w-2xl">
-              This mockup shows the dashboard snapshot: pinned notes, quick filters, insights, and upcoming reminders—all in one place.
+              This screenshot shows the dashboard snapshot: pinned notes, quick filters, insights, and upcoming reminders—all in one place.
             </p>
           </div>
-          <div className="mockup-window rounded-[28px] p-6 md:p-8 border border-white/15">
+          {SHOW_SCREENSHOT_PREVIEW ? (
+            <div className="mockup-window mockup-window--image mx-auto w-full max-w-[943px] rounded-[28px] border border-white/15 overflow-hidden">
+              <img
+                src={PREVIEW_SCREENSHOT_SRC}
+                alt="LifeLog dashboard preview"
+                className="block w-full h-auto"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          ) : (
+            <div className="mockup-window rounded-[28px] p-6 md:p-8 border border-white/15">
             <div className="flex items-center justify-between pb-5 border-b border-white/10 flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
@@ -400,6 +415,7 @@ function Content() {
               </div>
             </div>
           </div>
+          )}
         </motion.div>
 
         <motion.div

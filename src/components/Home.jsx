@@ -1,4 +1,4 @@
-﻿import HomeModal from "./HomeModal";
+import HomeModal from "./HomeModal";
 import ReactConfetti from "react-confetti";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -13,6 +13,12 @@ import {
   loadLocalNotes,
   upsertLocalNote,
 } from "../utils/localNotes";
+import {
+  hexToRgba,
+  isHexColor,
+  normalizeTagColorMap,
+  resolveTagColor,
+} from "../utils/tagColors";
 import {
   addDoc,
   collection,
@@ -51,6 +57,7 @@ function Home() {
   const [showSnapshot, setShowSnapshot] = useState(false);
   const [smartFolders, setSmartFolders] = useState([]);
   const [activeSmartFolderId, setActiveSmartFolderId] = useState("");
+  const [tagColors, setTagColors] = useState({});
   const [smartFolderDraft, setSmartFolderDraft] = useState({
     name: "",
     type: "tag",
@@ -63,6 +70,8 @@ function Home() {
   const currentUserId = user?.uid || "";
   const smartFoldersSeededRef = useRef(false);
   const hasSmartFolderSyncedRef = useRef(false);
+  const tagColorsSeededRef = useRef(false);
+  const hasTagColorsSyncedRef = useRef(false);
   const lastActiveLoadedRef = useRef(false);
   const sortOptions = [
     { value: "lastModified", label: "Last Modified" },
@@ -393,6 +402,14 @@ function Home() {
 
   const normalizeText = (value) => (value || "").toLowerCase();
 
+  const tagChipStyle = (tag) => {
+    const color = resolveTagColor(tag, tagColors);
+    return {
+      borderColor: color,
+      backgroundColor: hexToRgba(color, 0.14),
+    };
+  };
+
   const handleTagDragStart = (tag) => (event) => {
     event.dataTransfer.setData("text/plain", tag);
     event.dataTransfer.effectAllowed = "copy";
@@ -545,6 +562,34 @@ function Home() {
       );
 	    }
 	  };
+
+  const handleSetTagColor = (tag, color) => {
+    const cleanedTag = typeof tag === "string" ? tag.trim() : "";
+    const cleanedColor = typeof color === "string" ? color.trim() : "";
+    if (!cleanedTag) return;
+    if (!isHexColor(cleanedColor)) return;
+
+    setTagColors((prev) => ({ ...prev, [cleanedTag]: cleanedColor }));
+
+    if (currentUserId && isPremium) {
+      const tagRef = doc(
+        db,
+        "users",
+        currentUserId,
+        "tagColors",
+        encodeURIComponent(cleanedTag)
+      );
+      setDoc(
+        tagRef,
+        {
+          tag: cleanedTag,
+          color: cleanedColor,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      ).catch((err) => console.error("Failed to save tag color", err));
+    }
+  };
 
   const activeNotes = useMemo(
     () => notes.filter((note) => !note?.trashedAt),
@@ -809,6 +854,94 @@ function Home() {
   }, [smartFolders, currentUserId]);
 
   useEffect(() => {
+    hasTagColorsSyncedRef.current = false;
+    tagColorsSeededRef.current = false;
+
+    if (!currentUserId) {
+      setTagColors({});
+      return undefined;
+    }
+
+    const storageKey = `tagColors_${currentUserId}`;
+    let cachedMap = {};
+    const cached = localStorage.getItem(storageKey);
+    if (cached) {
+      try {
+        cachedMap = normalizeTagColorMap(JSON.parse(cached));
+      } catch (err) {
+        console.error("Failed to parse cached tag colors", err);
+      }
+    }
+    setTagColors(cachedMap);
+
+    if (!isPremium) return undefined;
+
+    const colorsRef = collection(db, "users", currentUserId, "tagColors");
+    const unsubscribe = onSnapshot(
+      colorsRef,
+      (snapshot) => {
+        const next = {};
+        snapshot.docs.forEach((docItem) => {
+          const data = docItem.data();
+          const tag = typeof data?.tag === "string" ? data.tag : "";
+          const color = typeof data?.color === "string" ? data.color : "";
+          if (tag && isHexColor(color)) {
+            next[tag] = color.trim();
+          }
+        });
+
+        if (
+          !hasTagColorsSyncedRef.current &&
+          snapshot.empty &&
+          Object.keys(cachedMap).length > 0 &&
+          !tagColorsSeededRef.current
+        ) {
+          tagColorsSeededRef.current = true;
+          Object.entries(cachedMap).forEach(([tag, color]) => {
+            const tagRef = doc(
+              db,
+              "users",
+              currentUserId,
+              "tagColors",
+              encodeURIComponent(tag)
+            );
+            setDoc(
+              tagRef,
+              {
+                tag,
+                color,
+                updatedAt: serverTimestamp(),
+              },
+              { merge: true }
+            ).catch((err) => console.error("Failed to seed tag color", err));
+          });
+          setTagColors(cachedMap);
+          hasTagColorsSyncedRef.current = true;
+          return;
+        }
+
+        setTagColors(next);
+        hasTagColorsSyncedRef.current = true;
+      },
+      (err) => console.error("Failed to load tag colors", err)
+    );
+
+    return unsubscribe;
+  }, [currentUserId, isPremium]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    try {
+      localStorage.setItem(
+        `tagColors_${currentUserId}`,
+        JSON.stringify(tagColors)
+      );
+    } catch {
+      // ignore storage errors (private mode / blocked storage)
+    }
+  }, [tagColors, currentUserId]);
+
+  useEffect(() => {
     const key = currentUserId
       ? `activeSmartFolder_${currentUserId}`
       : "activeSmartFolder_anonymous";
@@ -977,6 +1110,8 @@ function Home() {
                     onCloseModal={handleCloseModal}
                     onSaveNote={handleSaveNote}
                     existingTags={allTags}
+                    tagColors={tagColors}
+                    onSetTagColor={handleSetTagColor}
                   />
                 </div>
               )}
@@ -1058,7 +1193,15 @@ function Home() {
                     </SelectItem>
                     {allTags.map((tag) => (
                       <SelectItem key={tag} value={tag}>
-                        {tag}
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{
+                              backgroundColor: resolveTagColor(tag, tagColors),
+                            }}
+                          />
+                          <span>{tag}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </Select>
@@ -1452,7 +1595,8 @@ function Home() {
                       key={tag}
                       draggable
                       onDragStart={handleTagDragStart(tag)}
-                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/80 dark:bg-[#2a2a2a] border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 shadow-sm hover:-translate-y-0.5 transition-all"
+                      style={tagChipStyle(tag)}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium border text-slate-700 dark:text-gray-200 shadow-sm hover:-translate-y-0.5 transition-all"
                     >
                       {tag}
                     </button>
@@ -1596,7 +1740,8 @@ function Home() {
                               {nextDue.tags.slice(0, 3).map((tag) => (
                                 <span
                                   key={tag}
-                                  className="px-2 py-0.5 rounded-full text-[11px] border border-white/15 bg-white/5 text-white/80"
+                                  style={tagChipStyle(tag)}
+                                  className="px-2 py-0.5 rounded-full text-[11px] border text-white/80"
                                 >
                                   #{tag}
                                 </span>
@@ -1639,6 +1784,7 @@ function Home() {
                 notes={filteredAndSortedNotes}
                 onRestore={handleRestore}
                 onDeleteForever={handleDeleteForever}
+                tagColors={tagColors}
                 viewMode="list"
               />
             </div>
@@ -1701,6 +1847,7 @@ function Home() {
 	              onEdit={handleEdit}
 	              onDelete={handleDelete}
 	              onPin={handlePin}
+                  tagColors={tagColors}
 	              viewMode={viewMode}
 	            />
 	          </div>

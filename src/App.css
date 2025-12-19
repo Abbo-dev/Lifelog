@@ -67,6 +67,10 @@ html.dark {
   transform: rotate(-8deg);
 }
 
+.mockup-window--image::after {
+  content: none;
+}
+
 .glow-icon {
   position: relative;
   border-radius: 18px;

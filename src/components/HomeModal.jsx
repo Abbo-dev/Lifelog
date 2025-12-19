@@ -4,7 +4,18 @@ import { MapPinIcon as PinIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import RichTextEditor from "./RichTextEditor";
 import { sanitizeHtmlLinks } from "../utils/linkUtils";
+import { hexToRgba, resolveTagColor } from "../utils/tagColors";
 
+const NOTE_COLORS = [
+  "#0072F5",
+  "#5EA2EF",
+  "#00C48C",
+  "#F5A524",
+  "#F31260",
+  "#9353D3",
+  "#1B2333",
+  "#ffffff",
+];
 
 function HomeModal({
   noteToEdit,
@@ -12,6 +23,8 @@ function HomeModal({
   showHomeModal,
   onSaveNote,
   existingTags: existingTagsProp = [],
+  tagColors = {},
+  onSetTagColor,
 }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -20,6 +33,7 @@ function HomeModal({
   const [color, setColor] = useState("#ffffff");
   const [isPinned, setIsPinned] = useState(false);
   const [newTag, setNewTag] = useState("");
+  const [newTagColor, setNewTagColor] = useState("#5EA2EF");
   const [tagSuggestions, setTagSuggestions] = useState([]);
   const hasContent = (html) => {
     if (!html) return false;
@@ -136,6 +150,9 @@ function HomeModal({
       setTagSuggestions((prev) =>
         prev.includes(trimmedTag) ? prev : [...prev, trimmedTag]
       );
+      if (typeof onSetTagColor === "function") {
+        onSetTagColor(trimmedTag, newTagColor);
+      }
       setNewTag("");
     }
   };
@@ -215,20 +232,39 @@ function HomeModal({
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {tagSuggestions.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => handleToggleTag(tag)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                        tags.includes(tag)
-                          ? "bg-[#0072F5] text-white"
-                          : "bg-white/80 text-slate-700 border border-slate-200 hover:bg-white dark:bg-[#2a2a2a] dark:text-gray-300 dark:border-gray-700 dark:hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
+                  {tagSuggestions.map((tag) => {
+                    const selected = tags.includes(tag);
+                    const tagColor = resolveTagColor(tag, tagColors);
+                    return (
+                      <div key={tag} className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleTag(tag)}
+                          style={{
+                            borderColor: tagColor,
+                            backgroundColor: selected
+                              ? tagColor
+                              : hexToRgba(tagColor, 0.12),
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                            selected
+                              ? "text-white"
+                              : "text-slate-700 dark:text-gray-200"
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                        <input
+                          type="color"
+                          value={tagColor}
+                          onChange={(e) => onSetTagColor?.(tag, e.target.value)}
+                          disabled={typeof onSetTagColor !== "function"}
+                          className="h-8 w-8 cursor-pointer rounded-md border border-slate-200 dark:border-gray-700 bg-transparent p-0"
+                          aria-label={`Color for tag ${tag}`}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="flex gap-2">
@@ -239,6 +275,13 @@ function HomeModal({
                     onKeyPress={handleKeyPress}
                     placeholder="Add tag"
                     className="flex-1 bg-white/80 dark:bg-[#2a2a2a] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors"
+                  />
+                  <input
+                    type="color"
+                    value={newTagColor}
+                    onChange={(e) => setNewTagColor(e.target.value)}
+                    className="h-10 w-10 cursor-pointer rounded-md border border-slate-200 dark:border-gray-700 bg-transparent p-0"
+                    aria-label="New tag color"
                   />
                   <button
                     type="button"
@@ -275,6 +318,46 @@ function HomeModal({
                     Clear date
                   </button>
                 </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-500 dark:text-gray-400 mb-2">
+                    Note color
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {NOTE_COLORS.map((swatch) => {
+                      const active =
+                        typeof color === "string" &&
+                        color.toLowerCase() === swatch.toLowerCase();
+
+                      return (
+                        <button
+                          key={swatch}
+                          type="button"
+                          onClick={() => setColor(swatch)}
+                          className={`h-8 w-8 rounded-full border border-slate-200 dark:border-gray-700 transition-transform ${
+                            active
+                              ? "ring-2 ring-[#0072F5] scale-[1.05]"
+                              : "hover:scale-[1.05]"
+                          }`}
+                          style={{ backgroundColor: swatch }}
+                          aria-label={`Set note color to ${swatch}`}
+                        />
+                      );
+                    })}
+                    <div className="flex items-center gap-2 pl-2">
+                      <input
+                        type="color"
+                        value={color}
+                        onChange={(e) => setColor(e.target.value)}
+                        className="h-9 w-9 cursor-pointer rounded-md border border-slate-200 dark:border-gray-700 bg-transparent p-0"
+                        aria-label="Custom note color"
+                      />
+                      <span className="text-xs text-slate-500 dark:text-gray-400">
+                        {color?.toUpperCase?.() || ""}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-gray-800">

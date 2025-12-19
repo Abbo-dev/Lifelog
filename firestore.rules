@@ -22,6 +22,10 @@ service cloud.firestore {
       match /smartFolders/{folderId} {
         allow read, write: if isOwner(userId) && isPremiumUser();
       }
+
+      match /tagColors/{tagId} {
+        allow read, write: if isOwner(userId) && isPremiumUser();
+      }
     }
 
     match /notes/{noteId} {

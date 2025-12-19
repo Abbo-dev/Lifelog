@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { 
+import {
   ArrowUturnLeftIcon as RestoreIcon,
   MapPinIcon as PinIcon,
   CalendarIcon,
@@ -10,6 +10,7 @@ import {
   ClockIcon,
 } from "@heroicons/react/24/outline";
 import { sanitizeHtmlLinks } from "../utils/linkUtils";
+import { hexToRgba, resolveTagColor } from "../utils/tagColors";
 
 const NoteList = ({
   notes,
@@ -18,6 +19,7 @@ const NoteList = ({
   onPin,
   onRestore,
   onDeleteForever,
+  tagColors = {},
   viewMode = "grid",
   mode = "active",
 }) => {
@@ -171,14 +173,21 @@ const NoteList = ({
           </div>
 
           <div className="flex flex-wrap gap-1 mb-2">
-            {note.tags?.map((tag) => (
-              <span
-                key={tag}
-                className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-[#2a2a2a] dark:text-gray-300 rounded-full text-[11px]"
-              >
-                {tag}
-              </span>
-            ))}
+            {note.tags?.map((tag) => {
+              const tagColor = resolveTagColor(tag, tagColors);
+              return (
+                <span
+                  key={tag}
+                  style={{
+                    borderColor: tagColor,
+                    backgroundColor: hexToRgba(tagColor, 0.14),
+                  }}
+                  className="px-2 py-0.5 rounded-full text-[11px] border text-slate-700 dark:text-gray-200"
+                >
+                  {tag}
+                </span>
+              );
+            })}
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-gray-500">
@@ -233,14 +242,21 @@ const NoteList = ({
                   {openNote.title || "Untitled note"}
                 </h3>
                 <div className="text-[11px] text-slate-500 dark:text-gray-400 flex flex-wrap gap-2">
-                  {openNote.tags?.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-0.5 rounded-full border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#111827] text-slate-600 dark:text-gray-300"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
+                  {openNote.tags?.map((tag) => {
+                    const tagColor = resolveTagColor(tag, tagColors);
+                    return (
+                      <span
+                        key={tag}
+                        style={{
+                          borderColor: tagColor,
+                          backgroundColor: hexToRgba(tagColor, 0.14),
+                        }}
+                        className="px-2 py-0.5 rounded-full border text-slate-600 dark:text-gray-200"
+                      >
+                        #{tag}
+                      </span>
+                    );
+                  })}
                   {openNoteDueLabel && (
                     <span className="flex items-center gap-1">
                       <CalendarIcon className="w-3 h-3" />

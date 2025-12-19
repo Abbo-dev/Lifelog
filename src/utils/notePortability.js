@@ -127,6 +127,14 @@ const nodeToMarkdown = (node, ctx) => {
       const label = childrenMarkdown().trim() || href;
       return href ? `[${label}](${href})` : label;
     }
+    case "img": {
+      const src = element.getAttribute("src") || "";
+      if (!src) return "";
+      const alt = element.getAttribute("alt") || "";
+      const title = element.getAttribute("title") || "";
+      const titlePart = title ? ` "${escapeMarkdown(title)}"` : "";
+      return `![${escapeMarkdown(alt)}](${src}${titlePart})`;
+    }
     case "h1":
     case "h2":
     case "h3":
@@ -220,9 +228,13 @@ export const htmlToMarkdown = (html = "") => {
 const inlineMarkdownToHtml = (text) => {
   const escaped = escapeHtml(text);
   const withCode = escaped.replace(/`([^`]+)`/g, "<code>$1</code>");
-  const withLinks = withCode.replace(
+  const withImages = withCode.replace(
+    /!\[([^\]]*)\]\(([^)]+)\)/g,
+    (_match, alt, src) => `<img alt="${alt}" src="${src}" />`
+  );
+  const withLinks = withImages.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    (_match, label, href) => `<a href="${escapeHtml(href)}">${label}</a>`
+    (_match, label, href) => `<a href="${href}">${label}</a>`
   );
   const withBold = withLinks.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   const withItalic = withBold.replace(/\*([^*]+)\*/g, "<em>$1</em>");
@@ -402,4 +414,3 @@ export const parseNotesMarkdownImport = (markdown, { fallbackTitle } = {}) => {
 
   return { isLifeLogExport: true, notes };
 };
-

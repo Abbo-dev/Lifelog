@@ -11,6 +11,7 @@ import { Button } from '@heroui/react';
 import { useState, useEffect } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { ensureProtocol } from '../utils/linkUtils';
+import ImageNode from '../extensions/ImageNode';
 
 const MenuBar = ({ editor }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -36,7 +37,42 @@ const MenuBar = ({ editor }) => {
     if (!url) return;
 
     const href = ensureProtocol(url);
+    if (!href) {
+      window.alert('Please enter a valid URL.');
+      return;
+    }
     editor.chain().focus().setLink({ href }).run();
+  };
+
+  const normalizeImageSrc = (value) => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('/')) return trimmed;
+
+    const candidate = trimmed.includes('://')
+      ? trimmed
+      : `https://${trimmed.replace(/^\/+/, '')}`;
+
+    try {
+      const url = new URL(candidate);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+      return url.toString();
+    } catch {
+      return '';
+    }
+  };
+
+  const addImage = () => {
+    const raw = window.prompt('Enter image URL');
+    if (!raw) return;
+
+    const src = normalizeImageSrc(raw);
+    if (!src) {
+      window.alert('Please enter a valid http(s) image URL.');
+      return;
+    }
+
+    editor.chain().focus().setImage({ src }).run();
   };
 
   return (
@@ -121,6 +157,9 @@ const MenuBar = ({ editor }) => {
       >
         🔗 Link
       </Button>
+      <Button size="sm" variant="light" onPress={addImage}>
+        🖼 Image
+      </Button>
       <div className="relative">
         <Button
           size="sm"
@@ -159,6 +198,7 @@ const RichTextEditor = ({ content, onChange }) => {
           rel: 'noopener noreferrer',
         },
       }),
+      ImageNode,
       Placeholder.configure({
         placeholder: 'What\'s on your mind?',
       }),
