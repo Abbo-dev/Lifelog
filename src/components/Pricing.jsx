@@ -8,10 +8,10 @@ import { loadLocalNotes } from "../utils/localNotes";
 
 const features = {
   free: [
-    "Local-only notes (this device)",
-    "Rich text editor (formatting + links)",
-    "Tags + custom tag colors",
-    "Due dates, pinning, and dashboard",
+    "Local notes on one device",
+    "Rich editor (formatting + links)",
+    "Tags + custom colors",
+    "Pins, due dates, and dashboard",
     "Smart folders + fast search (Ctrl/Cmd+K)",
     "Starter templates (daily log, meeting notes)",
   ],
@@ -19,7 +19,7 @@ const features = {
     "Cloud sync across devices",
     "Real-time updates + offline cache",
     "Shareable read-only note links",
-    "Image uploads (Firebase Storage)",
+    "Image uploads + fast previews",
     "Sync smart folders + tag colors",
     "Import local notes to cloud",
   ],
@@ -179,7 +179,7 @@ function Pricing() {
                   </p>
                   <p className="text-3xl font-bold mt-1">$0</p>
                   <p className="text-sm text-slate-600 dark:text-white/70">
-                    Great for one device.
+                    Perfect for one device.
                   </p>
                 </div>
                 {!isPremium && (
@@ -200,7 +200,7 @@ function Pricing() {
                 ))}
               </ul>
               <p className="text-xs text-slate-500 dark:text-white/60">
-                Notes are stored in your browser on this device only.
+                Your notes stay on this device (no cloud sync on Free).
               </p>
             </CardBody>
           </Card>
@@ -315,21 +315,70 @@ function Pricing() {
           </div>
         )}
 
-        <div className="mt-10 rounded-2xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-5 text-sm text-slate-700 dark:text-white/75">
-          <p className="font-semibold text-slate-900 dark:text-white mb-2">
-            How Premium works
-          </p>
-          <ul className="space-y-1">
-            <li>1) Upgrade (monthly or annual).</li>
-            <li>2) Come back to the app.</li>
-            <li>3) Tap “Refresh plan” to unlock sync + premium features.</li>
-          </ul>
-          <p className="mt-3 text-xs text-slate-500 dark:text-white/60">
-            If Premium doesn&apos;t unlock within a few minutes, contact{" "}
-            <a
-              className="text-[#0072F5] hover:underline"
-              href="mailto:support@lifelog.app"
-            >
+        <div className="mt-10 rounded-2xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-6">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              How Premium works
+            </p>
+            <span className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
+              3 steps
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/15 text-[#0072F5] font-semibold">
+                  1
+                </span>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Upgrade
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-white/70">
+                    Choose monthly or annual and complete checkout.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/15 text-[#0072F5] font-semibold">
+                  2
+                </span>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Come back
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-white/70">
+                    Return to LifeLog after the payment finishes.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/15 text-[#0072F5] font-semibold">
+                  3
+                </span>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Refresh
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-white/70">
+                    Tap “Refresh plan” to unlock sync + Premium features.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="mt-4 text-xs text-slate-500 dark:text-white/60">
+            If Premium doesn&apos;t unlock within a few minutes, try “Refresh plan”
+            again or contact{" "}
+            <a className="text-[#0072F5] hover:underline" href="mailto:support@lifelog.app">
               support@lifelog.app
             </a>
             .

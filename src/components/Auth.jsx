@@ -124,7 +124,9 @@ export default function Auth() {
         );
         const trimmedName = username.trim();
         if (trimmedName) {
-          await updateProfile(userCredential.user, { displayName: trimmedName });
+          await updateProfile(userCredential.user, {
+            displayName: trimmedName,
+          });
         }
         navigate("/home");
         return;
@@ -146,12 +148,13 @@ export default function Auth() {
     : "Sign in to your account to continue.";
 
   const authInputClassNames = {
-    label: "mb-3",
+    label: "mb-3 text-slate-700 dark:text-white/70 font-medium",
+    input: "text-slate-900 dark:text-white",
   };
 
   return (
     <div className="w-full flex justify-center px-4 pt-16 pb-10">
-      <div className="w-full max-w-5xl overflow-hidden rounded-[28px] shadow-[0_35px_90px_rgba(0,0,0,0.35)] bg-white/95 dark:bg-[#071a33]">
+      <div className="w-full max-w-5xl overflow-hidden rounded-[28px] shadow-[0_35px_90px_rgba(0,0,0,0.35)] bg-white/95 dark:bg-[#0b1a33]">
         <div className="grid grid-cols-1 md:grid-cols-2">
           <section className="relative overflow-hidden px-8 py-10 md:px-10 md:py-12 text-white bg-gradient-to-br from-[#0072F5] via-[#5EA2EF] to-[#9353D3]">
             <div
@@ -202,12 +205,12 @@ export default function Auth() {
             >
               <path
                 d="M0,48 C160,116 310,0 470,56 C590,98 690,92 800,24 L800,120 L0,120 Z"
-                className="fill-white/95 dark:fill-[#071a33]"
+                className="fill-white/95 dark:fill-[#0b1a33]"
               />
             </svg>
           </section>
 
-          <section className="relative px-8 py-10 md:px-12 md:py-12 bg-white/95 dark:bg-[#071a33] text-slate-900 dark:text-white">
+          <section className="relative px-8 py-10 md:px-12 md:py-12 bg-white/95 dark:bg-[#0b1a33] text-slate-900 dark:text-white">
             <div className="hidden md:flex absolute right-6 top-6">
               <SwitchTheme />
             </div>
@@ -250,6 +253,7 @@ export default function Auth() {
                   <Input
                     isRequired
                     variant="underlined"
+                    color="primary"
                     label="Username"
                     labelPlacement="outside"
                     placeholder="Your name"
@@ -258,7 +262,11 @@ export default function Auth() {
                     onChange={(e) => setUsername(e.target.value)}
                     classNames={authInputClassNames}
                     endContent={
-                      <Image src={UserIcon} alt="" className="w-6 h-6 opacity-70" />
+                      <Image
+                        src={UserIcon}
+                        alt=""
+                        className="w-6 h-6 opacity-70"
+                      />
                     }
                   />
                 )}
@@ -266,6 +274,7 @@ export default function Auth() {
                 <Input
                   isRequired
                   variant="underlined"
+                  color="primary"
                   label="Email Address"
                   labelPlacement="outside"
                   placeholder="you@example.com"
@@ -276,13 +285,18 @@ export default function Auth() {
                   onChange={(e) => setEmail(e.target.value)}
                   classNames={authInputClassNames}
                   endContent={
-                    <Image src={EmailIcon} alt="" className="w-6 h-6 opacity-70" />
+                    <Image
+                      src={EmailIcon}
+                      alt=""
+                      className="w-6 h-6 opacity-70"
+                    />
                   }
                 />
 
                 <Input
                   isRequired
                   variant="underlined"
+                  color="primary"
                   label="Password"
                   labelPlacement="outside"
                   placeholder="••••••••"
@@ -297,7 +311,9 @@ export default function Auth() {
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
                       className="cursor-pointer flex items-center"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       <Image
                         src={showPassword ? EyeOff : Eye}
@@ -312,6 +328,7 @@ export default function Auth() {
                   {!isSignup ? (
                     <Checkbox
                       size="sm"
+                      color="primary"
                       isSelected={rememberMe}
                       onValueChange={setRememberMe}
                       className="text-xs text-slate-600 dark:text-white/70"
@@ -364,7 +381,9 @@ export default function Auth() {
                     type="button"
                     variant="flat"
                     isDisabled={loading}
-                    onPress={() => handleProviderSignIn(new GoogleAuthProvider())}
+                    onPress={() =>
+                      handleProviderSignIn(new GoogleAuthProvider())
+                    }
                     className="h-12 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10"
                     aria-label="Continue with Google"
                   >
@@ -374,7 +393,9 @@ export default function Auth() {
                     type="button"
                     variant="flat"
                     isDisabled={loading}
-                    onPress={() => handleProviderSignIn(new TwitterAuthProvider())}
+                    onPress={() =>
+                      handleProviderSignIn(new TwitterAuthProvider())
+                    }
                     className="h-12 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10"
                     aria-label="Continue with X"
                   >
@@ -384,7 +405,9 @@ export default function Auth() {
                     type="button"
                     variant="flat"
                     isDisabled={loading}
-                    onPress={() => handleProviderSignIn(new FacebookAuthProvider())}
+                    onPress={() =>
+                      handleProviderSignIn(new FacebookAuthProvider())
+                    }
                     className="h-12 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10"
                     aria-label="Continue with Facebook"
                   >

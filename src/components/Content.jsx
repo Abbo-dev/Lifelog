@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Image } from "@heroui/react";
+import { Button, Card, CardBody, Chip, Image } from "@heroui/react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { auth } from "../firebase";
@@ -29,17 +29,17 @@ const highlights = [
 
 const pricingTiers = {
   free: [
-    "Local-only notes (this device)",
-    "Rich text editor (formatting + links)",
-    "Tags + custom tag colors",
-    "Due dates, pinning, and dashboard",
+    "Local notes on one device",
+    "Rich editor (formatting + links)",
+    "Tags + custom colors",
+    "Pins, due dates, and dashboard",
     "Smart folders + fast search",
   ],
   premium: [
     "Cloud sync across devices",
     "Real-time updates + offline cache",
     "Shareable read-only note links",
-    "Image uploads (Firebase Storage)",
+    "Image uploads + fast previews",
     "Sync smart folders + tag colors",
   ],
 };
@@ -215,72 +215,108 @@ function Content() {
           transition={{ duration: 0.55, ease: "easeOut" }}
           className="mt-16"
         >
-          <div className="glass-panel rounded-3xl p-8 border border-white/15">
+          <div className="rounded-3xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
             <div className="text-center space-y-2">
-              <p className="text-[11px] uppercase tracking-[0.25em] text-white/70">
+              <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/70">
                 Pricing
               </p>
-              <h2 className="text-2xl md:text-3xl font-semibold text-white">
+              <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white">
                 Free forever. Upgrade for sync.
               </h2>
-              <p className="text-sm md:text-base text-white/80 max-w-2xl mx-auto">
+              <p className="text-sm md:text-base text-slate-700 dark:text-white/75 max-w-2xl mx-auto">
                 Start free on one device, or go Premium for cloud sync and backups.
               </p>
             </div>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-2 text-left">
-              <div className="glass-panel-soft rounded-2xl p-5 border border-white/10">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
-                  Free
-                </p>
-                <ul className="mt-3 space-y-2 text-sm text-white/80">
-                  {pricingTiers.free.map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#5EA2EF]" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            <div className="mt-8 grid gap-6 md:grid-cols-2">
+              <Card className="bg-white/70 dark:bg-black/20 border border-white/10 backdrop-blur-xl">
+                <CardBody className="p-6 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
+                        Free
+                      </p>
+                      <p className="text-3xl font-bold mt-1 text-slate-900 dark:text-white">
+                        $0
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-white/70">
+                        Perfect for one device.
+                      </p>
+                    </div>
+                    <Chip
+                      size="sm"
+                      className="bg-slate-900/5 text-slate-700 dark:bg-white/10 dark:text-white/80"
+                    >
+                      Starter
+                    </Chip>
+                  </div>
 
-              <div className="glass-panel-soft rounded-2xl p-5 border border-white/10">
-                <div className="flex items-baseline justify-between gap-4">
-	                  <div>
-	                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
-	                      Premium
-	                    </p>
-	                    <p className="text-2xl font-semibold text-white mt-1">
-	                      $4.99<span className="text-sm font-normal text-white/70">/mo</span>
-	                    </p>
+                  <ul className="space-y-2 text-sm text-slate-700 dark:text-white/75">
+                    {pricingTiers.free.map((item) => (
+                      <li key={item} className="flex items-start gap-2">
+                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#5EA2EF]" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <p className="text-xs text-slate-500 dark:text-white/60">
+                    Your notes stay on this device (no cloud sync).
+                  </p>
+                </CardBody>
+              </Card>
+
+              <Card className="bg-[#0b1a33]/95 border border-[#5EA2EF]/30 text-white shadow-[0_25px_70px_rgba(0,114,245,0.25)]">
+                <CardBody className="p-6 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.2em] text-white/70">
+                        Premium
+                      </p>
+                      <p className="text-3xl font-bold mt-1">
+                        $4.99
+                        <span className="text-sm font-normal text-white/70">/mo</span>
+                      </p>
                       <p className="text-xs text-white/70 mt-1">
                         or $49.99/yr{" "}
                         <span className="text-emerald-300 font-semibold">
                           Save 17%
                         </span>
                       </p>
-	                  </div>
-	                  <Link to="/pricing">
-	                    <Button
-	                      size="sm"
-                      variant="flat"
-                      className="glass-chip border border-white/20 text-white/90"
+                    </div>
+                    <Chip
+                      size="sm"
+                      className="bg-emerald-400/15 text-emerald-100 border border-emerald-300/20"
                     >
-                      Details
-                    </Button>
-                  </Link>
-                </div>
-                <ul className="mt-3 space-y-2 text-sm text-white/80">
-                  {pricingTiers.premium.map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                      Best value
+                    </Chip>
+                  </div>
+
+                  <ul className="space-y-2 text-sm text-white/80">
+                    {pricingTiers.premium.map((item) => (
+                      <li key={item} className="flex items-start gap-2">
+                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="pt-2">
+                    <Link to="/pricing">
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        className="w-full border border-white/15 bg-white/5 text-white hover:bg-white/10"
+                      >
+                        View details
+                      </Button>
+                    </Link>
+                  </div>
+                </CardBody>
+              </Card>
             </div>
 
-            <div className="mt-7 flex items-center justify-center gap-3 flex-wrap">
+            <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
               <Link to={primaryCta.to}>
                 <Button
                   color="primary"
@@ -292,7 +328,7 @@ function Content() {
               <Link to="/pricing">
                 <Button
                   variant="flat"
-                  className="px-5 glass-chip border border-white/20 text-white/90"
+                  className="px-5 glass-chip border border-white/20 text-slate-900 dark:text-white"
                 >
                   See full pricing
                 </Button>
