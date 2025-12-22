@@ -680,7 +680,7 @@ function Profile() {
           <p className="text-lg text-slate-700 dark:text-gray-200">
             Please sign in to view your profile.
           </p>
-          <Button onPress={() => navigate("/signin")}>Go to Sign In</Button>
+          <Button onPress={() => navigate("/auth?mode=signin")}>Go to Sign In</Button>
         </div>
       </div>
     );

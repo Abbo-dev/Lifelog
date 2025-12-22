@@ -407,12 +407,12 @@ function Home() {
   }, []);
 
   const handleSignIn = () => {
-    navigate("/signin");
+    navigate("/auth?mode=signin");
     setShowCard(false);
   };
 
   const handleSignUp = () => {
-    navigate("/signup");
+    navigate("/auth?mode=signup");
     setShowCard(false);
   };
 

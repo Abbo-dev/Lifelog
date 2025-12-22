@@ -86,10 +86,10 @@ function PasswordForget() {
                 <div className="mt-1">
                   <p className="text-center text-sm text-gray-500 -mt-4 pb-6 ">
                     Don't have an account?
-                    <a href="/signup" className="text-blue-500 hover:underline">
+                    <Link to="/auth?mode=signup" className="text-blue-500 hover:underline">
                       {" "}
                       Create one
-                    </a>
+                    </Link>
                   </p>
                 </div>
               )}

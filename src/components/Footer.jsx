@@ -16,14 +16,34 @@ const prefersReducedMotion = () => {
 const Footer = () => {
   const { pathname } = useLocation();
 
-  const handleSameRouteScroll = (to) => (event) => {
-    if (pathname !== to) return;
-    event.preventDefault();
+  const scrollToTop = () => {
+    if (typeof window === "undefined") return;
     window.scrollTo({
       top: 0,
       left: 0,
       behavior: prefersReducedMotion() ? "auto" : "smooth",
     });
+  };
+
+  const handleFooterNavClick = (to) => (event) => {
+    const isNonPrimaryClick =
+      typeof event.button === "number" && event.button !== 0;
+    const isModifiedClick =
+      event.metaKey || event.altKey || event.ctrlKey || event.shiftKey;
+
+    if (
+      event.defaultPrevented ||
+      isNonPrimaryClick ||
+      isModifiedClick
+    ) {
+      return;
+    }
+
+    if (pathname === to) {
+      event.preventDefault();
+    }
+
+    scrollToTop();
   };
 
   return (
@@ -69,35 +89,35 @@ const Footer = () => {
                 <Link
                   to="/"
                   className="hover:text-[#5EA2EF] transition-colors"
-                  onClick={handleSameRouteScroll("/")}
+                  onClick={handleFooterNavClick("/")}
                 >
                   Home
                 </Link>
                 <Link
                   to="/home"
                   className="hover:text-[#5EA2EF] transition-colors"
-                  onClick={handleSameRouteScroll("/home")}
+                  onClick={handleFooterNavClick("/home")}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/profile"
                   className="hover:text-[#5EA2EF] transition-colors"
-                  onClick={handleSameRouteScroll("/profile")}
+                  onClick={handleFooterNavClick("/profile")}
                 >
                   Profile
                 </Link>
                 <Link
-                  to="/signup"
+                  to="/auth?mode=signup"
                   className="hover:text-[#5EA2EF] transition-colors"
-                  onClick={handleSameRouteScroll("/signup")}
+                  onClick={handleFooterNavClick("/auth?mode=signup")}
                 >
                   Get started
                 </Link>
                 <Link
                   to="/pricing"
                   className="hover:text-[#5EA2EF] transition-colors"
-                  onClick={handleSameRouteScroll("/pricing")}
+                  onClick={handleFooterNavClick("/pricing")}
                 >
                   Pricing
                 </Link>
@@ -118,14 +138,14 @@ const Footer = () => {
                 <Link
                   to="/terms"
                   className="hover:text-[#5EA2EF] transition-colors"
-                  onClick={handleSameRouteScroll("/terms")}
+                  onClick={handleFooterNavClick("/terms")}
                 >
                   Terms
                 </Link>
                 <Link
                   to="/privacy"
                   className="hover:text-[#5EA2EF] transition-colors"
-                  onClick={handleSameRouteScroll("/privacy")}
+                  onClick={handleFooterNavClick("/privacy")}
                 >
                   Privacy
                 </Link>

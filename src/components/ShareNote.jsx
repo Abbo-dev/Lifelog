@@ -82,7 +82,7 @@ function ShareNote() {
             <span className="text-slate-700 dark:text-gray-200">Shared note</span>
           </div>
           <Link
-            to="/signin"
+            to="/auth?mode=signin"
             className="px-3 py-1.5 text-xs rounded-lg border border-[#0072F5]/30 text-[#0052CC] dark:text-[#5EA2EF] hover:bg-[#0072F5]/10 transition-colors"
           >
             Sign in

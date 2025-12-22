@@ -145,7 +145,7 @@ const NavbarSide = () => {
               </Button>
             </div>
           ) : (
-            <Link to="/signin">
+            <Link to="/auth?mode=signin">
               <Button className="w-20">Sign In</Button>
             </Link>
           )}

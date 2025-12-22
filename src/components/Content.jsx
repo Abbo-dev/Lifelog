@@ -59,11 +59,11 @@ function Content() {
 
   const primaryCta = isAuthenticated
     ? { label: "Go to the app", to: "/home" }
-    : { label: "Get Started", to: "/signup" };
+    : { label: "Get Started", to: "/auth?mode=signup" };
 
   const secondaryCta = isAuthenticated
     ? { label: "View profile", to: "/profile" }
-    : { label: "Sign in", to: "/signin" };
+    : { label: "Sign in", to: "/auth?mode=signin" };
 
   const tertiaryCta = { label: "See pricing", to: "/pricing" };
 
