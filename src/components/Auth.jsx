@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Input, Image, Button, Checkbox, Alert } from "@heroui/react";
+import { addToast } from "@heroui/toast";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   updateProfile,
+  sendEmailVerification,
   FacebookAuthProvider,
   GoogleAuthProvider,
   TwitterAuthProvider,
@@ -57,6 +62,57 @@ const getAuthErrorMessage = (error) => {
   }
 };
 
+const getPasswordStrengthMeta = (value) => {
+  const password = value || "";
+  if (!password) {
+    return {
+      label: "",
+      percent: 0,
+      textClass: "text-slate-500 dark:text-white/50",
+      barClass: "bg-slate-300 dark:bg-white/10",
+    };
+  }
+
+  let score = 0;
+  if (password.length >= 8) score += 1;
+  if (password.length >= 12) score += 1;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
+  if (/\d/.test(password)) score += 1;
+  if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+
+  if (score <= 1) {
+    return {
+      label: "Weak",
+      percent: 25,
+      textClass: "text-red-600 dark:text-red-400",
+      barClass: "bg-red-500",
+    };
+  }
+  if (score === 2) {
+    return {
+      label: "Fair",
+      percent: 45,
+      textClass: "text-amber-600 dark:text-amber-400",
+      barClass: "bg-amber-500",
+    };
+  }
+  if (score === 3) {
+    return {
+      label: "Good",
+      percent: 70,
+      textClass: "text-emerald-600 dark:text-emerald-400",
+      barClass: "bg-emerald-500",
+    };
+  }
+
+  return {
+    label: "Strong",
+    percent: 100,
+    textClass: "text-[#0072F5] dark:text-[#5EA2EF]",
+    barClass: "bg-gradient-to-r from-[#0072F5] to-[#9353D3]",
+  };
+};
+
 export default function Auth() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -65,13 +121,19 @@ export default function Auth() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const greeting = useMemo(() => getGreeting(), []);
+  const passwordStrength = useMemo(
+    () => getPasswordStrengthMeta(password),
+    [password]
+  );
 
   useEffect(() => {
     if (!searchParams.get("mode")) {
@@ -81,9 +143,11 @@ export default function Auth() {
 
   useEffect(() => {
     setError("");
+    setNotice("");
     setLoading(false);
     setShowPassword(false);
     setPassword("");
+    setConfirmPassword("");
     if (mode === "signin") setUsername("");
   }, [mode]);
 
@@ -91,12 +155,32 @@ export default function Auth() {
     setSearchParams({ mode: isSignup ? "signin" : "signup" });
   };
 
+  const ensureAuthPersistence = async ({ forceLocal } = {}) => {
+    try {
+      if (forceLocal) {
+        await setPersistence(auth, browserLocalPersistence);
+        return;
+      }
+
+      if (isSignup) return;
+
+      await setPersistence(
+        auth,
+        rememberMe ? browserLocalPersistence : browserSessionPersistence
+      );
+    } catch (err) {
+      console.warn("Unable to set auth persistence", err);
+    }
+  };
+
   const handleProviderSignIn = async (provider) => {
     if (loading) return;
     setLoading(true);
     setError("");
+    setNotice("");
 
     try {
+      await ensureAuthPersistence({ forceLocal: isSignup });
       await signInWithPopup(auth, provider);
       navigate("/home");
     } catch (err) {
@@ -112,11 +196,18 @@ export default function Auth() {
     if (loading) return;
     setLoading(true);
     setError("");
+    setNotice("");
 
     try {
       const trimmedEmail = email.trim();
 
       if (isSignup) {
+        if (password !== confirmPassword) {
+          setError("Passwords do not match.");
+          return;
+        }
+
+        await ensureAuthPersistence({ forceLocal: true });
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           trimmedEmail,
@@ -128,10 +219,23 @@ export default function Auth() {
             displayName: trimmedName,
           });
         }
+        try {
+          await sendEmailVerification(userCredential.user);
+          setNotice("Verification email sent. Please check your inbox.");
+          addToast({
+            title: "Verification email sent",
+            description: "Check your inbox to verify your LifeLog account.",
+            timeout: 6000,
+            shouldShowTimeoutProgress: true,
+          });
+        } catch (verificationError) {
+          console.warn("Failed to send verification email", verificationError);
+        }
         navigate("/home");
         return;
       }
 
+      await ensureAuthPersistence();
       await signInWithEmailAndPassword(auth, trimmedEmail, password);
       navigate("/home");
     } catch (err) {
@@ -248,6 +352,15 @@ export default function Auth() {
                 />
               )}
 
+              {notice && (
+                <Alert
+                  type="success"
+                  color="success"
+                  title="Heads up"
+                  description={notice}
+                />
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-9 pt-4">
                 {isSignup && (
                   <Input
@@ -323,6 +436,61 @@ export default function Auth() {
                     </button>
                   }
                 />
+
+                {isSignup && password ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-600 dark:text-white/70">
+                        Password strength
+                      </span>
+                      <span className={`font-semibold ${passwordStrength.textClass}`}>
+                        {passwordStrength.label}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                      <div
+                        className={`h-full ${passwordStrength.barClass}`}
+                        style={{ width: `${passwordStrength.percent}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-white/60">
+                      Use 12+ characters with a mix of letters, numbers, and symbols.
+                    </p>
+                  </div>
+                ) : null}
+
+                {isSignup && (
+                  <Input
+                    isRequired
+                    variant="underlined"
+                    color="primary"
+                    label="Confirm Password"
+                    labelPlacement="outside"
+                    placeholder="••••••••"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    isDisabled={loading}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    classNames={authInputClassNames}
+                    endContent={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="cursor-pointer flex items-center"
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                      >
+                        <Image
+                          src={showPassword ? EyeOff : Eye}
+                          alt=""
+                          className="w-6 h-6 opacity-70"
+                        />
+                      </button>
+                    }
+                  />
+                )}
 
                 <div className="flex items-center justify-between gap-3">
                   {!isSignup ? (

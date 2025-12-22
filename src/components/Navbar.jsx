@@ -21,7 +21,7 @@ const NavbarSide = () => {
       setIsMenuOpen(false);
       navigate("/");
     } catch (error) {
-      console.log(error);
+      console.error("Sign out failed", error);
     }
   };
 

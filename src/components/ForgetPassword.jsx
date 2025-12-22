@@ -23,11 +23,10 @@ function PasswordForget() {
       } else {
         await sendPasswordResetEmail(auth, email);
         setError("");
-        console.log("Password reset email sent to:", email);
       }
     } catch (error) {
       setError(error.message);
-      console.log(error);
+      console.error("Password reset failed", error);
     }
   };
 

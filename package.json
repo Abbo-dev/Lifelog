@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node server/index.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -28,8 +29,12 @@
     "@tiptap/starter-kit": "^2.14.0",
     "date-fns": "^4.1.0",
     "firebase": "^11.1.0",
+    "firebase-admin": "^13.0.2",
     "framer-motion": "^12.6.5",
     "next-themes": "^0.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "react": "^19.1.0",
     "react-colorful": "^5.6.1",
     "react-confetti": "^6.2.2",

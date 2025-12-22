@@ -56,6 +56,8 @@ function Home() {
   const [showTrash, setShowTrash] = useState(false);
   const [trashSelectMode, setTrashSelectMode] = useState(false);
   const [isTagDropActive, setIsTagDropActive] = useState(false);
+  const [draggingTag, setDraggingTag] = useState("");
+  const [dragCursor, setDragCursor] = useState({ x: 0, y: 0 });
   const [showSnapshot, setShowSnapshot] = useState(false);
   const [smartFolders, setSmartFolders] = useState([]);
   const [activeSmartFolderId, setActiveSmartFolderId] = useState("");
@@ -261,7 +263,7 @@ function Home() {
         ),
       });
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -287,7 +289,7 @@ function Home() {
         lastModified: serverTimestamp(),
       });
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -316,7 +318,7 @@ function Home() {
         await deleteDoc(doc(db, "notes", note.id));
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -610,9 +612,35 @@ function Home() {
     };
   };
 
+  useEffect(() => {
+    if (!draggingTag) return;
+
+    const handleDragOver = (event) => {
+      setDragCursor({ x: event.clientX, y: event.clientY });
+    };
+
+    window.addEventListener("dragover", handleDragOver);
+    return () => window.removeEventListener("dragover", handleDragOver);
+  }, [draggingTag]);
+
   const handleTagDragStart = (tag) => (event) => {
     event.dataTransfer.setData("text/plain", tag);
     event.dataTransfer.effectAllowed = "copy";
+
+    if (typeof event.dataTransfer.setDragImage === "function") {
+      const transparentImage = new Image();
+      transparentImage.src =
+        "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+      event.dataTransfer.setDragImage(transparentImage, 0, 0);
+    }
+
+    setDraggingTag(tag);
+    setDragCursor({ x: event.clientX, y: event.clientY });
+  };
+
+  const handleTagDragEnd = () => {
+    setDraggingTag("");
+    setIsTagDropActive(false);
   };
 
   const handleTagDrop = (event) => {
@@ -621,6 +649,7 @@ function Home() {
     if (draggedTag) {
       setFilterTag(draggedTag);
     }
+    setDraggingTag("");
     setIsTagDropActive(false);
   };
 
@@ -1838,6 +1867,24 @@ function Home() {
 	                </div>
 	              </div>
 	            ))}
+            {draggingTag && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none fixed z-[9999]"
+                style={{
+                  left: dragCursor.x,
+                  top: dragCursor.y,
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                <div
+                  style={tagChipStyle(draggingTag)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium border text-slate-800 dark:text-gray-100 shadow-lg backdrop-blur-sm"
+                >
+                  {draggingTag}
+                </div>
+              </div>
+            )}
             {!showTrash && !trashSelectMode && allTags.length > 0 && (
               <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
                 <div className="flex flex-wrap gap-2 items-center">
@@ -1849,8 +1896,9 @@ function Home() {
                       key={tag}
                       draggable
                       onDragStart={handleTagDragStart(tag)}
+                      onDragEnd={handleTagDragEnd}
                       style={tagChipStyle(tag)}
-                      className="px-3 py-1.5 rounded-full text-xs font-medium border text-slate-700 dark:text-gray-200 shadow-sm hover:-translate-y-0.5 transition-all"
+                      className="px-3 py-1.5 rounded-full text-xs font-medium border text-slate-700 dark:text-gray-200 shadow-sm hover:-translate-y-0.5 transition-all cursor-grab active:cursor-grabbing"
                     >
                       {tag}
                     </button>
@@ -1863,12 +1911,28 @@ function Home() {
                   className={`w-full lg:w-72 rounded-lg border-2 text-xs px-4 py-3 transition-all shadow-sm ${
                     isTagDropActive
                       ? "border-[#0072F5] bg-[#0072F5]/10 text-[#0072F5]"
-                      : "border-dashed border-slate-300 dark:border-gray-700 bg-white/60 dark:bg-[#111827] text-slate-500 dark:text-gray-400"
+                      : filterTag
+                        ? "border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-[#111827] text-slate-800 dark:text-gray-200"
+                        : "border-dashed border-slate-300 dark:border-gray-700 bg-white/60 dark:bg-[#111827] text-slate-500 dark:text-gray-400"
                   }`}
                 >
-                  {filterTag
-                    ? `Filtering by #${filterTag} ✨`
-                    : "Drop a tag here to filter 🔖"}
+                  {filterTag ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold">
+                        Filtering by{" "}
+                        <span className="text-[#0072F5]">#{filterTag}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setFilterTag("")}
+                        className="px-3 py-1 rounded-full border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-white/5 text-slate-700 dark:text-gray-200 hover:bg-white dark:hover:bg-white/10 transition-colors"
+                      >
+                        Clear filter
+                      </button>
+                    </div>
+                  ) : (
+                    "Drop a tag here to filter 🔖"
+                  )}
 	                </div>
 	              </div>
 	            )}

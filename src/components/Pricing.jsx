@@ -1,7 +1,10 @@
 import { Button, Card, CardBody, Chip, Skeleton } from "@heroui/react";
+import { addToast } from "@heroui/toast";
+import { CheckIcon } from "@heroicons/react/20/solid";
+import { RocketLaunchIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { importLocalNotesToCloud } from "../services/notesMigration";
 import { loadLocalNotes } from "../utils/localNotes";
@@ -28,11 +31,15 @@ const features = {
 function Pricing() {
   const { user, plan, isPremium, refreshPlan, planLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const checkoutUrlMonthly = import.meta.env.VITE_CHECKOUT_URL;
   const checkoutUrlAnnual = import.meta.env.VITE_CHECKOUT_URL_ANNUAL;
+  const apiBaseUrlRaw = import.meta.env.VITE_API_BASE_URL;
+  const apiBaseUrl = (apiBaseUrlRaw || "").replace(/\/+$/, "");
   const [importing, setImporting] = useState(false);
   const [importStatus, setImportStatus] = useState("");
   const [billingCycle, setBillingCycle] = useState("monthly");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const monthlyPrice = 4.99;
   const annualPrice = 49.99;
@@ -69,6 +76,86 @@ function Pricing() {
     billingCycle === "annual"
       ? "mailto:support@lifelog.app?subject=LifeLog%20Premium%20Annual"
       : "mailto:support@lifelog.app?subject=LifeLog%20Premium%20Monthly";
+
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const canceled = searchParams.get("canceled");
+    if (!success && !canceled) return;
+
+    if (success === "1") {
+      addToast({
+        title: "Thanks for upgrading",
+        description: "Refreshing your plan…",
+        timeout: 6000,
+        shouldShowTimeoutProgress: true,
+      });
+      refreshPlan();
+    } else if (canceled === "1") {
+      addToast({
+        title: "Checkout canceled",
+        description: "No charges were made.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+      });
+    }
+
+    setSearchParams({}, { replace: true });
+  }, [refreshPlan, searchParams, setSearchParams]);
+
+  const startUpgrade = async () => {
+    const fallbackUrl = selectedCheckoutUrl || mailtoUpgradeUrl;
+
+    if (!user) {
+      navigate("/auth?mode=signin");
+      return;
+    }
+
+    if (!apiBaseUrl) {
+      window.location.href = fallbackUrl;
+      return;
+    }
+
+    setCheckoutLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`${apiBaseUrl}/create-checkout-session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ billingCycle }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error || "Unable to start checkout.");
+      }
+      if (!payload?.url) {
+        throw new Error("Checkout URL missing from server response.");
+      }
+      window.location.href = payload.url;
+    } catch (error) {
+      console.error("Checkout failed", error);
+      addToast({
+        title: "Checkout unavailable",
+        description: "Using the fallback checkout link.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+      });
+      window.location.href = fallbackUrl;
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const startFree = () => {
+    if (user) {
+      navigate("/home");
+      return;
+    }
+    navigate("/auth?mode=signup");
+  };
 
   return (
     <div
@@ -170,105 +257,171 @@ function Pricing() {
         </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2">
-          <Card className="bg-white/70 dark:bg-black/20 border border-white/10 backdrop-blur-xl">
-            <CardBody className="p-6 space-y-4">
-              <div className="flex items-start justify-between gap-3">
+          <Card className="relative h-full overflow-hidden border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+              <div className="absolute -top-28 -right-24 h-64 w-64 rounded-full bg-[#5EA2EF]/18 blur-3xl" />
+              <div className="absolute -bottom-28 -left-24 h-64 w-64 rounded-full bg-[#0072F5]/10 blur-3xl" />
+            </div>
+            <CardBody className="relative p-7 flex flex-col h-full">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
+                  <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/60">
                     Free
                   </p>
-                  <p className="text-3xl font-bold mt-1">$0</p>
-                  <p className="text-sm text-slate-600 dark:text-white/70">
-                    Perfect for one device.
+                  <div className="mt-3 flex items-end gap-2">
+                    <p className="text-4xl font-extrabold text-slate-900 dark:text-white">
+                      $0
+                    </p>
+                    <span className="pb-1 text-sm text-slate-600 dark:text-white/70">
+                      forever
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-700 dark:text-white/75 max-w-xs">
+                    Everything you need to get started on one device.
                   </p>
                 </div>
-                {!isPremium && (
-                  <Chip
-                    size="sm"
-                    className="bg-slate-900/5 text-slate-700 dark:bg-white/10 dark:text-white/80"
-                  >
-                    Current
-                  </Chip>
-                )}
+                <div className="flex flex-col items-end gap-2">
+                  {user && !isPremium ? (
+                    <Chip
+                      size="sm"
+                      className="bg-slate-900/5 text-slate-700 dark:bg-white/10 dark:text-white/80"
+                    >
+                      Current
+                    </Chip>
+                  ) : (
+                    <Chip
+                      size="sm"
+                      className="bg-slate-900/5 text-slate-700 dark:bg-white/10 dark:text-white/80"
+                    >
+                      Starter
+                    </Chip>
+                  )}
+                  <div className="h-11 w-11 rounded-2xl border border-[#0072F5]/20 dark:border-white/10 bg-white/60 dark:bg-white/5 flex items-center justify-center">
+                    <SparklesIcon className="h-6 w-6 text-[#0072F5] dark:text-[#5EA2EF]" />
+                  </div>
+                </div>
               </div>
-              <ul className="space-y-2 text-sm text-slate-700 dark:text-white/75">
+
+              <div className="mt-6 h-px w-full bg-slate-200/80 dark:bg-white/10" />
+
+              <ul className="mt-6 space-y-3 text-sm text-slate-700 dark:text-white/80">
                 {features.free.map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#5EA2EF]" />
+                  <li key={item} className="flex items-start gap-3">
+                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/12 dark:bg-[#0072F5]/20">
+                      <CheckIcon className="h-3.5 w-3.5 text-[#0072F5] dark:text-[#5EA2EF]" />
+                    </span>
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-slate-500 dark:text-white/60">
-                Your notes stay on this device (no cloud sync on Free).
+
+              <p className="mt-5 text-xs text-slate-600 dark:text-white/60">
+                Your notes stay on this device (no cloud sync).
               </p>
+
+              <div className="mt-auto pt-6">
+                <Button
+                  variant="flat"
+                  className="w-full border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 text-slate-900 dark:text-white hover:bg-white dark:hover:bg-white/10"
+                  onPress={startFree}
+                >
+                  {user ? "Go to app" : "Start free"}
+                </Button>
+              </div>
             </CardBody>
           </Card>
 
-          <Card className="bg-[#0b1a33]/95 border border-[#5EA2EF]/30 text-white shadow-[0_25px_70px_rgba(0,114,245,0.25)]">
-            <CardBody className="p-6 space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.2em] text-white/70">
-                    Premium
-                  </p>
-                  <p className="text-3xl font-bold mt-1">
+          <div className="relative h-full rounded-3xl p-[1px] bg-gradient-to-br from-[#0072F5] via-[#5EA2EF] to-[#9353D3] shadow-[0_25px_70px_rgba(0,114,245,0.25)]">
+            <Card className="relative h-full overflow-hidden rounded-3xl bg-[#0b1a33]/95 text-white border border-white/10">
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+                <div className="absolute -top-28 -left-24 h-64 w-64 rounded-full bg-[#0072F5]/25 blur-3xl" />
+                <div className="absolute -bottom-28 -right-24 h-64 w-64 rounded-full bg-[#9353D3]/18 blur-3xl" />
+              </div>
+              <CardBody className="relative p-7 flex flex-col h-full">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.25em] text-white/70">
+                      Premium
+                    </p>
+                    <div className="mt-3 flex items-end gap-2">
+                      <p className="text-4xl font-extrabold">
+                        {billingCycle === "annual"
+                          ? `$${annualPrice.toFixed(2)}`
+                          : `$${monthlyPrice.toFixed(2)}`}
+                      </p>
+                      <span className="pb-1 text-sm text-white/70">
+                        {billingCycle === "annual" ? "/yr" : "/mo"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-white/70 max-w-xs">
+                      Sync, backups, sharing, and advanced workflows.
+                    </p>
+                    {billingCycle === "annual" ? (
+                      <p className="mt-1 text-xs text-white/65">
+                        ${annualEffectiveMonthly}/mo billed yearly
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs text-white/65">Cancel anytime.</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    {user && isPremium ? (
+                      <Chip
+                        size="sm"
+                        className="bg-emerald-400/15 text-emerald-100 border border-emerald-300/20"
+                      >
+                        Active
+                      </Chip>
+                    ) : (
+                      <Chip
+                        size="sm"
+                        className="bg-emerald-400/15 text-emerald-100 border border-emerald-300/20"
+                      >
+                        Most popular
+                      </Chip>
+                    )}
+                    <div className="h-11 w-11 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center">
+                      <RocketLaunchIcon className="h-6 w-6 text-white/85" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 h-px w-full bg-white/10" />
+
+                <ul className="mt-6 space-y-3 text-sm text-white/80">
+                  {features.premium.map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-300/15">
+                        <CheckIcon className="h-3.5 w-3.5 text-emerald-300" />
+                      </span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-auto pt-6 space-y-2">
+                  <Button
+                    className="w-full bg-white text-slate-900 hover:bg-white/90"
+                    isLoading={checkoutLoading}
+                    onPress={startUpgrade}
+                  >
                     {billingCycle === "annual"
-                      ? `$${annualPrice.toFixed(2)}`
-                      : `$${monthlyPrice.toFixed(2)}`}
+                      ? "Upgrade (annual)"
+                      : "Upgrade (monthly)"}
+                  </Button>
+                  <p className="text-xs text-white/65">
+                    Premium unlocks automatically after checkout. If it doesn&apos;t, click
+                    “Refresh plan”.
                   </p>
-                  <p className="text-sm text-white/70">
-                    {billingCycle === "annual" ? "per year" : "per month"}
-                  </p>
-                  {billingCycle === "annual" ? (
-                    <p className="text-xs text-white/70 mt-1">
-                      ${annualEffectiveMonthly}/mo billed yearly
+                  {billingCycle === "annual" && !checkoutUrlAnnual && !apiBaseUrl ? (
+                    <p className="text-xs text-white/65">
+                      Annual checkout link not set yet — contact to get annual billing.
                     </p>
                   ) : null}
                 </div>
-                {isPremium && (
-                  <Chip
-                    size="sm"
-                    className="bg-emerald-400/15 text-emerald-100 border border-emerald-300/20"
-                  >
-                    Active
-                  </Chip>
-                )}
-              </div>
-              <ul className="space-y-2 text-sm text-white/80">
-                {features.premium.map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="pt-2 space-y-2">
-                <Button
-                  className="w-full bg-white text-slate-900 hover:bg-white/90"
-                  onPress={() => {
-                    if (selectedCheckoutUrl) window.location.href = selectedCheckoutUrl;
-                    else window.location.href = mailtoUpgradeUrl;
-                  }}
-                >
-                  {selectedCheckoutUrl
-                    ? billingCycle === "annual"
-                      ? "Upgrade (annual)"
-                      : "Upgrade (monthly)"
-                    : "Contact to upgrade"}
-                </Button>
-                <p className="text-xs text-white/65">
-                  After upgrading, click “Refresh plan” to unlock premium sync.
-                </p>
-                {billingCycle === "annual" && !checkoutUrlAnnual ? (
-                  <p className="text-xs text-white/65">
-                    Annual checkout link not set yet — contact to get annual billing.
-                  </p>
-                ) : null}
-              </div>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          </div>
         </div>
 
         {user && isPremium && localNotesCount > 0 && (
@@ -368,7 +521,7 @@ function Pricing() {
                     Refresh
                   </p>
                   <p className="text-xs text-slate-600 dark:text-white/70">
-                    Tap “Refresh plan” to unlock sync + Premium features.
+                    Premium unlocks automatically — tap “Refresh plan” if it doesn&apos;t.
                   </p>
                 </div>
               </div>

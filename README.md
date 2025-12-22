@@ -1,8 +1,41 @@
-# React + Vite
+# LifeLog (Hnotepad)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Calm note + routine tracker with optional Premium cloud sync.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1) Install deps
+
+`npm install`
+
+2) Create `.env`
+
+Copy `.env.example` → `.env` and fill your Firebase values.
+
+3) Run the app
+
+`npm run dev`
+
+## Firebase Rules
+
+- Firestore rules live in `firestore.rules`
+- Storage rules live in `storage.rules`
+
+Deploy them from the Firebase console or via the Firebase CLI.
+
+## Premium (Paddle) backend (optional)
+
+To auto-unlock Premium after Paddle checkout, run `server/index.js`.
+
+1) Copy `server/.env.example` → `server/.env` and fill:
+   - Paddle API key + webhook secret
+   - Paddle price IDs (monthly/annual)
+   - Firebase Admin service account JSON
+
+2) Run:
+
+`npm run server`
+
+3) Point the client at your server:
+
+Set `VITE_API_BASE_URL` in `.env` (example: `http://localhost:4242`).

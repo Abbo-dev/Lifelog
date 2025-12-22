@@ -30,11 +30,10 @@ function ModalEdit({ isOpen, onClose, note, onSave }) {
         createdAt: serverTimestamp(),
       };
       await updateDoc(doc(db, "notes", note.id), updatedNote);
-      console.log("New note create with ID :", note.id);
       onSave();
       onClose();
     } catch (error) {
-      console.log(error);
+      console.error("Failed to update note", error);
     }
   };
   return (
@@ -77,7 +76,6 @@ function ModalEdit({ isOpen, onClose, note, onSave }) {
                   size="md"
                   value={dueDate}
                   onChange={(date) => {
-                    console.log("Due Date:", date);
                     setDueDate(date);
                   }}
                 />

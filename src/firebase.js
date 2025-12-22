@@ -5,15 +5,32 @@ import { getAnalytics } from "firebase/analytics";
 import { enableIndexedDbPersistence, getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Your Firebase configuration
+const requiredEnv = [
+  "VITE_FIREBASE_API_KEY",
+  "VITE_FIREBASE_AUTH_DOMAIN",
+  "VITE_FIREBASE_PROJECT_ID",
+  "VITE_FIREBASE_STORAGE_BUCKET",
+  "VITE_FIREBASE_MESSAGING_SENDER_ID",
+  "VITE_FIREBASE_APP_ID",
+];
+
+const missingEnv = requiredEnv.filter((key) => !import.meta.env[key]);
+if (missingEnv.length > 0) {
+  throw new Error(
+    `Missing Firebase env vars: ${missingEnv.join(
+      ", "
+    )}. Create a .env file (see .env.example).`
+  );
+}
+
 const firebaseConfig = {
-  apiKey: "AIzaSyAk2QNm1AIgyGzNdT7Hs4TaVcozOCshrwA",
-  authDomain: "lifelog-6bb29.firebaseapp.com",
-  projectId: "lifelog-6bb29",
-  storageBucket: "lifelog-6bb29.appspot.com", // Fixed incorrect URL
-  messagingSenderId: "203803492510",
-  appId: "1:203803492510:web:d9afb8896b143824f5fb8f",
-  measurementId: "G-KGGG7S6F70",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase

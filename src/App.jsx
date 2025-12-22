@@ -8,6 +8,7 @@ import Pricing from './components/Pricing'
 import Terms from './components/Terms'
 import Privacy from './components/Privacy'
 import ShareNote from './components/ShareNote'
+import NotFound from './components/NotFound'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import NavbarSide from './components/Navbar'
 import Footer from './components/Footer'
@@ -32,6 +33,7 @@ function AppLayout() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/share/:shareId" element={<ShareNote />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       {!hideFooter && <Footer />}
     </div>
