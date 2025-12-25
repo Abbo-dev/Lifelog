@@ -1,10 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardBody } from "@heroui/card";
-import { Button, Avatar, Chip, Skeleton } from "@heroui/react";
+import {
+  Button,
+  Avatar,
+  Chip,
+  Skeleton,
+  Checkbox,
+  Select,
+  SelectItem,
+} from "@heroui/react";
 import { auth, db, storage } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useBillingStatus } from "../hooks/useBillingStatus";
+import {
+  showReminderNotification,
+  useReminderScheduler,
+  useReminderSettings,
+} from "../hooks/useReminders";
+import { useLocalPro } from "../hooks/useLocalPro";
 import {
   generateLocalNoteId,
   loadLocalNotes,
@@ -25,6 +40,7 @@ import {
   parseNotesJsonImport,
   parseNotesMarkdownImport,
 } from "../utils/notePortability";
+import { createBillingPortalSession } from "../services/billingPortal";
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -51,6 +67,15 @@ const statCards = [
   { label: "Pinned", key: "pinned" },
   { label: "Tags", key: "tags" },
   { label: "Daily streak", key: "streak" },
+];
+
+const reminderLeadOptions = [
+  { value: "0", label: "At due time" },
+  { value: "5", label: "5 minutes before" },
+  { value: "15", label: "15 minutes before" },
+  { value: "30", label: "30 minutes before" },
+  { value: "60", label: "1 hour before" },
+  { value: "1440", label: "1 day before" },
 ];
 
 const AVATAR_MAX_DIMENSION = 512;
@@ -137,7 +162,17 @@ const prepareAvatarBlob = async (file) => {
 
 function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isPremium, planLoading } = useAuth();
+  const billing = useBillingStatus(user?.uid);
+  const apiBaseUrlRaw = import.meta.env.VITE_API_BASE_URL;
+  const apiBaseUrl = (apiBaseUrlRaw || "").replace(/\/+$/, "");
+  const {
+    enabled: localProEnabled,
+    isCodeConfigured: localProCodeConfigured,
+    setProEnabled,
+    unlockWithCode,
+  } = useLocalPro(user?.uid);
   const [stats, setStats] = useState({
     notes: 0,
     pinned: 0,
@@ -157,6 +192,9 @@ function Profile() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [notes, setNotes] = useState([]);
+  const { settings: reminderSettings, updateSettings: updateReminderSettings } =
+    useReminderSettings(user?.uid);
+  useReminderScheduler({ notes, userId: user?.uid, settings: reminderSettings });
   const [notesLoaded, setNotesLoaded] = useState(false);
   const activeNotes = useMemo(
     () => notes.filter((note) => !note?.trashedAt),
@@ -171,6 +209,17 @@ function Profile() {
   const importMarkdownInputRef = useRef(null);
   const [dataBusy, setDataBusy] = useState(false);
   const [dataStatus, setDataStatus] = useState("");
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalStatus, setPortalStatus] = useState("");
+  const [reminderStatus, setReminderStatus] = useState("");
+  const [reminderPermission, setReminderPermission] = useState(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      return "unsupported";
+    }
+    return Notification.permission;
+  });
+  const [localProCode, setLocalProCode] = useState("");
+  const [localProStatus, setLocalProStatus] = useState("");
 
   const toDateValue = (value) => {
     if (!value) return null;
@@ -196,6 +245,38 @@ function Profile() {
       return Number.isNaN(parsed.getTime()) ? null : parsed;
     }
     return null;
+  };
+
+  const formatSubscriptionStatus = (status) => {
+    if (!status) return isPremium ? "Active" : "Free";
+    const normalized = String(status).toLowerCase();
+    const labels = {
+      active: "Active",
+      trialing: "Trial",
+      past_due: "Past due",
+      canceled: "Canceled",
+      cancelled: "Canceled",
+      paused: "Paused",
+    };
+    return labels[normalized] || normalized.replace(/_/g, " ");
+  };
+
+  const formatBillingDate = (value) => {
+    const date = toDateValue(value);
+    return date ? format(date, "MMM d, yyyy") : "";
+  };
+
+  const formatReminderPermission = (permission) => {
+    switch (permission) {
+      case "granted":
+        return "Notifications are enabled in this browser.";
+      case "denied":
+        return "Notifications are blocked in this browser.";
+      case "unsupported":
+        return "Notifications aren't supported in this browser.";
+      default:
+        return "Allow notifications to enable reminders.";
+    }
   };
 
   const formatDayKey = (date) => {
@@ -284,6 +365,21 @@ function Profile() {
   useEffect(() => {
     setNewEmail(user?.email || "");
   }, [user]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || "");
+    if (params.get("localpro") === "1") {
+      setShowSettings(true);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setReminderPermission("unsupported");
+      return;
+    }
+    setReminderPermission(Notification.permission);
+  }, [user?.uid]);
 
   const reauthenticate = async (password) => {
     if (!user?.email) {
@@ -671,6 +767,117 @@ function Profile() {
     } finally {
       setDataBusy(false);
     }
+  };
+
+  const handleOpenBillingPortal = async () => {
+    if (!user) {
+      navigate("/auth?mode=signin");
+      return;
+    }
+    if (!apiBaseUrl) {
+      setPortalStatus("Billing portal is not configured yet.");
+      return;
+    }
+    if (!billing.customerId) {
+      setPortalStatus("No billing profile found for this account yet.");
+      return;
+    }
+
+    setPortalStatus("");
+    setPortalLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const url = await createBillingPortalSession({ apiBaseUrl, token });
+      window.location.href = url;
+    } catch (error) {
+      setPortalStatus(error?.message || "Unable to open billing portal.");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const handleToggleReminders = async (nextEnabled) => {
+    if (!nextEnabled) {
+      updateReminderSettings({ enabled: false });
+      setReminderStatus("");
+      return;
+    }
+
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setReminderPermission("unsupported");
+      updateReminderSettings({ enabled: false });
+      setReminderStatus("Notifications aren't supported in this browser.");
+      return;
+    }
+
+    let permission = Notification.permission;
+    if (permission !== "granted") {
+      permission = await Notification.requestPermission();
+    }
+    setReminderPermission(permission);
+
+    if (permission !== "granted") {
+      updateReminderSettings({ enabled: false });
+      setReminderStatus("Notification permission was not granted.");
+      return;
+    }
+
+    updateReminderSettings({ enabled: true });
+    setReminderStatus("Reminders enabled.");
+  };
+
+  const handleLeadChange = (keys) => {
+    const value = Array.from(keys)[0];
+    const minutes = Number(value);
+    updateReminderSettings({
+      leadMinutes: Number.isFinite(minutes) ? minutes : 0,
+    });
+  };
+
+  const handleTestReminder = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setReminderPermission("unsupported");
+      setReminderStatus("Notifications aren't supported in this browser.");
+      return;
+    }
+
+    let permission = Notification.permission;
+    if (permission !== "granted") {
+      permission = await Notification.requestPermission();
+    }
+    setReminderPermission(permission);
+
+    if (permission !== "granted") {
+      setReminderStatus("Notification permission was not granted.");
+      return;
+    }
+
+    await showReminderNotification({
+      title: "LifeLog reminder",
+      body: "This is how due date reminders will look.",
+      data: { url: "/home" },
+    });
+    setReminderStatus("Test reminder sent.");
+  };
+
+  const handleUnlockLocalPro = () => {
+    setLocalProStatus("");
+    if (!localProCodeConfigured) {
+      setLocalProStatus("Set VITE_LOCAL_PRO_CODE in your .env to enable unlocks.");
+      return;
+    }
+    const result = unlockWithCode(localProCode);
+    if (!result.ok) {
+      setLocalProStatus("Invalid Local Pro code.");
+      return;
+    }
+    setLocalProCode("");
+    setLocalProStatus("Local Pro unlocked on this device.");
+  };
+
+  const handleDisableLocalPro = () => {
+    setProEnabled(false);
+    setLocalProStatus("Local Pro disabled on this device.");
   };
 
   if (!user) {
@@ -1143,6 +1350,254 @@ function Profile() {
             transition={{ delay: 0.1 }}
             className="mt-8 grid gap-4 md:grid-cols-2"
           >
+            <Card className="profile-card">
+              <CardBody className="p-5 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold">Subscription</h3>
+                  <Chip
+                    size="sm"
+                    className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
+                    variant="flat"
+                  >
+                    {planLoading ? "Loading" : isPremium ? "Premium" : "Free"}
+                  </Chip>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-gray-400">
+                  View your billing status and manage your subscription.
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-500 dark:text-gray-400">
+                      Status
+                    </span>
+                    {billing.loaded ? (
+                      <span className="font-medium text-slate-900 dark:text-gray-100">
+                        {formatSubscriptionStatus(billing.status)}
+                      </span>
+                    ) : (
+                      <Skeleton className="h-5 w-24 rounded-full" />
+                    )}
+                  </div>
+                  {billing.loaded && billing.nextBilledAt ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-500 dark:text-gray-400">
+                        Next bill
+                      </span>
+                      <span className="text-slate-900 dark:text-gray-100">
+                        {formatBillingDate(billing.nextBilledAt)}
+                      </span>
+                    </div>
+                  ) : null}
+                  {billing.loaded && billing.updatedAt ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-500 dark:text-gray-400">
+                        Last update
+                      </span>
+                      <span className="text-slate-900 dark:text-gray-100">
+                        {formatBillingDate(billing.updatedAt)}
+                      </span>
+                    </div>
+                  ) : null}
+                  {billing.loaded && billing.subscriptionId ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-500 dark:text-gray-400">
+                        Subscription
+                      </span>
+                      <span className="text-xs text-slate-700 dark:text-gray-200 truncate max-w-[180px]">
+                        {billing.subscriptionId}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {isPremium ? (
+                    <Button
+                      size="sm"
+                      className="shadow-md shadow-[#0072F5]/20"
+                      isLoading={portalLoading}
+                      onPress={handleOpenBillingPortal}
+                    >
+                      Manage billing
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="shadow-md shadow-[#0072F5]/20"
+                      onPress={() => navigate("/pricing")}
+                    >
+                      Upgrade
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="bordered"
+                    className="border-slate-200 dark:border-gray-700"
+                    onPress={() => navigate("/pricing")}
+                  >
+                    View plans
+                  </Button>
+                </div>
+
+                {portalStatus && (
+                  <p className="text-xs text-slate-500 dark:text-gray-400">
+                    {portalStatus}
+                  </p>
+                )}
+                {billing.error && (
+                  <p className="text-xs text-rose-600 dark:text-rose-300">
+                    {billing.error}
+                  </p>
+                )}
+              </CardBody>
+            </Card>
+            <Card className="profile-card">
+              <CardBody className="p-5 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold">Local Pro</h3>
+                  <Chip
+                    size="sm"
+                    className={
+                      localProEnabled
+                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+                        : "bg-slate-900/5 text-slate-700 dark:bg-white/10 dark:text-white/80"
+                    }
+                    variant="flat"
+                  >
+                    {localProEnabled ? "Unlocked" : "Locked"}
+                  </Chip>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-gray-400">
+                  Unlock Local Pro features on this device (no cloud required).
+                </p>
+
+                {localProEnabled ? (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      className="border border-slate-200 dark:border-gray-700"
+                      onPress={handleDisableLocalPro}
+                    >
+                      Disable Local Pro
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-500 dark:text-gray-400">
+                        Unlock code
+                      </label>
+                      <input
+                        type="text"
+                        value={localProCode}
+                        onChange={(e) => setLocalProCode(e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
+                        placeholder="Enter Local Pro code"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className="shadow-md shadow-[#0072F5]/20"
+                        onPress={handleUnlockLocalPro}
+                      >
+                        Unlock Local Pro
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="bordered"
+                        className="border-slate-200 dark:border-gray-700"
+                        onPress={() => navigate("/pricing")}
+                      >
+                        View pricing
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                <p className="text-xs text-slate-500 dark:text-gray-400">
+                  Local Pro is stored on this device only.
+                </p>
+                {localProStatus && (
+                  <p className="text-xs text-slate-500 dark:text-gray-400">
+                    {localProStatus}
+                  </p>
+                )}
+              </CardBody>
+            </Card>
+            <Card className="profile-card">
+              <CardBody className="p-5 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold">Reminders</h3>
+                  <Chip
+                    size="sm"
+                    className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+                    variant="flat"
+                  >
+                    {reminderSettings.enabled ? "On" : "Off"}
+                  </Chip>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-gray-400">
+                  Get a notification when a note is due.
+                </p>
+                <Checkbox
+                  size="sm"
+                  color="primary"
+                  isSelected={reminderSettings.enabled}
+                  onValueChange={handleToggleReminders}
+                  className="text-sm text-slate-700 dark:text-gray-200"
+                >
+                  Enable reminders
+                </Checkbox>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-slate-500 dark:text-gray-400">
+                    Remind me
+                  </label>
+                  <Select
+                    selectedKeys={[
+                      String(reminderSettings.leadMinutes ?? 0),
+                    ]}
+                    onSelectionChange={handleLeadChange}
+                    isDisabled={!reminderSettings.enabled}
+                    size="sm"
+                    className="max-w-[220px]"
+                    classNames={{
+                      trigger:
+                        "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
+                    }}
+                    aria-label="Reminder timing"
+                  >
+                    {reminderLeadOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    className="border border-slate-200 dark:border-gray-700"
+                    onPress={handleTestReminder}
+                  >
+                    Send test
+                  </Button>
+                </div>
+
+                <p className="text-xs text-slate-500 dark:text-gray-400">
+                  {formatReminderPermission(reminderPermission)}
+                </p>
+                {reminderStatus && (
+                  <p className="text-xs text-slate-500 dark:text-gray-400">
+                    {reminderStatus}
+                  </p>
+                )}
+              </CardBody>
+            </Card>
             <Card className="profile-card">
               <CardBody className="p-5 space-y-3">
                 <div className="flex items-center justify-between">

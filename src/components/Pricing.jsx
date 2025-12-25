@@ -8,6 +8,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { importLocalNotesToCloud } from "../services/notesMigration";
 import { loadLocalNotes } from "../utils/localNotes";
+import { createBillingPortalSession } from "../services/billingPortal";
+import { useLocalPro } from "../hooks/useLocalPro";
 
 const features = {
   free: [
@@ -30,6 +32,7 @@ const features = {
 
 function Pricing() {
   const { user, plan, isPremium, refreshPlan, planLoading } = useAuth();
+  const { enabled: localProEnabled } = useLocalPro(user?.uid);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const checkoutUrlMonthly = import.meta.env.VITE_CHECKOUT_URL;
@@ -40,6 +43,8 @@ function Pricing() {
   const [importStatus, setImportStatus] = useState("");
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalStatus, setPortalStatus] = useState("");
 
   const monthlyPrice = 4.99;
   const annualPrice = 49.99;
@@ -149,6 +154,43 @@ function Pricing() {
     }
   };
 
+  const openBillingPortal = async () => {
+    if (!user) {
+      navigate("/auth?mode=signin");
+      return;
+    }
+    if (!apiBaseUrl) {
+      setPortalStatus("Billing portal is not configured yet.");
+      addToast({
+        title: "Billing portal unavailable",
+        description: "Set VITE_API_BASE_URL to enable the billing portal.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+      });
+      return;
+    }
+
+    setPortalStatus("");
+    setPortalLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const url = await createBillingPortalSession({ apiBaseUrl, token });
+      window.location.href = url;
+    } catch (error) {
+      console.error("Billing portal failed", error);
+      const message = error?.message || "Unable to open billing portal.";
+      setPortalStatus(message);
+      addToast({
+        title: "Billing portal unavailable",
+        description: message,
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+      });
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
   const startFree = () => {
     if (user) {
       navigate("/home");
@@ -225,6 +267,40 @@ function Pricing() {
             </div>
           </div>
         )}
+
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                Local Pro (offline bundle)
+              </p>
+              <p className="text-xs text-slate-600 dark:text-white/70 mt-1">
+                Version history, PDF export, note lock, focus mode, and advanced templates —
+                all stored on this device.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {localProEnabled ? (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="border border-slate-200 dark:border-white/10"
+                  onPress={() => navigate("/profile?localpro=1")}
+                >
+                  Manage Local Pro
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  className="bg-[#0072F5] text-white hover:bg-[#0052CC]"
+                  onPress={() => navigate("/profile?localpro=1")}
+                >
+                  Unlock with code
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div className="mt-8 flex items-center justify-center">
           <div className="inline-flex items-center rounded-full border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-1 shadow-sm">
@@ -402,17 +478,28 @@ function Pricing() {
                 <div className="mt-auto pt-6 space-y-2">
                   <Button
                     className="w-full bg-white text-slate-900 hover:bg-white/90"
-                    isLoading={checkoutLoading}
-                    onPress={startUpgrade}
+                    isLoading={isPremium ? portalLoading : checkoutLoading}
+                    onPress={isPremium ? openBillingPortal : startUpgrade}
                   >
-                    {billingCycle === "annual"
-                      ? "Upgrade (annual)"
-                      : "Upgrade (monthly)"}
+                    {isPremium
+                      ? "Manage subscription"
+                      : billingCycle === "annual"
+                        ? "Upgrade (annual)"
+                        : "Upgrade (monthly)"}
                   </Button>
-                  <p className="text-xs text-white/65">
-                    Premium unlocks automatically after checkout. If it doesn&apos;t, click
-                    “Refresh plan”.
-                  </p>
+                  {isPremium ? (
+                    <p className="text-xs text-white/65">
+                      Update payment details, download invoices, or cancel anytime.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-white/65">
+                      Premium unlocks automatically after checkout. If it doesn&apos;t, click
+                      “Refresh plan”.
+                    </p>
+                  )}
+                  {isPremium && portalStatus ? (
+                    <p className="text-xs text-white/65">{portalStatus}</p>
+                  ) : null}
                   {billingCycle === "annual" && !checkoutUrlAnnual && !apiBaseUrl ? (
                     <p className="text-xs text-white/65">
                       Annual checkout link not set yet — contact to get annual billing.

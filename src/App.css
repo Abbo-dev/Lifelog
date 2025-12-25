@@ -196,3 +196,13 @@ html.dark .footer-panel {
 html.dark .footer-muted {
   color: rgba(231, 237, 248, 0.82);
 }
+
+body[data-focus="on"] header,
+body[data-focus="on"] footer {
+  display: none;
+}
+
+body[data-focus="on"] .app-shell {
+  padding-top: 0;
+  padding-bottom: 0;
+}

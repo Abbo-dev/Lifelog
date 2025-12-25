@@ -115,6 +115,37 @@ const safeJsonParse = (value) => {
   }
 };
 
+const normalizeDateValue = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string" || typeof value === "number") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+  if (typeof value === "object" && value.date) {
+    return normalizeDateValue(value.date);
+  }
+  return null;
+};
+
+const resolveNextBilledAt = (resource) => {
+  const candidates = [
+    resource?.next_billed_at,
+    resource?.next_payment?.date,
+    resource?.billing_period?.ends_at,
+    resource?.current_billing_period?.ends_at,
+    resource?.current_period?.ends_at,
+    resource?.current_period_end,
+    resource?.next_payment_at,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeDateValue(candidate);
+    if (normalized) return normalized;
+  }
+  return null;
+};
+
 const extractUidFromPaddlePayload = (event) => {
   const data = event?.data || event?.data?.object || {};
 
@@ -225,6 +256,58 @@ app.post("/create-checkout-session", express.json(), async (req, res) => {
   }
 });
 
+app.post("/billing/portal", express.json(), async (req, res) => {
+  try {
+    const decoded = await verifyFirebaseToken(req);
+    const uid = decoded.uid;
+
+    const userSnap = await db.collection("users").doc(uid).get();
+    const customerId = userSnap.exists ? userSnap.data()?.paddleCustomerId : null;
+    if (!customerId) {
+      return res.status(404).json({ error: "No billing customer found for this account." });
+    }
+
+    const returnUrl =
+      process.env.PADDLE_PORTAL_RETURN_URL ||
+      `${process.env.APP_URL}/profile?billing=1`;
+
+    const response = await fetch(
+      `${paddleApiBaseUrl}/customers/${encodeURIComponent(customerId)}/portal-sessions`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PADDLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ return_url: returnUrl }),
+      }
+    );
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      console.error("Paddle portal session failed", payload);
+      return res
+        .status(502)
+        .json({ error: "Paddle portal could not be created." });
+    }
+
+    const portalUrl =
+      payload?.data?.url || payload?.data?.portal_url || payload?.data?.portalUrl;
+
+    if (!portalUrl) {
+      console.error("Paddle portal response missing url", payload);
+      return res.status(502).json({ error: "Portal URL missing from Paddle." });
+    }
+
+    res.json({ url: portalUrl });
+  } catch (error) {
+    console.error("Failed to create billing portal session", error);
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.message || "Unable to open billing portal." });
+  }
+});
+
 app.post(
   "/webhook/paddle",
   express.raw({ type: "*/*" }),
@@ -256,6 +339,7 @@ app.post(
       const customerId =
         resource?.customer_id || resource?.customer?.id || resource?.customerId || null;
       const status = resource?.status || resource?.subscription_status || "unknown";
+      const nextBilledAt = resolveNextBilledAt(resource);
 
       let uid = extractUidFromPaddlePayload(event);
 
@@ -282,6 +366,8 @@ app.post(
           paddleCustomerId: customerId,
           paddleSubscriptionId: subscriptionId || null,
           paddleSubscriptionStatus: status,
+          paddleNextBilledAt: nextBilledAt,
+          paddleLastEventType: eventType || null,
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }

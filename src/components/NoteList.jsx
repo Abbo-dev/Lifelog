@@ -9,9 +9,13 @@ import {
   TrashIcon,
   ClockIcon,
   LinkIcon,
+  LockClosedIcon,
+  LockOpenIcon,
 } from "@heroicons/react/24/outline";
 import { sanitizeHtmlLinks } from "../utils/linkUtils";
 import { hexToRgba, resolveTagColor } from "../utils/tagColors";
+import { loadNoteHistory } from "../utils/localNoteHistory";
+import { htmlToMarkdown } from "../utils/notePortability";
 
 const NoteList = ({
   notes,
@@ -21,14 +25,20 @@ const NoteList = ({
   onShare,
   onUnshare,
   onRestore,
+  onRestoreVersion,
   onDeleteForever,
+  onToggleLock,
   tagColors = {},
   viewMode = "grid",
   mode = "active",
+  userId = "",
+  localProEnabled = false,
 }) => {
   const [openNote, setOpenNote] = useState(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [copiedShareId, setCopiedShareId] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyItems, setHistoryItems] = useState([]);
   useEffect(() => {
     if (mode === "trashSelect") {
       setOpenNote(null);
@@ -42,6 +52,10 @@ const NoteList = ({
       setOpenNote(updated);
     }
   }, [notes, openNote?.id]);
+
+  useEffect(() => {
+    setShowHistory(false);
+  }, [openNote?.id]);
 
   const toDateValue = (value) => {
     if (!value) return null;
@@ -80,10 +94,98 @@ const NoteList = ({
     ? formatDateValue(openNote.createdAt, "MMM d, h:mm a")
     : "";
   const sanitizedOpenContent = sanitizeHtmlLinks(openNote?.content || "");
+  const openNoteLocked = !!openNote?.locked;
   const shareEnabled = typeof onShare === "function";
   const shareUrl = openNote?.shareId
     ? `${window.location.origin}/share/${openNote.shareId}`
     : "";
+
+  const refreshHistory = () => {
+    if (!userId || !openNote?.id) {
+      setHistoryItems([]);
+      return [];
+    }
+    const history = loadNoteHistory(userId, openNote.id);
+    setHistoryItems(history);
+    return history;
+  };
+
+  const handleToggleHistory = () => {
+    if (!showHistory) {
+      refreshHistory();
+    }
+    setShowHistory((prev) => !prev);
+  };
+
+  const downloadTextFile = (filename, contents, mimeType) => {
+    const blob = new Blob([contents], { type: mimeType });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  };
+
+  const buildExportName = (title, ext) => {
+    const safe =
+      title
+        ?.toLowerCase()
+        ?.replace(/[^a-z0-9]+/g, "-")
+        ?.replace(/^-+|-+$/g, "")
+        ?.slice(0, 48) || "note";
+    return `lifelog-${safe}.${ext}`;
+  };
+
+  const handleExportMarkdown = () => {
+    if (!openNote) return;
+    const markdown = htmlToMarkdown(openNote.content || "");
+    const header = `# ${openNote.title || "Untitled note"}\n\n`;
+    downloadTextFile(
+      buildExportName(openNote.title, "md"),
+      `${header}${markdown}`.trim() + "\n",
+      "text/markdown"
+    );
+  };
+
+  const handleExportPdf = () => {
+    if (!openNote) return;
+    const printWindow = window.open("", "_blank", "noopener,noreferrer");
+    if (!printWindow) return;
+
+    const title = openNote.title || "LifeLog note";
+    const html = `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>${title.replace(/</g, "&lt;")}</title>
+          <style>
+            body { font-family: "Kanit", "Poppins", system-ui, sans-serif; padding: 32px; color: #0f172a; }
+            h1 { font-size: 22px; margin-bottom: 16px; }
+            .meta { font-size: 12px; color: #64748b; margin-bottom: 24px; }
+            .content { line-height: 1.6; }
+            img { max-width: 100%; height: auto; }
+          </style>
+        </head>
+        <body>
+          <h1>${title.replace(/</g, "&lt;")}</h1>
+          <div class="meta">Exported from LifeLog</div>
+          <div class="content">${sanitizedOpenContent}</div>
+        </body>
+      </html>`;
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const extractPreviewText = (html) =>
+    (html || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
   const copyText = async (text) => {
     if (!text) return false;
@@ -155,13 +257,16 @@ const NoteList = ({
   };
 
   const NoteCard = ({ note }) => {
+    const isLocked = !!note.locked;
     const dueDateLabel = formatDateValue(note.dueDate, "MMM d, h:mm a");
     const lastModifiedLabel = formatDateValue(
       note.lastModified || note.createdAt,
       "MMM d, h:mm a"
     );
     const createdLabel = formatDateValue(note.createdAt, "MMM d, h:mm a");
-    const sanitizedPreviewContent = sanitizeHtmlLinks(note.content || "");
+    const sanitizedPreviewContent = isLocked
+      ? ""
+      : sanitizeHtmlLinks(note.content || "");
     const isTrashMode = mode === "trash";
     const isTrashSelectMode = mode === "trashSelect";
 
@@ -178,7 +283,7 @@ const NoteList = ({
         <div className="p-4 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-gray-100 line-clamp-2 flex-1">
-              {note.title}
+              {isLocked ? "Locked note" : note.title}
             </h3>
             <div className="flex items-center gap-1">
               {isTrashMode ? (
@@ -220,6 +325,24 @@ const NoteList = ({
                 </button>
               ) : (
                 <>
+                  {(localProEnabled || isLocked) &&
+                  typeof onToggleLock === "function" ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleLock?.(note);
+                      }}
+                      className="p-1 text-gray-500 hover:text-slate-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                      aria-label={isLocked ? "Unlock note" : "Lock note"}
+                      type="button"
+                    >
+                      {isLocked ? (
+                        <LockClosedIcon className="w-3.5 h-3.5" />
+                      ) : (
+                        <LockOpenIcon className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  ) : null}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -232,6 +355,7 @@ const NoteList = ({
                     }`}
                     aria-label="Pin note"
                     type="button"
+                    disabled={isLocked}
                   >
                     <PinIcon className="w-3.5 h-3.5" />
                   </button>
@@ -243,6 +367,7 @@ const NoteList = ({
                     className="p-1 text-gray-500 hover:text-gray-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 rounded-lg transition-colors"
                     aria-label="Edit note"
                     type="button"
+                    disabled={isLocked}
                   >
                     <PencilIcon className="w-3.5 h-3.5" />
                   </button>
@@ -256,29 +381,35 @@ const NoteList = ({
               className="note-content text-[13px] leading-relaxed text-slate-600 dark:text-gray-300 line-clamp-3"
               dangerouslySetInnerHTML={{ __html: sanitizedPreviewContent }}
             />
+            {isLocked && (
+              <p className="text-xs text-slate-500 dark:text-gray-400">
+                Locked · enter passcode to view
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-1 mb-2">
-            {note.tags?.map((tag) => {
-              const tagColor = resolveTagColor(tag, tagColors);
-              return (
-                <span
-                  key={tag}
-                  style={{
-                    borderColor: tagColor,
-                    backgroundColor: hexToRgba(tagColor, 0.14),
-                  }}
-                  className="px-2 py-0.5 rounded-full text-[11px] border text-slate-700 dark:text-gray-200"
-                >
-                  {tag}
-                </span>
-              );
-            })}
+            {!isLocked &&
+              note.tags?.map((tag) => {
+                const tagColor = resolveTagColor(tag, tagColors);
+                return (
+                  <span
+                    key={tag}
+                    style={{
+                      borderColor: tagColor,
+                      backgroundColor: hexToRgba(tagColor, 0.14),
+                    }}
+                    className="px-2 py-0.5 rounded-full text-[11px] border text-slate-700 dark:text-gray-200"
+                  >
+                    {tag}
+                  </span>
+                );
+              })}
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-gray-500">
             <div className="flex items-center gap-2">
-              {dueDateLabel && (
+              {!isLocked && dueDateLabel && (
                 <div className="flex items-center gap-1">
                   <CalendarIcon className="w-3 h-3" />
                   <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
@@ -325,25 +456,26 @@ const NoteList = ({
                   Note preview
                 </p>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">
-                  {openNote.title || "Untitled note"}
+                  {openNoteLocked ? "Locked note" : openNote.title || "Untitled note"}
                 </h3>
                 <div className="text-[11px] text-slate-500 dark:text-gray-400 flex flex-wrap gap-2">
-                  {openNote.tags?.map((tag) => {
-                    const tagColor = resolveTagColor(tag, tagColors);
-                    return (
-                      <span
-                        key={tag}
-                        style={{
-                          borderColor: tagColor,
-                          backgroundColor: hexToRgba(tagColor, 0.14),
-                        }}
-                        className="px-2 py-0.5 rounded-full border text-slate-600 dark:text-gray-200"
-                      >
-                        #{tag}
-                      </span>
-                    );
-                  })}
-                  {openNoteDueLabel && (
+                  {!openNoteLocked &&
+                    openNote.tags?.map((tag) => {
+                      const tagColor = resolveTagColor(tag, tagColors);
+                      return (
+                        <span
+                          key={tag}
+                          style={{
+                            borderColor: tagColor,
+                            backgroundColor: hexToRgba(tagColor, 0.14),
+                          }}
+                          className="px-2 py-0.5 rounded-full border text-slate-600 dark:text-gray-200"
+                        >
+                          #{tag}
+                        </span>
+                      );
+                    })}
+                  {!openNoteLocked && openNoteDueLabel && (
                     <span className="flex items-center gap-1">
                       <CalendarIcon className="w-3 h-3" />
                       <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
@@ -388,7 +520,38 @@ const NoteList = ({
                     </button>
                   </>
                 ) : null}
-                {mode === "active" && shareEnabled ? (
+                {mode === "active" && localProEnabled && !openNoteLocked ? (
+                  <>
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800"
+                      onClick={handleExportMarkdown}
+                    >
+                      Export MD
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800"
+                      onClick={handleExportPdf}
+                    >
+                      Export PDF
+                    </button>
+                  </>
+                ) : null}
+                {mode === "active" &&
+                localProEnabled &&
+                !openNoteLocked &&
+                typeof onRestoreVersion === "function" &&
+                userId ? (
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800"
+                    onClick={handleToggleHistory}
+                  >
+                    {showHistory ? "Back" : "History"}
+                  </button>
+                ) : null}
+                {mode === "active" && shareEnabled && !openNoteLocked ? (
                   openNote?.shareId ? (
                     <>
                       <button
@@ -434,10 +597,73 @@ const NoteList = ({
               </div>
             </div>
             <div className="p-4 max-h-[70vh] overflow-y-auto">
-              <div
-                className="note-content prose prose-sm dark:prose-invert max-w-none text-slate-800 dark:text-gray-100"
-                dangerouslySetInnerHTML={{ __html: sanitizedOpenContent }}
-              />
+              {mode === "active" && !localProEnabled && (
+                <div className="mb-3 rounded-lg border border-slate-200/80 dark:border-gray-800 bg-white/70 dark:bg-white/5 p-3 text-xs text-slate-600 dark:text-gray-300">
+                  Local Pro unlocks history, PDF export, focus mode, and note locks
+                  on this device.
+                </div>
+              )}
+              {showHistory ? (
+                <div className="space-y-3">
+                  {historyItems.length === 0 ? (
+                    <div className="text-sm text-slate-600 dark:text-gray-300">
+                      No history yet. Save edits to create versions.
+                    </div>
+                  ) : (
+                    historyItems.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="rounded-xl border border-slate-200/80 dark:border-gray-800 bg-white/70 dark:bg-white/5 p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs text-slate-500 dark:text-gray-400">
+                              {formatDateValue(entry.savedAt, "MMM d, h:mm a")}
+                            </p>
+                            <p className="text-sm font-medium text-slate-900 dark:text-gray-100">
+                              {entry.snapshot?.title || "Untitled note"}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 line-clamp-2">
+                              {extractPreviewText(entry.snapshot?.content || "") ||
+                                "No content preview."}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 text-xs rounded-lg border border-[#0072F5]/30 text-[#0052CC] dark:text-[#5EA2EF] hover:bg-[#0072F5]/10"
+                            onClick={() => {
+                              onRestoreVersion?.(openNote, entry.snapshot);
+                              setShowHistory(false);
+                            }}
+                          >
+                            Restore
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : openNoteLocked ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                  <p className="text-sm text-slate-600 dark:text-gray-300">
+                    This note is locked. Enter your passcode to view it.
+                  </p>
+                  {typeof onToggleLock === "function" ? (
+                    <button
+                      type="button"
+                      className="px-4 py-2 text-xs rounded-lg border border-[#0072F5]/30 text-[#0052CC] dark:text-[#5EA2EF] hover:bg-[#0072F5]/10"
+                      onClick={() => onToggleLock?.(openNote)}
+                    >
+                      Unlock note
+                    </button>
+                  ) : null}
+                </div>
+              ) : (
+                <div
+                  className="note-content prose prose-sm dark:prose-invert max-w-none text-slate-800 dark:text-gray-100"
+                  dangerouslySetInnerHTML={{ __html: sanitizedOpenContent }}
+                />
+              )}
             </div>
           </div>
         </div>

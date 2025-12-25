@@ -7,18 +7,27 @@ import { addToast } from "@heroui/toast";
 import Search from "../assets/search.svg";
 import NoteList from "./NoteList";
 import { useAuth } from "../contexts/AuthContext";
+import { useReminderScheduler, useReminderSettings } from "../hooks/useReminders";
+import { useFocusMode } from "../hooks/useFocusMode";
+import { useLocalPro } from "../hooks/useLocalPro";
 import {
   deleteLocalNote,
   generateLocalNoteId,
   loadLocalNotes,
   upsertLocalNote,
 } from "../utils/localNotes";
+import { saveNoteVersion } from "../utils/localNoteHistory";
 import {
   hexToRgba,
   isHexColor,
   normalizeTagColorMap,
   resolveTagColor,
 } from "../utils/tagColors";
+import {
+  getLockStatus,
+  setLockPasscode,
+  verifyLockPasscode,
+} from "../utils/localNoteLock";
 import {
   addDoc,
   collection,
@@ -70,8 +79,12 @@ function Home() {
   });
   const [isSmartDrawerOpen, setIsSmartDrawerOpen] = useState(false);
   const { user, isPremium, planLoading } = useAuth();
-  const isAuthenticated = !!user;
   const currentUserId = user?.uid || "";
+  const isAuthenticated = !!user;
+  const { enabled: focusMode, toggle: toggleFocusMode } = useFocusMode();
+  const { enabled: localProEnabled } = useLocalPro(currentUserId);
+  const { settings: reminderSettings } = useReminderSettings(currentUserId);
+  useReminderScheduler({ notes, userId: currentUserId, settings: reminderSettings });
   const smartFoldersSeededRef = useRef(false);
   const hasSmartFolderSyncedRef = useRef(false);
   const tagColorsSeededRef = useRef(false);
@@ -154,6 +167,32 @@ function Home() {
             "<h2>To do</h2><ul><li></li><li></li><li></li></ul><h2>Next</h2><ul><li></li></ul>",
           tags: ["tasks"],
           color: "#ffffff",
+          isPinned: false,
+          dueDate: null,
+        },
+      },
+      {
+        label: "Weekly review",
+        proOnly: true,
+        draft: {
+          title: `Weekly review • ${todayLabel}`,
+          content:
+            "<h2>Wins</h2><ul><li></li><li></li></ul><h2>Challenges</h2><ul><li></li></ul><h2>Next week</h2><ul><li></li><li></li></ul>",
+          tags: ["weekly", "review"],
+          color: "#1B2333",
+          isPinned: false,
+          dueDate: null,
+        },
+      },
+      {
+        label: "Project plan",
+        proOnly: true,
+        draft: {
+          title: "Project plan",
+          content:
+            "<h2>Goal</h2><p></p><h2>Milestones</h2><ul><li></li><li></li></ul><h2>Risks</h2><ul><li></li></ul><h2>Next actions</h2><ul><li></li></ul>",
+          tags: ["project"],
+          color: "#5EA2EF",
           isPinned: false,
           dueDate: null,
         },
@@ -418,6 +457,128 @@ function Home() {
     setShowCard(false);
   };
 
+  const requestPasscode = async ({ createIfMissing = false } = {}) => {
+    if (!currentUserId) return false;
+    const status = getLockStatus(currentUserId);
+
+    if (!status.hasPasscode && createIfMissing) {
+      const first = window.prompt("Create a passcode for locked notes:");
+      if (!first) return false;
+      const confirm = window.prompt("Confirm your passcode:");
+      if (!confirm || confirm !== first) {
+        addToast({
+          title: "Passcodes do not match",
+          description: "Please try again.",
+          timeout: 5000,
+          shouldShowTimeoutProgress: true,
+        });
+        return false;
+      }
+      const saved = await setLockPasscode(currentUserId, first);
+      if (!saved) {
+        addToast({
+          title: "Unable to save passcode",
+          description: "Please try again.",
+          timeout: 5000,
+          shouldShowTimeoutProgress: true,
+        });
+        return false;
+      }
+      return true;
+    }
+
+    if (!status.hasPasscode) {
+      addToast({
+        title: "No passcode set",
+        description: "Create a passcode before locking notes.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+      });
+      return false;
+    }
+
+    const passcode = window.prompt("Enter your note lock passcode:");
+    if (!passcode) return false;
+    const ok = await verifyLockPasscode(currentUserId, passcode);
+    if (!ok) {
+      addToast({
+        title: "Incorrect passcode",
+        description: "Try again.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleToggleLock = async (note) => {
+    if (!currentUserId || !note?.id) return;
+    if (!localProEnabled && !note.locked) {
+      addToast({
+        title: "Local Pro required",
+        description: "Unlock Local Pro to lock notes.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+      });
+      return;
+    }
+
+    if (isPremium) {
+      addToast({
+        title: "Locking is local-only",
+        description: "Switch to local notes to use note locks.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+      });
+      return;
+    }
+
+    const nowIso = new Date().toISOString();
+
+    if (note.locked) {
+      const ok = await requestPasscode();
+      if (!ok) return;
+      const payload = note.lockedPayload || {};
+      const nextNote = {
+        ...note,
+        ...payload,
+        locked: false,
+        lockedPayload: null,
+        lastModified: nowIso,
+      };
+      const next = upsertLocalNote(currentUserId, nextNote);
+      setNotes(next);
+      return;
+    }
+
+    const ok = await requestPasscode({ createIfMissing: true });
+    if (!ok) return;
+
+    const payload = {
+      title: note.title || "",
+      content: note.content || "",
+      tags: Array.isArray(note.tags) ? note.tags : [],
+      dueDate: note.dueDate || null,
+      color: note.color || "#ffffff",
+      isPinned: !!note.isPinned,
+    };
+
+    const nextNote = {
+      ...note,
+      title: "Locked note",
+      content: "",
+      tags: [],
+      dueDate: null,
+      isPinned: false,
+      locked: true,
+      lockedPayload: payload,
+      lastModified: nowIso,
+    };
+    const next = upsertLocalNote(currentUserId, nextNote);
+    setNotes(next);
+  };
+
   const handlePin = async (note) => {
     if (!currentUserId) return;
     if (!note?.id) return;
@@ -524,6 +685,10 @@ function Home() {
       color: noteDraft?.color || "#ffffff",
       isPinned: !!noteDraft?.isPinned,
     };
+
+    if (existingNote && localProEnabled) {
+      saveNoteVersion(currentUserId, existingNote);
+    }
 
     if (!isPremium) {
       const nowIso = new Date().toISOString();
@@ -817,6 +982,24 @@ function Home() {
         },
         { merge: true }
       ).catch((err) => console.error("Failed to save tag color", err));
+    }
+  };
+
+  const handleRestoreVersion = async (note, snapshot) => {
+    if (!note || !snapshot) return;
+    if (!localProEnabled) {
+      addToast({
+        title: "Local Pro required",
+        description: "Unlock Local Pro to restore note history.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+      });
+      return;
+    }
+    try {
+      await handleSaveNote(snapshot, note);
+    } catch (error) {
+      console.error("Failed to restore version", error);
     }
   };
 
@@ -1505,6 +1688,26 @@ function Home() {
 
                 <Button
                   size="sm"
+                  variant="flat"
+                  className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                  onPress={() => {
+                    if (!localProEnabled) {
+                      addToast({
+                        title: "Local Pro required",
+                        description: "Unlock Local Pro to use Focus mode.",
+                        timeout: 5000,
+                        shouldShowTimeoutProgress: true,
+                      });
+                      return;
+                    }
+                    toggleFocusMode();
+                  }}
+                >
+                  {focusMode ? "Exit focus" : "Focus"}
+                </Button>
+
+                <Button
+                  size="sm"
                   variant={trashSelectMode ? "solid" : "flat"}
                   className={
                     trashSelectMode
@@ -2108,7 +2311,9 @@ function Home() {
                 notes={filteredAndSortedNotes}
                 onRestore={handleRestore}
                 onDeleteForever={handleDeleteForever}
+                userId={currentUserId}
                 tagColors={tagColors}
+                localProEnabled={localProEnabled}
                 viewMode="list"
               />
             </div>
@@ -2175,18 +2380,36 @@ function Home() {
 	                  >
 	                    New note
 	                  </Button>
-	                  {starterTemplates.map((template) => (
-	                    <Button
-	                      key={template.label}
-	                      size="sm"
-	                      variant="flat"
-	                      className="px-5 glass-chip border border-white/20 text-slate-900 dark:text-white"
-	                      onPress={() => openNewNote(template.draft)}
-	                    >
-	                      {template.label}
-	                    </Button>
-	                  ))}
-	                </div>
+                  {starterTemplates.map((template) => (
+                    <Button
+                      key={template.label}
+                      size="sm"
+                      variant="flat"
+                      className="px-5 glass-chip border border-white/20 text-slate-900 dark:text-white"
+                      onPress={() => {
+                        if (template.proOnly && !localProEnabled) {
+                          addToast({
+                            title: "Local Pro required",
+                            description: "Unlock Local Pro to use this template.",
+                            timeout: 5000,
+                            shouldShowTimeoutProgress: true,
+                          });
+                          return;
+                        }
+                        openNewNote(template.draft);
+                      }}
+                    >
+                      <span className="flex items-center gap-2">
+                        {template.label}
+                        {template.proOnly && !localProEnabled ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/70 text-slate-700">
+                            Pro
+                          </span>
+                        ) : null}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
 	                <p className="text-xs text-slate-500 dark:text-gray-400">
 	                  Start blank or pick a template to save time.
 	                </p>
@@ -2197,17 +2420,21 @@ function Home() {
 	          <div
 	            className={`w-full ${viewMode === "list" ? "max-w-[900px]" : ""}`}
 	          >
-	            <NoteList
-	              mode={trashSelectMode ? "trashSelect" : "active"}
-	              notes={filteredAndSortedNotes}
-	              onEdit={handleEdit}
-	              onDelete={handleDelete}
-	              onPin={handlePin}
-                  onShare={isPremium ? handleShareNote : undefined}
-                  onUnshare={isPremium ? handleUnshareNote : undefined}
-                  tagColors={tagColors}
-	              viewMode={viewMode}
-	            />
+            <NoteList
+              mode={trashSelectMode ? "trashSelect" : "active"}
+              notes={filteredAndSortedNotes}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onPin={handlePin}
+              onRestoreVersion={handleRestoreVersion}
+              onToggleLock={handleToggleLock}
+              userId={currentUserId}
+              localProEnabled={localProEnabled}
+              onShare={isPremium ? handleShareNote : undefined}
+              onUnshare={isPremium ? handleUnshareNote : undefined}
+              tagColors={tagColors}
+              viewMode={viewMode}
+            />
 	          </div>
 	        )}
       </div>
