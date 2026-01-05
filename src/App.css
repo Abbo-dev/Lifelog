@@ -1,12 +1,12 @@
 /* Glassmorphism helpers with light/dark tuning */
 :root {
-  --glass-strong-bg: linear-gradient(135deg, rgba(15, 31, 63, 0.42), rgba(10, 26, 52, 0.34));
-  --glass-soft-bg: linear-gradient(140deg, rgba(15, 31, 63, 0.3), rgba(10, 26, 52, 0.24));
-  --glass-chip-bg: linear-gradient(120deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.2));
-  --glass-border: rgba(12, 33, 69, 0.14);
-  --glass-border-strong: rgba(12, 33, 69, 0.2);
-  --glass-shadow: 0 16px 38px rgba(13, 38, 80, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.22);
-  --glass-shadow-strong: 0 22px 55px rgba(13, 38, 80, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.3);
+  --glass-strong-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(231, 239, 255, 0.6));
+  --glass-soft-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(232, 240, 255, 0.52));
+  --glass-chip-bg: linear-gradient(120deg, rgba(255, 255, 255, 0.85), rgba(232, 240, 255, 0.7));
+  --glass-border: rgba(148, 172, 214, 0.28);
+  --glass-border-strong: rgba(148, 172, 214, 0.4);
+  --glass-shadow: 0 16px 38px rgba(15, 32, 65, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.45);
+  --glass-shadow-strong: 0 22px 55px rgba(15, 32, 65, 0.16), 0 0 0 1px rgba(255, 255, 255, 0.55);
 }
 
 html.dark {
@@ -41,7 +41,7 @@ html.dark {
   color: #0f1f3f;
   background: var(--glass-chip-bg);
   border: 1px solid var(--glass-border-strong);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12), 0 0 18px rgba(94, 162, 239, 0.18);
+  box-shadow: 0 12px 28px rgba(15, 32, 65, 0.12), 0 0 16px rgba(94, 162, 239, 0.14);
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
 }
@@ -73,10 +73,10 @@ html.dark {
   border: 1px solid var(--glass-border-strong);
   background: radial-gradient(
     circle at 30% 30%,
-    rgba(94, 162, 239, 0.28),
-    rgba(0, 114, 245, 0.12)
+    rgba(94, 162, 239, 0.22),
+    rgba(0, 114, 245, 0.08)
   );
-  box-shadow: 0 12px 32px rgba(0, 114, 245, 0.25),
+  box-shadow: 0 12px 28px rgba(0, 114, 245, 0.18),
     0 0 0 1px var(--glass-border);
 }
 

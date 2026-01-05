@@ -262,7 +262,7 @@ function Pricing() {
                 className="bg-[#0072F5] text-white hover:bg-[#0052CC]"
                 onPress={() => navigate("/home")}
               >
-                Go to app
+                Open LifeLog
               </Button>
             </div>
           </div>
@@ -401,7 +401,7 @@ function Pricing() {
                   className="w-full border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 text-slate-900 dark:text-white hover:bg-white dark:hover:bg-white/10"
                   onPress={startFree}
                 >
-                  {user ? "Go to app" : "Start free"}
+                  {user ? "Open LifeLog" : "Start free"}
                 </Button>
               </div>
             </CardBody>

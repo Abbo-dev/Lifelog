@@ -274,7 +274,7 @@ const NoteList = ({
       <div
         key={note.id}
         onClick={isTrashSelectMode ? undefined : () => setOpenNote(note)}
-        className={`group relative bg-[#eef3ff] dark:bg-slate-900/90 border border-[#d6e4ff]/80 dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#0072F5]/15 ${
+        className={`group relative bg-[var(--surface-2)] dark:bg-slate-900/90 border border-[color:var(--surface-border)] dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#0072F5]/15 ${
           !isTrashMode && note.isPinned ? "border-[#0072F5]" : ""
         } ${isTrashSelectMode ? "cursor-default" : "cursor-pointer"}`}
       >
@@ -449,7 +449,7 @@ const NoteList = ({
 
       {openNote && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-3">
-          <div className="relative w-full max-w-3xl bg-[#eef3ff] dark:bg-slate-900 rounded-2xl border border-[#d6e4ff]/80 dark:border-gray-800 shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-3xl bg-[var(--surface-2)] dark:bg-slate-900 rounded-2xl border border-[color:var(--surface-border)] dark:border-gray-800 shadow-2xl overflow-hidden">
             <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-200 dark:border-gray-800">
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">

@@ -12,16 +12,22 @@ body {
 
 :root {
   /* Shared palettes for light/dark - keep smooth, single-pass gradients to avoid banding lines */
-  --app-bg-light: linear-gradient(180deg, #dce7ff 0%, #cfdcfa 100%);
+  --app-bg-light: linear-gradient(180deg, #f5f8ff 0%, #e9f0ff 100%);
   --app-bg-dark: linear-gradient(180deg, #0b1f3f 0%, #0b1f3f 100%);
   --app-bg: var(--app-bg-light);
   --nav-bg: transparent;
-  --text-primary: #0f1f3f;
-  --text-secondary: #1f2f53;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --surface-1: #f9fbff;
+  --surface-2: #eff4ff;
+  --surface-border: rgba(148, 172, 214, 0.55);
+  --surface-border-strong: rgba(130, 156, 205, 0.7);
 }
 
 html.dark {
   --app-bg: var(--app-bg-dark);
+  --text-primary: #f7f9ff;
+  --text-secondary: #cbd5f5;
 }
 
 html,
