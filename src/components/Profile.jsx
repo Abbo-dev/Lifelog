@@ -8,6 +8,11 @@ import {
   Chip,
   Skeleton,
   Checkbox,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
   Select,
   SelectItem,
 } from "@heroui/react";
@@ -19,7 +24,6 @@ import {
   useReminderScheduler,
   useReminderSettings,
 } from "../hooks/useReminders";
-import { useLocalPro } from "../hooks/useLocalPro";
 import {
   generateLocalNoteId,
   loadLocalNotes,
@@ -167,12 +171,6 @@ function Profile() {
   const billing = useBillingStatus(user?.uid);
   const apiBaseUrlRaw = import.meta.env.VITE_API_BASE_URL;
   const apiBaseUrl = (apiBaseUrlRaw || "").replace(/\/+$/, "");
-  const {
-    enabled: localProEnabled,
-    isCodeConfigured: localProCodeConfigured,
-    setProEnabled,
-    unlockWithCode,
-  } = useLocalPro(user?.uid);
   const [stats, setStats] = useState({
     notes: 0,
     pinned: 0,
@@ -194,7 +192,11 @@ function Profile() {
   const [notes, setNotes] = useState([]);
   const { settings: reminderSettings, updateSettings: updateReminderSettings } =
     useReminderSettings(user?.uid);
-  useReminderScheduler({ notes, userId: user?.uid, settings: reminderSettings });
+  useReminderScheduler({
+    notes,
+    userId: user?.uid,
+    settings: reminderSettings,
+  });
   const [notesLoaded, setNotesLoaded] = useState(false);
   const activeNotes = useMemo(
     () => notes.filter((note) => !note?.trashedAt),
@@ -218,8 +220,6 @@ function Profile() {
     }
     return Notification.permission;
   });
-  const [localProCode, setLocalProCode] = useState("");
-  const [localProStatus, setLocalProStatus] = useState("");
 
   const toDateValue = (value) => {
     if (!value) return null;
@@ -480,7 +480,9 @@ function Profile() {
         contentType: optimizedBlob.type || file.type,
       });
       const url = await getDownloadURL(storageRef);
-      const cacheBustedUrl = `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+      const cacheBustedUrl = `${url}${
+        url.includes("?") ? "&" : "?"
+      }v=${Date.now()}`;
       await updateProfile(user, { photoURL: cacheBustedUrl });
       setAvatarStatus("Photo updated.");
     } catch (error) {
@@ -533,7 +535,9 @@ function Profile() {
     const total = activeNotes.length;
     const pinned = pinnedNotes.length;
     const upcoming = upcomingNotes.length;
-    const dated = activeNotes.filter((note) => !!toDateValue(note.dueDate)).length;
+    const dated = activeNotes.filter(
+      (note) => !!toDateValue(note.dueDate)
+    ).length;
     return { total, pinned, upcoming, dated };
   }, [activeNotes, pinnedNotes, upcomingNotes]);
 
@@ -627,7 +631,9 @@ function Profile() {
 
     const existing = loadLocalNotes(user.uid);
     const byId = new Map(
-      existing.filter((note) => typeof note?.id === "string").map((note) => [note.id, note])
+      existing
+        .filter((note) => typeof note?.id === "string")
+        .map((note) => [note.id, note])
     );
 
     let imported = 0;
@@ -673,7 +679,8 @@ function Profile() {
 
     for (const raw of importedNotes) {
       const rawId = typeof raw?.id === "string" ? raw.id.trim() : "";
-      const ref = preserveIds && rawId ? doc(db, "notes", rawId) : doc(notesCollection);
+      const ref =
+        preserveIds && rawId ? doc(db, "notes", rawId) : doc(notesCollection);
 
       const createdAt = toDateValue(raw?.createdAt);
       const lastModified = toDateValue(raw?.lastModified);
@@ -852,32 +859,16 @@ function Profile() {
       return;
     }
 
-    await showReminderNotification({
+    const shown = await showReminderNotification({
       title: "LifeLog reminder",
       body: "This is how due date reminders will look.",
       data: { url: "/home" },
     });
-    setReminderStatus("Test reminder sent.");
-  };
-
-  const handleUnlockLocalPro = () => {
-    setLocalProStatus("");
-    if (!localProCodeConfigured) {
-      setLocalProStatus("Set VITE_LOCAL_PRO_CODE in your .env to enable unlocks.");
-      return;
-    }
-    const result = unlockWithCode(localProCode);
-    if (!result.ok) {
-      setLocalProStatus("Invalid Local Pro code.");
-      return;
-    }
-    setLocalProCode("");
-    setLocalProStatus("Local Pro unlocked on this device.");
-  };
-
-  const handleDisableLocalPro = () => {
-    setProEnabled(false);
-    setLocalProStatus("Local Pro disabled on this device.");
+    setReminderStatus(
+      shown
+        ? "Test reminder sent."
+        : "Couldn't show a notification. Check browser or OS settings."
+    );
   };
 
   if (!user) {
@@ -887,7 +878,9 @@ function Profile() {
           <p className="text-lg text-slate-700 dark:text-gray-200">
             Please sign in to view your profile.
           </p>
-          <Button onPress={() => navigate("/auth?mode=signin")}>Go to Sign In</Button>
+          <Button onPress={() => navigate("/auth?mode=signin")}>
+            Go to Sign In
+          </Button>
         </div>
       </div>
     );
@@ -969,23 +962,23 @@ function Profile() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.45 }}
-          className="mt-10 profile-surface-strong rounded-3xl p-5 md:p-6 text-white overflow-hidden"
+          className="mt-10 profile-surface-strong rounded-3xl p-5 md:p-6 text-slate-900 dark:text-white overflow-hidden"
         >
           <div className="flex items-center justify-between gap-3 flex-wrap pb-4">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.25em] text-white/70">
+              <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/70">
                 Dashboard snapshot
               </p>
               <h2 className="text-xl font-semibold">Live LifeLog view</h2>
-              <p className="text-xs text-white/70">
+              <p className="text-xs text-slate-600 dark:text-white/70">
                 Pinned, due soon, and calendar from your notes.
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="profile-chip px-3 py-1 text-[11px]">
+              <span className="profile-chip px-3 py-1 text-[11px] text-slate-700 dark:text-white/80">
                 Pinned {dashboardStats.pinned}
               </span>
-              <span className="profile-chip px-3 py-1 text-[11px] text-[#5EA2EF]">
+              <span className="profile-chip px-3 py-1 text-[11px] text-slate-700 dark:text-white/80">
                 Upcoming {dashboardStats.upcoming}
               </span>
             </div>
@@ -996,14 +989,14 @@ function Profile() {
               <div className="profile-surface rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
                       Pinned + due soon
                     </p>
-                    <p className="text-xs text-white/70">
+                    <p className="text-xs text-slate-600 dark:text-white/70">
                       Real notes from your workspace
                     </p>
                   </div>
-                  <span className="px-3 py-1 text-[11px] rounded-full profile-chip text-white/80">
+                  <span className="px-3 py-1 text-[11px] rounded-full profile-chip text-slate-700 dark:text-white/80">
                     {priorityNotes.length
                       ? `${priorityNotes.length} highlighted`
                       : "No priority notes yet"}
@@ -1011,7 +1004,7 @@ function Profile() {
                 </div>
                 <div className="mt-3 space-y-3">
                   {priorityNotes.length === 0 ? (
-                    <p className="text-sm text-white/60">
+                    <p className="text-sm text-slate-500 dark:text-white/60">
                       Pin notes or add due dates to see them here.
                     </p>
                   ) : (
@@ -1021,10 +1014,10 @@ function Profile() {
                         className="flex items-start justify-between gap-3 rounded-xl profile-surface px-3 py-3"
                       >
                         <div className="space-y-1 text-left">
-                          <p className="text-sm font-semibold text-white line-clamp-2">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white line-clamp-2">
                             {note.title || "Untitled note"}
                           </p>
-                          <p className="text-[11px] text-white/70">
+                          <p className="text-[11px] text-slate-600 dark:text-white/70">
                             {note.isPinned ? "Pinned • " : ""}
                             {formatDue(note)}
                           </p>
@@ -1033,7 +1026,7 @@ function Profile() {
                               {note.tags.slice(0, 3).map((tag) => (
                                 <span
                                   key={tag}
-                                  className="px-2 py-0.5 rounded-full text-[11px] profile-chip text-white/80"
+                                  className="px-2 py-0.5 rounded-full text-[11px] profile-chip text-slate-700 dark:text-white/80"
                                 >
                                   #{tag}
                                 </span>
@@ -1063,12 +1056,12 @@ function Profile() {
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className="rounded-2xl profile-surface p-3 text-left"
+                      className="rounded-2xl profile-surface p-3 text-left flex flex-col min-h-[84px]"
                     >
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">
+                      <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500 dark:text-white/60">
                         {stat.label}
                       </p>
-                      <p className="text-lg font-semibold text-white mt-1">
+                      <p className="mt-auto text-2xl font-semibold text-slate-900 dark:text-white leading-tight tabular-nums">
                         {stat.value}
                       </p>
                     </div>
@@ -1086,7 +1079,7 @@ function Profile() {
                   >
                     ‹
                   </button>
-                  <div className="text-sm font-semibold text-white">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white">
                     {format(calendarMonth, "MMMM yyyy")}
                   </div>
                   <button
@@ -1097,7 +1090,7 @@ function Profile() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-2 mt-3 text-[11px] text-white/60">
+                <div className="grid grid-cols-7 gap-2 mt-3 text-[11px] text-slate-500 dark:text-white/60">
                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
                     (day) => (
                       <span key={day} className="text-center">
@@ -1119,10 +1112,10 @@ function Profile() {
                         onClick={() => handleDateSelect(day)}
                         className={`relative h-12 rounded-xl text-xs transition-all ${
                           selected
-                            ? "profile-chip text-white shadow-[0_0_0_1px_rgba(94,162,239,0.2)]"
+                            ? "profile-chip text-slate-900 dark:text-white shadow-[0_0_0_1px_rgba(94,162,239,0.2)]"
                             : inMonth
-                            ? "profile-surface text-white/80 hover:shadow-[0_0_0_1px_rgba(94,162,239,0.18)]"
-                            : "profile-surface text-white/40 opacity-70"
+                            ? "profile-surface text-slate-700 dark:text-white/80 hover:shadow-[0_0_0_1px_rgba(94,162,239,0.18)]"
+                            : "profile-surface text-slate-400 dark:text-white/40 opacity-70"
                         }`}
                       >
                         <span className="absolute top-1 left-1 text-[11px]">
@@ -1141,16 +1134,16 @@ function Profile() {
 
                 <div className="mt-4 rounded-2xl profile-surface p-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
                       {format(selectedDate, "MMM d, yyyy")}
                     </p>
-                    <span className="text-xs text-white/70">
+                    <span className="text-xs text-slate-600 dark:text-white/70">
                       {selectedDateNotes.length} scheduled
                     </span>
                   </div>
                   <div className="mt-3 space-y-2">
                     {selectedDateNotes.length === 0 ? (
-                      <p className="text-sm text-white/60">
+                      <p className="text-sm text-slate-500 dark:text-white/60">
                         No notes due on this date.
                       </p>
                     ) : (
@@ -1160,16 +1153,16 @@ function Profile() {
                           className="flex items-center justify-between gap-2 rounded-xl profile-surface px-3 py-2"
                         >
                           <div className="space-y-0.5 text-left">
-                            <p className="text-sm font-semibold text-white line-clamp-1">
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white line-clamp-1">
                               {note.title || "Untitled note"}
                             </p>
-                            <p className="text-[11px] text-white/70">
+                            <p className="text-[11px] text-slate-600 dark:text-white/70">
                               {formatDue(note)}
                             </p>
                           </div>
                           <Chip
                             size="sm"
-                            className="profile-chip text-white"
+                            className="profile-chip text-slate-900 dark:text-white"
                             variant="flat"
                           >
                             {note.tags?.[0] ? `#${note.tags[0]}` : "Scheduled"}
@@ -1236,10 +1229,13 @@ function Profile() {
                 <Button
                   size="sm"
                   variant="light"
-                  onPress={() => setShowSettings((prev) => !prev)}
+                  onPress={() => setShowSettings(true)}
                   className="text-[#0072F5]"
+                  aria-expanded={showSettings}
+                  aria-controls="account-settings-modal"
+                  aria-haspopup="dialog"
                 >
-                  {showSettings ? "Hide settings" : "Account settings"}
+                  Account settings
                 </Button>
               </div>
               <p className="text-xs text-slate-500 dark:text-gray-400">
@@ -1343,421 +1339,428 @@ function Profile() {
           </Card>
         </motion.div>
 
-        {showSettings && (
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mt-8 grid gap-4 md:grid-cols-2"
+        <Modal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          size="4xl"
+          scrollBehavior="inside"
+          className="mx-4"
+        >
+          <ModalContent
+            id="account-settings-modal"
+            className="profile-modal text-slate-900 dark:text-gray-100"
           >
-            <Card className="profile-card">
-              <CardBody className="p-5 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold">Subscription</h3>
-                  <Chip
-                    size="sm"
-                    className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
-                    variant="flat"
+            {(onClose) => (
+              <>
+                <ModalHeader className="flex flex-col gap-1 profile-modal-header">
+                  <h2
+                    id="account-settings-title"
+                    className="text-xl font-semibold"
                   >
-                    {planLoading ? "Loading" : isPremium ? "Premium" : "Free"}
-                  </Chip>
-                </div>
-                <p className="text-sm text-slate-500 dark:text-gray-400">
-                  View your billing status and manage your subscription.
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 dark:text-gray-400">
-                      Status
-                    </span>
-                    {billing.loaded ? (
-                      <span className="font-medium text-slate-900 dark:text-gray-100">
-                        {formatSubscriptionStatus(billing.status)}
-                      </span>
-                    ) : (
-                      <Skeleton className="h-5 w-24 rounded-full" />
-                    )}
-                  </div>
-                  {billing.loaded && billing.nextBilledAt ? (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 dark:text-gray-400">
-                        Next bill
-                      </span>
-                      <span className="text-slate-900 dark:text-gray-100">
-                        {formatBillingDate(billing.nextBilledAt)}
-                      </span>
-                    </div>
-                  ) : null}
-                  {billing.loaded && billing.updatedAt ? (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 dark:text-gray-400">
-                        Last update
-                      </span>
-                      <span className="text-slate-900 dark:text-gray-100">
-                        {formatBillingDate(billing.updatedAt)}
-                      </span>
-                    </div>
-                  ) : null}
-                  {billing.loaded && billing.subscriptionId ? (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 dark:text-gray-400">
-                        Subscription
-                      </span>
-                      <span className="text-xs text-slate-700 dark:text-gray-200 truncate max-w-[180px]">
-                        {billing.subscriptionId}
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
+                    Account settings
+                  </h2>
+                  <p className="text-sm text-slate-500 dark:text-gray-400">
+                    Manage your plan, reminders, and security details in one
+                    place.
+                  </p>
+                </ModalHeader>
+                <ModalBody className="space-y-5 pb-6 lg:pb-8">
+                  <section
+                    aria-labelledby="account-settings-preferences"
+                    className="space-y-2"
+                  >
+                    <h3
+                      id="account-settings-preferences"
+                      className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400"
+                    >
+                      Plan & preferences
+                    </h3>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Card className="profile-card">
+                        <CardBody className="p-4 pb-4 space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <h3 className="text-lg font-semibold">
+                              Subscription
+                            </h3>
+                            <Chip
+                              size="sm"
+                              className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
+                              variant="flat"
+                            >
+                              {planLoading
+                                ? "Loading"
+                                : isPremium
+                                ? "Premium"
+                                : "Free"}
+                            </Chip>
+                          </div>
+                          <p className="text-sm text-slate-500 dark:text-gray-400">
+                            View your billing status and manage your
+                            subscription.
+                          </p>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-500 dark:text-gray-400">
+                                Status
+                              </span>
+                              {billing.loaded ? (
+                                <span className="font-medium text-slate-900 dark:text-gray-100">
+                                  {formatSubscriptionStatus(billing.status)}
+                                </span>
+                              ) : (
+                                <Skeleton className="h-5 w-24 rounded-full" />
+                              )}
+                            </div>
+                            {billing.loaded && billing.nextBilledAt ? (
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-slate-500 dark:text-gray-400">
+                                  Next bill
+                                </span>
+                                <span className="text-slate-900 dark:text-gray-100">
+                                  {formatBillingDate(billing.nextBilledAt)}
+                                </span>
+                              </div>
+                            ) : null}
+                            {billing.loaded && billing.updatedAt ? (
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-slate-500 dark:text-gray-400">
+                                  Last update
+                                </span>
+                                <span className="text-slate-900 dark:text-gray-100">
+                                  {formatBillingDate(billing.updatedAt)}
+                                </span>
+                              </div>
+                            ) : null}
+                            {billing.loaded && billing.subscriptionId ? (
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-slate-500 dark:text-gray-400">
+                                  Subscription
+                                </span>
+                                <span className="text-xs text-slate-700 dark:text-gray-200 truncate max-w-[180px]">
+                                  {billing.subscriptionId}
+                                </span>
+                              </div>
+                            ) : null}
+                          </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {isPremium ? (
-                    <Button
-                      size="sm"
-                      className="shadow-md shadow-[#0072F5]/20"
-                      isLoading={portalLoading}
-                      onPress={handleOpenBillingPortal}
+                          <div className="flex flex-wrap gap-2">
+                            {isPremium ? (
+                              <Button
+                                size="sm"
+                                className="shadow-md shadow-[#0072F5]/20"
+                                isLoading={portalLoading}
+                                onPress={handleOpenBillingPortal}
+                              >
+                                Manage billing
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="shadow-md shadow-[#0072F5]/20"
+                                onPress={() => navigate("/pricing")}
+                              >
+                                Upgrade
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="bordered"
+                              className="border-slate-200 dark:border-gray-700"
+                              onPress={() => navigate("/pricing")}
+                            >
+                              View plans
+                            </Button>
+                          </div>
+
+                          {portalStatus && (
+                            <p className="text-xs text-slate-500 dark:text-gray-400">
+                              {portalStatus}
+                            </p>
+                          )}
+                          {billing.error && (
+                            <p className="text-xs text-rose-600 dark:text-rose-300">
+                              {billing.error}
+                            </p>
+                          )}
+                        </CardBody>
+                      </Card>
+
+                      <Card className="profile-card">
+                        <CardBody className="p-4 pb-4 space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <h3 className="text-lg font-semibold">Reminders</h3>
+                            <Chip
+                              size="sm"
+                              className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+                              variant="flat"
+                            >
+                              {reminderSettings.enabled ? "On" : "Off"}
+                            </Chip>
+                          </div>
+                          <p className="text-sm text-slate-500 dark:text-gray-400">
+                            Get a notification when a note is due.
+                          </p>
+                          <Checkbox
+                            size="sm"
+                            color="primary"
+                            isSelected={reminderSettings.enabled}
+                            onValueChange={handleToggleReminders}
+                            className="text-sm text-slate-700 dark:text-gray-200"
+                          >
+                            Enable reminders
+                          </Checkbox>
+
+                          <div className="space-y-1">
+                            <label className="text-xs text-slate-500 dark:text-gray-400">
+                              Remind me
+                            </label>
+                            <Select
+                              selectedKeys={[
+                                String(reminderSettings.leadMinutes ?? 0),
+                              ]}
+                              onSelectionChange={handleLeadChange}
+                              isDisabled={!reminderSettings.enabled}
+                              size="sm"
+                              className="max-w-[220px]"
+                              classNames={{
+                                trigger:
+                                  "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
+                              }}
+                              aria-label="Reminder timing"
+                            >
+                              {reminderLeadOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </Select>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              className="border border-slate-200 dark:border-gray-700"
+                              onPress={handleTestReminder}
+                            >
+                              Send test
+                            </Button>
+                          </div>
+
+                          <p className="text-xs text-slate-500 dark:text-gray-400">
+                            {formatReminderPermission(reminderPermission)}
+                          </p>
+                          {reminderStatus && (
+                            <p className="text-xs text-slate-500 dark:text-gray-400">
+                              {reminderStatus}
+                            </p>
+                          )}
+                        </CardBody>
+                      </Card>
+                    </div>
+                  </section>
+
+                  <section
+                    aria-labelledby="account-settings-security"
+                    className="space-y-2"
+                  >
+                    <h3
+                      id="account-settings-security"
+                      className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400"
                     >
-                      Manage billing
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="shadow-md shadow-[#0072F5]/20"
-                      onPress={() => navigate("/pricing")}
-                    >
-                      Upgrade
-                    </Button>
-                  )}
+                      Security
+                    </h3>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Card className="profile-card">
+                        <CardBody className="p-4 pb-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold">
+                              Update email
+                            </h3>
+                            <Chip
+                              size="sm"
+                              className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
+                              variant="flat"
+                            >
+                              Secure
+                            </Chip>
+                          </div>
+                          <form
+                            className="space-y-2"
+                            onSubmit={handleUpdateEmail}
+                          >
+                            <div className="space-y-1">
+                              <label className="text-xs text-slate-500 dark:text-gray-400">
+                                New email
+                              </label>
+                              <input
+                                type="email"
+                                value={newEmail}
+                                onChange={(e) => setNewEmail(e.target.value)}
+                                className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
+                                placeholder="you@example.com"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-slate-500 dark:text-gray-400">
+                                Password (for confirmation)
+                              </label>
+                              <input
+                                type="password"
+                                value={authPassword}
+                                onChange={(e) =>
+                                  setAuthPassword(e.target.value)
+                                }
+                                className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
+                                placeholder="Enter current password"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs text-slate-500 dark:text-gray-400">
+                                Re-authentication keeps your account secure.
+                              </p>
+                              <Button
+                                size="sm"
+                                type="submit"
+                                isLoading={savingEmail}
+                                className="shadow-md shadow-[#0072F5]/20"
+                              >
+                                Save email
+                              </Button>
+                            </div>
+                            {emailStatus && (
+                              <p
+                                className={`text-xs ${
+                                  emailStatus.includes("successfully")
+                                    ? "text-emerald-600"
+                                    : "text-red-500"
+                                }`}
+                              >
+                                {emailStatus}
+                              </p>
+                            )}
+                          </form>
+                        </CardBody>
+                      </Card>
+
+                      <Card className="profile-card">
+                        <CardBody className="p-4 pb-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold">
+                              Update password
+                            </h3>
+                            <Chip
+                              size="sm"
+                              className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
+                              variant="flat"
+                            >
+                              Secure
+                            </Chip>
+                          </div>
+                          <form
+                            className="space-y-2"
+                            onSubmit={handleUpdatePassword}
+                          >
+                            <div className="space-y-1">
+                              <label className="text-xs text-slate-500 dark:text-gray-400">
+                                Current password
+                              </label>
+                              <input
+                                type="password"
+                                value={passwordForm.current}
+                                onChange={(e) =>
+                                  setPasswordForm((prev) => ({
+                                    ...prev,
+                                    current: e.target.value,
+                                  }))
+                                }
+                                className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
+                                placeholder="Current password"
+                              />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <label className="text-xs text-slate-500 dark:text-gray-400">
+                                  New password
+                                </label>
+                                <input
+                                  type="password"
+                                  value={passwordForm.next}
+                                  onChange={(e) =>
+                                    setPasswordForm((prev) => ({
+                                      ...prev,
+                                      next: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
+                                  placeholder="At least 6 characters"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-xs text-slate-500 dark:text-gray-400">
+                                  Confirm new password
+                                </label>
+                                <input
+                                  type="password"
+                                  value={passwordForm.confirm}
+                                  onChange={(e) =>
+                                    setPasswordForm((prev) => ({
+                                      ...prev,
+                                      confirm: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
+                                  placeholder="Repeat new password"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs text-slate-500 dark:text-gray-400">
+                                Create a strong password to keep your notes
+                                safe.
+                              </p>
+                              <Button
+                                size="sm"
+                                type="submit"
+                                isLoading={savingPassword}
+                                className="shadow-md shadow-[#0072F5]/20"
+                              >
+                                Save password
+                              </Button>
+                            </div>
+                            {passwordStatus && (
+                              <p
+                                className={`text-xs ${
+                                  passwordStatus.includes("successfully")
+                                    ? "text-emerald-600"
+                                    : "text-red-500"
+                                }`}
+                              >
+                                {passwordStatus}
+                              </p>
+                            )}
+                          </form>
+                        </CardBody>
+                      </Card>
+                    </div>
+                  </section>
+                </ModalBody>
+                <ModalFooter className="flex justify-end gap-3 profile-modal-footer">
                   <Button
-                    size="sm"
                     variant="bordered"
                     className="border-slate-200 dark:border-gray-700"
-                    onPress={() => navigate("/pricing")}
+                    onPress={onClose}
                   >
-                    View plans
+                    Close
                   </Button>
-                </div>
-
-                {portalStatus && (
-                  <p className="text-xs text-slate-500 dark:text-gray-400">
-                    {portalStatus}
-                  </p>
-                )}
-                {billing.error && (
-                  <p className="text-xs text-rose-600 dark:text-rose-300">
-                    {billing.error}
-                  </p>
-                )}
-              </CardBody>
-            </Card>
-            <Card className="profile-card">
-              <CardBody className="p-5 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold">Local Pro</h3>
-                  <Chip
-                    size="sm"
-                    className={
-                      localProEnabled
-                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
-                        : "bg-slate-900/5 text-slate-700 dark:bg-white/10 dark:text-white/80"
-                    }
-                    variant="flat"
-                  >
-                    {localProEnabled ? "Unlocked" : "Locked"}
-                  </Chip>
-                </div>
-                <p className="text-sm text-slate-500 dark:text-gray-400">
-                  Unlock Local Pro features on this device (no cloud required).
-                </p>
-
-                {localProEnabled ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      className="border border-slate-200 dark:border-gray-700"
-                      onPress={handleDisableLocalPro}
-                    >
-                      Disable Local Pro
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-1">
-                      <label className="text-xs text-slate-500 dark:text-gray-400">
-                        Unlock code
-                      </label>
-                      <input
-                        type="text"
-                        value={localProCode}
-                        onChange={(e) => setLocalProCode(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
-                        placeholder="Enter Local Pro code"
-                      />
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        className="shadow-md shadow-[#0072F5]/20"
-                        onPress={handleUnlockLocalPro}
-                      >
-                        Unlock Local Pro
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="bordered"
-                        className="border-slate-200 dark:border-gray-700"
-                        onPress={() => navigate("/pricing")}
-                      >
-                        View pricing
-                      </Button>
-                    </div>
-                  </>
-                )}
-
-                <p className="text-xs text-slate-500 dark:text-gray-400">
-                  Local Pro is stored on this device only.
-                </p>
-                {localProStatus && (
-                  <p className="text-xs text-slate-500 dark:text-gray-400">
-                    {localProStatus}
-                  </p>
-                )}
-              </CardBody>
-            </Card>
-            <Card className="profile-card">
-              <CardBody className="p-5 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold">Reminders</h3>
-                  <Chip
-                    size="sm"
-                    className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
-                    variant="flat"
-                  >
-                    {reminderSettings.enabled ? "On" : "Off"}
-                  </Chip>
-                </div>
-                <p className="text-sm text-slate-500 dark:text-gray-400">
-                  Get a notification when a note is due.
-                </p>
-                <Checkbox
-                  size="sm"
-                  color="primary"
-                  isSelected={reminderSettings.enabled}
-                  onValueChange={handleToggleReminders}
-                  className="text-sm text-slate-700 dark:text-gray-200"
-                >
-                  Enable reminders
-                </Checkbox>
-
-                <div className="space-y-2">
-                  <label className="text-xs text-slate-500 dark:text-gray-400">
-                    Remind me
-                  </label>
-                  <Select
-                    selectedKeys={[
-                      String(reminderSettings.leadMinutes ?? 0),
-                    ]}
-                    onSelectionChange={handleLeadChange}
-                    isDisabled={!reminderSettings.enabled}
-                    size="sm"
-                    className="max-w-[220px]"
-                    classNames={{
-                      trigger:
-                        "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
-                    }}
-                    aria-label="Reminder timing"
-                  >
-                    {reminderLeadOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    className="border border-slate-200 dark:border-gray-700"
-                    onPress={handleTestReminder}
-                  >
-                    Send test
-                  </Button>
-                </div>
-
-                <p className="text-xs text-slate-500 dark:text-gray-400">
-                  {formatReminderPermission(reminderPermission)}
-                </p>
-                {reminderStatus && (
-                  <p className="text-xs text-slate-500 dark:text-gray-400">
-                    {reminderStatus}
-                  </p>
-                )}
-              </CardBody>
-            </Card>
-            <Card className="profile-card">
-              <CardBody className="p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Update email</h3>
-                  <Chip
-                    size="sm"
-                    className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
-                    variant="flat"
-                  >
-                    Secure
-                  </Chip>
-                </div>
-                <form className="space-y-3" onSubmit={handleUpdateEmail}>
-                  <div className="space-y-1">
-                    <label className="text-xs text-slate-500 dark:text-gray-400">
-                      New email
-                    </label>
-                    <input
-                      type="email"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
-                      placeholder="you@example.com"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs text-slate-500 dark:text-gray-400">
-                      Password (for confirmation)
-                    </label>
-                    <input
-                      type="password"
-                      value={authPassword}
-                      onChange={(e) => setAuthPassword(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
-                      placeholder="Enter current password"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-slate-500 dark:text-gray-400">
-                      Re-authentication keeps your account secure.
-                    </p>
-                    <Button
-                      size="sm"
-                      type="submit"
-                      isLoading={savingEmail}
-                      className="shadow-md shadow-[#0072F5]/20"
-                    >
-                      Save email
-                    </Button>
-                  </div>
-                  {emailStatus && (
-                    <p
-                      className={`text-xs ${
-                        emailStatus.includes("successfully")
-                          ? "text-emerald-600"
-                          : "text-red-500"
-                      }`}
-                    >
-                      {emailStatus}
-                    </p>
-                  )}
-                </form>
-              </CardBody>
-            </Card>
-
-            <Card className="profile-card">
-              <CardBody className="p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Update password</h3>
-                  <Chip
-                    size="sm"
-                    className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
-                    variant="flat"
-                  >
-                    Secure
-                  </Chip>
-                </div>
-                <form className="space-y-3" onSubmit={handleUpdatePassword}>
-                  <div className="space-y-1">
-                    <label className="text-xs text-slate-500 dark:text-gray-400">
-                      Current password
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordForm.current}
-                      onChange={(e) =>
-                        setPasswordForm((prev) => ({
-                          ...prev,
-                          current: e.target.value,
-                        }))
-                      }
-                      className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
-                      placeholder="Current password"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-xs text-slate-500 dark:text-gray-400">
-                        New password
-                      </label>
-                      <input
-                        type="password"
-                        value={passwordForm.next}
-                        onChange={(e) =>
-                          setPasswordForm((prev) => ({
-                            ...prev,
-                            next: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
-                        placeholder="At least 6 characters"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs text-slate-500 dark:text-gray-400">
-                        Confirm new password
-                      </label>
-                      <input
-                        type="password"
-                        value={passwordForm.confirm}
-                        onChange={(e) =>
-                          setPasswordForm((prev) => ({
-                            ...prev,
-                            confirm: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
-                        placeholder="Repeat new password"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-slate-500 dark:text-gray-400">
-                      Create a strong password to keep your notes safe.
-                    </p>
-                    <Button
-                      size="sm"
-                      type="submit"
-                      isLoading={savingPassword}
-                      className="shadow-md shadow-[#0072F5]/20"
-                    >
-                      Save password
-                    </Button>
-                  </div>
-                  {passwordStatus && (
-                    <p
-                      className={`text-xs ${
-                        passwordStatus.includes("successfully")
-                          ? "text-emerald-600"
-                          : "text-red-500"
-                      }`}
-                    >
-                      {passwordStatus}
-                    </p>
-                  )}
-                </form>
-              </CardBody>
-            </Card>
-          </motion.div>
-        )}
+                </ModalFooter>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
       </div>
     </div>
   );

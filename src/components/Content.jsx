@@ -85,14 +85,13 @@ function Content() {
     ? { label: "View profile", to: "/profile" }
     : { label: "Sign in", to: "/auth?mode=signin" };
 
-  const tertiaryCta = { label: "See pricing", to: "/pricing" };
   const finalCta = isAuthenticated
     ? { label: "Open dashboard", to: "/home" }
     : { label: "Create free account", to: "/auth?mode=signup" };
 
   return (
     <div
-      className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center px-4 pt-14 md:pt-16 pb-24"
+      className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center px-4 pt-14 md:pt-16 pb-32"
     >
       <div className="relative max-w-6xl w-full text-center z-10">
         <motion.div
@@ -116,8 +115,8 @@ function Content() {
           </h1>
           <p className="text-base md:text-lg text-slate-700 dark:text-white/80 max-w-2xl mx-auto">
             {isAuthenticated
-              ? "Pick up where you left off—your notes and routines are waiting."
-              : "Capture thoughts, stay organized, and move forward."}
+              ? "Pick up where you left off—your notes, tasks, and reminders are waiting."
+              : "LifeLog is a personal notes and daily-planning dashboard—capture ideas, tag them, and set reminders in one place."}
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link to={primaryCta.to}>
@@ -135,12 +134,6 @@ function Content() {
               >
                 {secondaryCta.label}
               </Button>
-            </Link>
-            <Link
-              to={tertiaryCta.to}
-              className="text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white transition-colors"
-            >
-              {tertiaryCta.label}
             </Link>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 dark:text-white/75">

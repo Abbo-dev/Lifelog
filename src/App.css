@@ -171,6 +171,27 @@ html.dark .profile-shell {
   box-shadow: var(--profile-shadow);
 }
 
+.profile-modal {
+  --profile-surface: var(--glass-soft-bg);
+  --profile-surface-strong: var(--glass-strong-bg);
+  --profile-border: var(--glass-border);
+  --profile-shadow: var(--glass-shadow);
+  --profile-filter: blur(14px) saturate(135%);
+  background: var(--profile-surface-strong);
+  border: 1px solid var(--profile-border);
+  box-shadow: var(--glass-shadow-strong);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+
+.profile-modal-header {
+  border-bottom: 1px solid var(--profile-border);
+}
+
+.profile-modal-footer {
+  border-top: 1px solid var(--profile-border);
+}
+
 /* Footer */
 .footer-panel {
   position: relative;

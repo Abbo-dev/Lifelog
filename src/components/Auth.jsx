@@ -16,6 +16,7 @@ import {
   TwitterAuthProvider,
 } from "firebase/auth";
 import { auth } from "../firebase";
+import { useAuth } from "../contexts/AuthContext";
 import SwitchTheme from "./Switch";
 import Logo from "../assets/logo2.png";
 import EmailIcon from "../assets/email.svg";
@@ -118,6 +119,7 @@ export default function Auth() {
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = normalizeMode(searchParams.get("mode"));
   const isSignup = mode === "signup";
+  const { user } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -140,6 +142,11 @@ export default function Auth() {
       setSearchParams({ mode: "signin" }, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!user || !isSignup) return;
+    navigate("/home", { replace: true });
+  }, [user, isSignup, navigate]);
 
   useEffect(() => {
     setError("");

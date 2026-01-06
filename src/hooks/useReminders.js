@@ -86,25 +86,31 @@ export const showReminderNotification = async ({ title, body, data }) => {
   if (!isNotificationSupported()) return false;
   if (Notification.permission !== "granted") return false;
 
+  const payload = {
+    body,
+    tag: data?.noteId ? `note-${data.noteId}` : undefined,
+    data,
+  };
+
   if ("serviceWorker" in navigator) {
-    const registration = await navigator.serviceWorker.getRegistration();
-    if (registration) {
-      await registration.showNotification(title, {
-        body,
-        tag: data?.noteId ? `note-${data.noteId}` : undefined,
-        data,
-      });
-      return true;
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        await registration.showNotification(title, payload);
+        return true;
+      }
+    } catch {
+      // Fall back to the window notification API.
     }
   }
 
   // Fallback to the window notification API.
-  new Notification(title, {
-    body,
-    tag: data?.noteId ? `note-${data.noteId}` : undefined,
-    data,
-  });
-  return true;
+  try {
+    new Notification(title, payload);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const useReminderSettings = (userId) => {
@@ -172,13 +178,15 @@ export const useReminderScheduler = ({ notes, userId, settings }) => {
               ? ` (${settings.leadMinutes}m early)`
               : "";
 
-          await showReminderNotification({
+          const shown = await showReminderNotification({
             title: `Reminder: ${noteTitle}`,
             body: `Due ${dueLabel}${leadLabel}`,
             data: { noteId, url: "/home" },
           });
-          history[noteId] = fireAt;
-          changed = true;
+          if (shown) {
+            history[noteId] = fireAt;
+            changed = true;
+          }
         }
       }
 
