@@ -1,4 +1,12 @@
-import { Button, Card, CardBody, Chip, Skeleton } from "@heroui/react";
+import {
+  Accordion,
+  AccordionItem,
+  Button,
+  Card,
+  CardBody,
+  Chip,
+  Skeleton,
+} from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import { RocketLaunchIcon, SparklesIcon } from "@heroicons/react/24/outline";
@@ -29,6 +37,39 @@ const features = {
     "Import local notes to cloud",
   ],
 };
+
+const pricingFaqItems = [
+  {
+    id: "cancel-anytime",
+    question: "Can I cancel Premium anytime?",
+    answer:
+      "Yes. You can cancel directly from the billing portal whenever you want, with no hidden steps. Your Premium access typically stays active until the end of the current billing period, and after that you simply return to the Free plan without losing your notes.",
+  },
+  {
+    id: "annual-discount",
+    question: "Is there an annual discount?",
+    answer:
+      "Yes. Annual billing is priced lower than paying month to month, so you save over the year. When you switch the toggle to Annual you will see the discounted total and the effective monthly rate upfront.",
+  },
+  {
+    id: "downgrade",
+    question: "What happens if I downgrade?",
+    answer:
+      "You keep all of your notes. Local notes stay on your device as usual, and cloud sync simply stops after your Premium period ends. If you decide to return to Premium later, you can upgrade again and continue syncing.",
+  },
+  {
+    id: "billing-portal",
+    question: "Where do I manage billing and invoices?",
+    answer:
+      "After upgrading, the billing portal is the place to update your payment method, download invoices, and manage your subscription. If you are signed in, you can open the portal directly from this page with one click.",
+  },
+  {
+    id: "refunds",
+    question: "Do you offer refunds?",
+    answer:
+      "If something goes wrong with your billing, contact support and we will help you sort it out. We want you to feel confident when you upgrade, so if there is a mistake or an issue, we will work with you to make it right.",
+  },
+];
 
 function Pricing() {
   const { user, plan, isPremium, refreshPlan, planLoading } = useAuth();
@@ -555,74 +596,55 @@ function Pricing() {
           </div>
         )}
 
-        <div className="mt-10 rounded-2xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-6">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">
-              How Premium works
+        <div className="mt-10">
+          <div className="text-center mb-7 space-y-2">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/70">
+              Pricing FAQ
             </p>
-            <span className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
-              3 steps
-            </span>
+            <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white">
+              Pricing questions, answered.
+            </h2>
+            <p className="text-sm text-slate-700 dark:text-white/75 max-w-2xl mx-auto">
+              Clear answers about billing, upgrades, and what happens if you change plans.
+            </p>
           </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/15 text-[#0072F5] font-semibold">
-                  1
-                </span>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Upgrade
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-white/70">
-                    Choose monthly or annual and complete checkout.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/15 text-[#0072F5] font-semibold">
-                  2
-                </span>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Come back
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-white/70">
-                    Return to LifeLog after the payment finishes.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/15 text-[#0072F5] font-semibold">
-                  3
-                </span>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Refresh
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-white/70">
-                    Premium unlocks automatically — tap “Refresh plan” if it doesn&apos;t.
-                  </p>
-                </div>
-              </div>
+          <div className="relative mx-auto w-full max-w-3xl">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-6 rounded-[32px] bg-gradient-to-r from-[#5EA2EF]/20 via-[#0072F5]/15 to-transparent blur-3xl opacity-70"
+            />
+            <div className="relative glass-panel-soft rounded-3xl border border-white/10 p-4 md:p-6 text-left">
+              <Accordion
+                variant="splitted"
+                selectionMode="multiple"
+                defaultExpandedKeys={["cancel-anytime"]}
+                showDivider={false}
+                className="gap-3"
+                itemClasses={{
+                  base:
+                    "rounded-2xl border border-white/10 bg-white/70 dark:bg-white/5 shadow-[0_16px_40px_rgba(15,32,65,0.12)] backdrop-blur-xl",
+                  trigger: "px-4 py-4 gap-4",
+                  title: "text-sm md:text-base font-semibold text-slate-900 dark:text-white",
+                  content:
+                    "px-4 pb-4 pt-0 text-sm text-slate-700 dark:text-white/70",
+                  indicator: "text-[#0072F5] dark:text-[#5EA2EF]",
+                }}
+              >
+                {pricingFaqItems.map((item) => (
+                  <AccordionItem
+                    key={item.id}
+                    aria-label={item.question}
+                    title={item.question}
+                  >
+                    <p className="text-sm text-slate-700 dark:text-white/70">
+                      {item.answer}
+                    </p>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </div>
           </div>
-
-          <p className="mt-4 text-xs text-slate-500 dark:text-white/60">
-            If Premium doesn&apos;t unlock within a few minutes, try “Refresh plan”
-            again or contact{" "}
-            <a className="text-[#0072F5] hover:underline" href="mailto:support@lifelog.app">
-              support@lifelog.app
-            </a>
-            .
-          </p>
         </div>
       </div>
     </div>

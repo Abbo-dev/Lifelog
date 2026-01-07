@@ -1,9 +1,23 @@
 import { useEffect, useState } from "react";
-import { Button, Card, CardBody, Chip, Image } from "@heroui/react";
+import {
+  Accordion,
+  AccordionItem,
+  Button,
+  Card,
+  CardBody,
+  Chip,
+  Image,
+} from "@heroui/react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckIcon } from "@heroicons/react/20/solid";
-import { RocketLaunchIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import {
+  BellAlertIcon,
+  PencilSquareIcon,
+  RocketLaunchIcon,
+  SparklesIcon,
+  Squares2X2Icon,
+} from "@heroicons/react/24/outline";
 import { auth } from "../firebase";
 
 import Calendar from "../assets/calendar.svg";
@@ -47,6 +61,27 @@ const highlights = [
   },
 ];
 
+const howItWorks = [
+  {
+    title: "Capture in seconds",
+    body: "Save notes, tasks, and ideas the moment they show up.",
+    icon: PencilSquareIcon,
+    points: ["Quick add with rich formatting", "Checklists, links, and images"],
+  },
+  {
+    title: "Organize with intent",
+    body: "Group what matters using tags, colors, and pins.",
+    icon: Squares2X2Icon,
+    points: ["Smart folders and fast search", "Drag to reorder priorities"],
+  },
+  {
+    title: "Act on what's next",
+    body: "Set due dates and reminders so nothing slips.",
+    icon: BellAlertIcon,
+    points: ["Due dates on any note", "Browser reminders at the right time"],
+  },
+];
+
 const pricingTiers = {
   free: [
     "Local notes on one device",
@@ -63,6 +98,39 @@ const pricingTiers = {
     "Sync smart folders + tag colors",
   ],
 };
+
+const faqItems = [
+  {
+    id: "what-is",
+    question: "What is LifeLog?",
+    answer:
+      "LifeLog is your all-in-one place for daily notes, quick tasks, and gentle reminders. It brings your ideas, priorities, and due dates into a single, simple dashboard so you can plan your day without bouncing between apps.",
+  },
+  {
+    id: "free-plan",
+    question: "Is LifeLog free?",
+    answer:
+      "Yes. The Free plan is available forever and stores your notes locally on one device. If you want cloud sync, sharing, and automatic backups, the Premium plan adds those extras while keeping the same clean, fast experience.",
+  },
+  {
+    id: "reminders",
+    question: "How do reminders work?",
+    answer:
+      "Add a due date to any note and choose when you want to be reminded. LifeLog will send a browser notification at the right time, so you stay on track without needing to keep the app open.",
+  },
+  {
+    id: "offline",
+    question: "Can I use LifeLog offline?",
+    answer:
+      "Absolutely. Local notes work offline by default, which makes LifeLog great for commuting or focused sessions without Wi-Fi. Premium also keeps an offline cache and syncs your changes automatically once you are back online.",
+  },
+  {
+    id: "privacy",
+    question: "How private are my notes?",
+    answer:
+      "Your notes stay on your device by default, which keeps things private and lightweight. If you choose Premium, your notes are synced to the cloud so you can access them anywhere, and you stay in control of what you share.",
+  },
+];
 
 function Content() {
   const [authUser, setAuthUser] = useState(null);
@@ -245,6 +313,76 @@ function Content() {
         </motion.div>
 
         <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.55, ease: "easeOut" }}
+          className="mt-16"
+        >
+          <div className="text-center mb-7 space-y-2">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/65">
+              How it works
+            </p>
+            <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white">
+              A simple flow for busy days.
+            </h2>
+            <p className="text-sm text-slate-700 dark:text-white/70 max-w-2xl mx-auto">
+              Capture, organize, and act without switching tools.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 text-left md:grid-cols-3">
+            {howItWorks.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.25 }}
+                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 * idx }}
+                  className="group glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-white/10 text-slate-900 dark:text-white transition-all hover:border-white/20 hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
+                >
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -top-16 right-0 h-32 w-32 rounded-full bg-[#5EA2EF]/20 blur-3xl opacity-70 transition-opacity group-hover:opacity-90"
+                  />
+                  <div className="relative space-y-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-2">
+                        <span className="inline-flex items-center rounded-full border border-white/20 bg-white/70 dark:bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
+                          Step {idx + 1}
+                        </span>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                          {item.title}
+                        </h3>
+                        <p className="text-sm text-slate-700 dark:text-white/75">
+                          {item.body}
+                        </p>
+                      </div>
+                      <span className="glow-icon w-12 h-12 flex items-center justify-center shrink-0">
+                        <Icon className="w-6 h-6 text-[#0072F5] dark:text-[#5EA2EF]" />
+                      </span>
+                    </div>
+                    <div className="h-px w-full bg-white/20 dark:bg-white/10" />
+                    <ul className="space-y-2 text-sm text-slate-700 dark:text-white/75">
+                      {item.points.map((point) => (
+                        <li key={point} className="flex items-start gap-3">
+                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/12 dark:bg-[#0072F5]/20">
+                            <CheckIcon className="h-3.5 w-3.5 text-[#0072F5] dark:text-[#5EA2EF]" />
+                          </span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.25 }}
@@ -400,6 +538,63 @@ function Content() {
               </div>
             </div>
 
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="mt-16"
+        >
+          <div className="text-center mb-8 space-y-2">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/65">
+              FAQ
+            </p>
+            <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white">
+              Questions, answered.
+            </h2>
+            <p className="text-sm text-slate-700 dark:text-white/70 max-w-2xl mx-auto">
+              Quick details on plans, privacy, and reminders.
+            </p>
+          </div>
+
+          <div className="relative mx-auto w-full max-w-3xl">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-6 rounded-[32px] bg-gradient-to-r from-[#5EA2EF]/20 via-[#0072F5]/15 to-transparent blur-3xl opacity-70"
+            />
+            <div className="relative glass-panel-soft rounded-3xl border border-white/10 p-4 md:p-6 text-left">
+              <Accordion
+                variant="splitted"
+                selectionMode="multiple"
+                defaultExpandedKeys={["what-is"]}
+                showDivider={false}
+                className="gap-3"
+                itemClasses={{
+                  base:
+                    "rounded-2xl border border-white/10 bg-white/70 dark:bg-white/5 shadow-[0_16px_40px_rgba(15,32,65,0.12)] backdrop-blur-xl",
+                  trigger: "px-4 py-4 gap-4",
+                  title: "text-sm md:text-base font-semibold text-slate-900 dark:text-white",
+                  content:
+                    "px-4 pb-4 pt-0 text-sm text-slate-700 dark:text-white/70",
+                  indicator: "text-[#0072F5] dark:text-[#5EA2EF]",
+                }}
+              >
+                {faqItems.map((item) => (
+                  <AccordionItem
+                    key={item.id}
+                    aria-label={item.question}
+                    title={item.question}
+                  >
+                    <p className="text-sm text-slate-700 dark:text-white/70">
+                      {item.answer}
+                    </p>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
           </div>
         </motion.div>
 
