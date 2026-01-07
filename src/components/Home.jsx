@@ -9,7 +9,6 @@ import NoteList from "./NoteList";
 import { useAuth } from "../contexts/AuthContext";
 import { useReminderScheduler, useReminderSettings } from "../hooks/useReminders";
 import { useFocusMode } from "../hooks/useFocusMode";
-import { useLocalPro } from "../hooks/useLocalPro";
 import {
   deleteLocalNote,
   generateLocalNoteId,
@@ -82,7 +81,6 @@ function Home() {
   const currentUserId = user?.uid || "";
   const isAuthenticated = !!user;
   const { enabled: focusMode, toggle: toggleFocusMode } = useFocusMode();
-  const { enabled: localProEnabled } = useLocalPro(currentUserId);
   const { settings: reminderSettings } = useReminderSettings(currentUserId);
   useReminderScheduler({ notes, userId: currentUserId, settings: reminderSettings });
   const smartFoldersSeededRef = useRef(false);
@@ -173,7 +171,6 @@ function Home() {
       },
       {
         label: "Weekly review",
-        proOnly: true,
         draft: {
           title: `Weekly review • ${todayLabel}`,
           content:
@@ -186,7 +183,6 @@ function Home() {
       },
       {
         label: "Project plan",
-        proOnly: true,
         draft: {
           title: "Project plan",
           content:
@@ -514,16 +510,6 @@ function Home() {
 
   const handleToggleLock = async (note) => {
     if (!currentUserId || !note?.id) return;
-    if (!localProEnabled && !note.locked) {
-      addToast({
-        title: "Local Pro required",
-        description: "Unlock Local Pro to lock notes.",
-        timeout: 5000,
-        shouldShowTimeoutProgress: true,
-      });
-      return;
-    }
-
     if (isPremium) {
       addToast({
         title: "Locking is local-only",
@@ -686,7 +672,7 @@ function Home() {
       isPinned: !!noteDraft?.isPinned,
     };
 
-    if (existingNote && localProEnabled) {
+    if (existingNote) {
       saveNoteVersion(currentUserId, existingNote);
     }
 
@@ -987,15 +973,6 @@ function Home() {
 
   const handleRestoreVersion = async (note, snapshot) => {
     if (!note || !snapshot) return;
-    if (!localProEnabled) {
-      addToast({
-        title: "Local Pro required",
-        description: "Unlock Local Pro to restore note history.",
-        timeout: 5000,
-        shouldShowTimeoutProgress: true,
-      });
-      return;
-    }
     try {
       await handleSaveNote(snapshot, note);
     } catch (error) {
@@ -1251,18 +1228,24 @@ function Home() {
   }, [currentUserId, isPremium]);
 
   useEffect(() => {
+    const writeOrClear = (key) => {
+      try {
+        if (smartFolders.length > 0) {
+          localStorage.setItem(key, JSON.stringify(smartFolders));
+        } else {
+          localStorage.removeItem(key);
+        }
+      } catch {
+        // ignore storage errors (private mode / blocked storage)
+      }
+    };
+
     if (!currentUserId) {
-      localStorage.setItem(
-        "smartFolders_anonymous",
-        JSON.stringify(smartFolders)
-      );
+      writeOrClear("smartFolders_anonymous");
+      return;
     }
-    if (currentUserId && smartFolders.length > 0) {
-      localStorage.setItem(
-        `smartFolders_${currentUserId}`,
-        JSON.stringify(smartFolders)
-      );
-    }
+
+    writeOrClear(`smartFolders_${currentUserId}`);
   }, [smartFolders, currentUserId]);
 
   useEffect(() => {
@@ -1691,15 +1674,6 @@ function Home() {
                   variant="flat"
                   className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
                   onPress={() => {
-                    if (!localProEnabled) {
-                      addToast({
-                        title: "Local Pro required",
-                        description: "Unlock Local Pro to use Focus mode.",
-                        timeout: 5000,
-                        shouldShowTimeoutProgress: true,
-                      });
-                      return;
-                    }
                     toggleFocusMode();
                   }}
                 >
@@ -2313,7 +2287,6 @@ function Home() {
                 onDeleteForever={handleDeleteForever}
                 userId={currentUserId}
                 tagColors={tagColors}
-                localProEnabled={localProEnabled}
                 viewMode="list"
               />
             </div>
@@ -2387,25 +2360,11 @@ function Home() {
                       variant="flat"
                       className="px-5 glass-chip border border-white/20 text-slate-900 dark:text-white"
                       onPress={() => {
-                        if (template.proOnly && !localProEnabled) {
-                          addToast({
-                            title: "Local Pro required",
-                            description: "Unlock Local Pro to use this template.",
-                            timeout: 5000,
-                            shouldShowTimeoutProgress: true,
-                          });
-                          return;
-                        }
                         openNewNote(template.draft);
                       }}
                     >
                       <span className="flex items-center gap-2">
                         {template.label}
-                        {template.proOnly && !localProEnabled ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/70 text-slate-700">
-                            Pro
-                          </span>
-                        ) : null}
                       </span>
                     </Button>
                   ))}
@@ -2429,7 +2388,6 @@ function Home() {
               onRestoreVersion={handleRestoreVersion}
               onToggleLock={handleToggleLock}
               userId={currentUserId}
-              localProEnabled={localProEnabled}
               onShare={isPremium ? handleShareNote : undefined}
               onUnshare={isPremium ? handleUnshareNote : undefined}
               tagColors={tagColors}

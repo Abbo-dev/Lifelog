@@ -17,7 +17,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { importLocalNotesToCloud } from "../services/notesMigration";
 import { loadLocalNotes } from "../utils/localNotes";
 import { createBillingPortalSession } from "../services/billingPortal";
-import { useLocalPro } from "../hooks/useLocalPro";
 
 const features = {
   free: [
@@ -73,7 +72,6 @@ const pricingFaqItems = [
 
 function Pricing() {
   const { user, plan, isPremium, refreshPlan, planLoading } = useAuth();
-  const { enabled: localProEnabled } = useLocalPro(user?.uid);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const checkoutUrlMonthly = import.meta.env.VITE_CHECKOUT_URL;
@@ -308,40 +306,6 @@ function Pricing() {
             </div>
           </div>
         )}
-
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                Local Pro (offline bundle)
-              </p>
-              <p className="text-xs text-slate-600 dark:text-white/70 mt-1">
-                Version history, PDF export, note lock, focus mode, and advanced templates —
-                all stored on this device.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {localProEnabled ? (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  className="border border-slate-200 dark:border-white/10"
-                  onPress={() => navigate("/profile?localpro=1")}
-                >
-                  Manage Local Pro
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  className="bg-[#0072F5] text-white hover:bg-[#0052CC]"
-                  onPress={() => navigate("/profile?localpro=1")}
-                >
-                  Unlock with code
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
 
         <div className="mt-8 flex items-center justify-center">
           <div className="inline-flex items-center rounded-full border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-1 shadow-sm">

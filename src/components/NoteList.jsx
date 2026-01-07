@@ -32,7 +32,6 @@ const NoteList = ({
   viewMode = "grid",
   mode = "active",
   userId = "",
-  localProEnabled = false,
 }) => {
   const [openNote, setOpenNote] = useState(null);
   const [shareBusy, setShareBusy] = useState(false);
@@ -325,8 +324,7 @@ const NoteList = ({
                 </button>
               ) : (
                 <>
-                  {(localProEnabled || isLocked) &&
-                  typeof onToggleLock === "function" ? (
+                  {typeof onToggleLock === "function" ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -520,7 +518,7 @@ const NoteList = ({
                     </button>
                   </>
                 ) : null}
-                {mode === "active" && localProEnabled && !openNoteLocked ? (
+                {mode === "active" && !openNoteLocked ? (
                   <>
                     <button
                       type="button"
@@ -539,7 +537,6 @@ const NoteList = ({
                   </>
                 ) : null}
                 {mode === "active" &&
-                localProEnabled &&
                 !openNoteLocked &&
                 typeof onRestoreVersion === "function" &&
                 userId ? (
@@ -597,12 +594,6 @@ const NoteList = ({
               </div>
             </div>
             <div className="p-4 max-h-[70vh] overflow-y-auto">
-              {mode === "active" && !localProEnabled && (
-                <div className="mb-3 rounded-lg border border-slate-200/80 dark:border-gray-800 bg-white/70 dark:bg-white/5 p-3 text-xs text-slate-600 dark:text-gray-300">
-                  Local Pro unlocks history, PDF export, focus mode, and note locks
-                  on this device.
-                </div>
-              )}
               {showHistory ? (
                 <div className="space-y-3">
                   {historyItems.length === 0 ? (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardBody } from "@heroui/card";
 import {
@@ -166,7 +166,6 @@ const prepareAvatarBlob = async (file) => {
 
 function Profile() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, isPremium, planLoading } = useAuth();
   const billing = useBillingStatus(user?.uid);
   const apiBaseUrlRaw = import.meta.env.VITE_API_BASE_URL;
@@ -365,13 +364,6 @@ function Profile() {
   useEffect(() => {
     setNewEmail(user?.email || "");
   }, [user]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search || "");
-    if (params.get("localpro") === "1") {
-      setShowSettings(true);
-    }
-  }, [location.search]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) {
