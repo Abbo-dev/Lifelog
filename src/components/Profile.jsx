@@ -854,7 +854,7 @@ function Profile() {
     const shown = await showReminderNotification({
       title: "LifeLog reminder",
       body: "This is how due date reminders will look.",
-      data: { url: "/home" },
+      data: { url: "/app" },
     });
     setReminderStatus(
       shown
@@ -1205,7 +1205,7 @@ function Profile() {
               <div className="flex gap-2 flex-wrap">
                 <Button
                   size="sm"
-                  onPress={() => navigate("/home")}
+                  onPress={() => navigate("/app")}
                   className="shadow-md shadow-[#0072F5]/20"
                 >
                   Open Notes
@@ -1213,7 +1213,7 @@ function Profile() {
                 <Button
                   size="sm"
                   variant="bordered"
-                  onPress={() => navigate("/home")}
+                  onPress={() => navigate("/app")}
                   className="border-slate-200 dark:border-gray-700"
                 >
                   Create a Note
