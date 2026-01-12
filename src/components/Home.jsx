@@ -389,7 +389,25 @@ function Home() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      setShowCard(true);
+      let skipModal = false;
+      try {
+        const ts = sessionStorage.getItem("lifelog:skipAuthModal");
+        if (ts) {
+          sessionStorage.removeItem("lifelog:skipAuthModal");
+          const age = Date.now() - Number(ts);
+          if (Number.isFinite(age) && age < 10000) {
+            skipModal = true;
+          }
+        }
+      } catch {
+        // ignore storage errors
+      }
+
+      if (!skipModal) {
+        setShowCard(true);
+      } else {
+        setShowCard(false);
+      }
       setConfetti(false);
       return;
     }
