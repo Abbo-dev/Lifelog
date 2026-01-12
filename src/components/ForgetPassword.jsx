@@ -35,7 +35,7 @@ function PasswordForget() {
       <div className="w-full h-screen flex justify-center items-center overflow-hidden   transition-all">
         <Card className="w-full max-w-md m-5 pb-10">
           <CardHeader className="flex items-center justify-center -mt-4">
-            <Link to="/">
+            <Link to="/home">
               <Image
                 src={Logo}
                 alt="logo"
