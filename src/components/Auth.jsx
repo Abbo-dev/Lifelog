@@ -145,7 +145,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (!user || !isSignup) return;
-    navigate("/home", { replace: true });
+    navigate("/app", { replace: true });
   }, [user, isSignup, navigate]);
 
   useEffect(() => {
@@ -189,7 +189,7 @@ export default function Auth() {
     try {
       await ensureAuthPersistence({ forceLocal: isSignup });
       await signInWithPopup(auth, provider);
-      navigate("/home");
+      navigate("/app");
     } catch (err) {
       console.error(err);
       setError(getAuthErrorMessage(err));
@@ -238,13 +238,13 @@ export default function Auth() {
         } catch (verificationError) {
           console.warn("Failed to send verification email", verificationError);
         }
-        navigate("/home");
+        navigate("/app");
         return;
       }
 
       await ensureAuthPersistence();
       await signInWithEmailAndPassword(auth, trimmedEmail, password);
-      navigate("/home");
+      navigate("/app");
     } catch (err) {
       console.error(err);
       setError(getAuthErrorMessage(err));
@@ -280,7 +280,7 @@ export default function Auth() {
 
             <div className="relative z-10 flex flex-col h-full min-h-[260px]">
               <div className="flex items-start justify-between gap-4">
-                <Link to="/" className="inline-flex items-center gap-2">
+                <Link to="/home" className="inline-flex items-center gap-2">
                   <Image
                     src={Logo}
                     alt="LifeLog"
