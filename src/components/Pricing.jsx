@@ -232,7 +232,7 @@ function Pricing() {
 
   const startFree = () => {
     if (user) {
-      navigate("/home");
+      navigate("/app");
       return;
     }
     navigate("/auth?mode=signup");
@@ -299,7 +299,7 @@ function Pricing() {
               <Button
                 size="sm"
                 className="bg-[#0072F5] text-white hover:bg-[#0052CC]"
-                onPress={() => navigate("/home")}
+                onPress={() => navigate("/app")}
               >
                 Open LifeLog
               </Button>
