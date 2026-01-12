@@ -181,7 +181,7 @@ export const useReminderScheduler = ({ notes, userId, settings }) => {
           const shown = await showReminderNotification({
             title: `Reminder: ${noteTitle}`,
             body: `Due ${dueLabel}${leadLabel}`,
-            data: { noteId, url: "/home" },
+            data: { noteId, url: "/app" },
           });
           if (shown) {
             history[noteId] = fireAt;
