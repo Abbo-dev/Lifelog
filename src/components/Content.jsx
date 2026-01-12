@@ -267,10 +267,10 @@ function Content() {
             </Link>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 dark:text-white/75">
-            <span className="px-3 py-1 rounded-full glass-chip border border-white/10 text-slate-700 dark:text-white/80">
+            <span className="px-3 py-1 rounded-full glass-chip border border-slate-200/70 dark:border-white/10 text-slate-700 dark:text-white/80">
               Free forever on one device. Upgrade for sync anytime.
             </span>
-            <span className="px-3 py-1 rounded-full glass-chip border border-white/10 text-slate-700 dark:text-white/80">
+            <span className="px-3 py-1 rounded-full glass-chip border border-slate-200/70 dark:border-white/10 text-slate-700 dark:text-white/80">
               See priorities, tags, and due dates at a glance.
             </span>
           </div>
@@ -310,8 +310,8 @@ function Content() {
                       : ""
                   }`}
                 >
-                  <span className="h-px w-12 bg-white/60 dark:bg-white/40" />
-                  <div className="rounded-2xl border border-white/20 bg-white/80 dark:bg-black/40 px-3 py-2 text-xs text-slate-700 dark:text-white/80 shadow-[0_12px_30px_rgba(0,0,0,0.2)] backdrop-blur-xl">
+                  <span className="h-px w-12 bg-slate-300/70 dark:bg-white/40" />
+                  <div className="rounded-2xl border border-slate-200/80 dark:border-white/20 bg-white/80 dark:bg-black/40 px-3 py-2 text-xs text-slate-700 dark:text-white/80 shadow-[0_12px_30px_rgba(0,0,0,0.2)] backdrop-blur-xl">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
                       {callout.title}
                     </p>
@@ -336,7 +336,7 @@ function Content() {
             {previewCallouts.map((callout) => (
               <span
                 key={callout.title}
-                className="px-3 py-1 rounded-full glass-chip border border-white/10"
+                className="px-3 py-1 rounded-full glass-chip border border-slate-200/70 dark:border-white/10"
               >
                 {callout.title}
               </span>
@@ -382,7 +382,7 @@ function Content() {
             {socialProof.brands.map((brand) => (
               <span
                 key={brand}
-                className="px-4 py-2 rounded-full glass-chip border border-white/10 uppercase tracking-[0.25em] text-[10px]"
+                className="px-4 py-2 rounded-full glass-chip border border-slate-200/70 dark:border-white/10 uppercase tracking-[0.25em] text-[10px]"
               >
                 {brand}
               </span>
@@ -401,7 +401,7 @@ function Content() {
                   ease: "easeOut",
                   delay: 0.05 * idx,
                 }}
-                className="glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-white/10 text-slate-900 dark:text-white"
+                className="glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-white"
               >
                 <div
                   aria-hidden="true"
@@ -415,7 +415,7 @@ function Content() {
                     <Avatar
                       name={item.name}
                       src={item.src}
-                      className="w-11 h-11 text-sm bg-white/80 text-slate-900 dark:bg-white/10 dark:text-white border border-white/20"
+                      className="w-11 h-11 text-sm bg-white/80 text-slate-900 dark:bg-white/10 dark:text-white border border-slate-200/80 dark:border-white/20"
                     />
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -463,7 +463,7 @@ function Content() {
                   ease: "easeOut",
                   delay: 0.05 * idx,
                 }}
-                className="group glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-white/10 text-slate-900 dark:text-white transition-all hover:border-white/20 hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
+                className="group glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-white transition-all hover:border-slate-300/80 dark:hover:border-white/20 hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
               >
                 <div
                   aria-hidden="true"
@@ -472,7 +472,7 @@ function Content() {
                 <div className="relative space-y-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-2">
-                      <span className="inline-flex items-center rounded-full border border-white/20 bg-white/70 dark:bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
+                      <span className="inline-flex items-center rounded-full border border-slate-200/80 dark:border-white/20 bg-white/70 dark:bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
                         {item.meta}
                       </span>
                       <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -490,11 +490,11 @@ function Content() {
                       />
                     </span>
                   </div>
-                  <div className="h-px w-full bg-white/20 dark:bg-white/10" />
+                  <div className="h-px w-full bg-slate-200/70 dark:bg-white/10" />
                   <ul className="space-y-2 text-sm text-slate-700 dark:text-white/75">
                     {item.points.map((point) => (
                       <li key={point} className="flex items-start gap-3">
-                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/12 dark:bg-[#0072F5]/20">
+                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/22 border border-[#0072F5]/20 dark:bg-[#0072F5]/20 dark:border-[#0072F5]/30">
                           <CheckIcon className="h-3.5 w-3.5 text-[#0072F5] dark:text-[#5EA2EF]" />
                         </span>
                         <span>{point}</span>
@@ -540,7 +540,7 @@ function Content() {
                     ease: "easeOut",
                     delay: 0.05 * idx,
                   }}
-                  className="group glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-white/10 text-slate-900 dark:text-white transition-all hover:border-white/20 hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
+                  className="group glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-white transition-all hover:border-slate-300/80 dark:hover:border-white/20 hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
                 >
                   <div
                     aria-hidden="true"
@@ -549,7 +549,7 @@ function Content() {
                   <div className="relative space-y-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-2">
-                        <span className="inline-flex items-center rounded-full border border-white/20 bg-white/70 dark:bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
+                        <span className="inline-flex items-center rounded-full border border-slate-200/80 dark:border-white/20 bg-white/70 dark:bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
                           Step {idx + 1}
                         </span>
                         <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -563,11 +563,11 @@ function Content() {
                         <Icon className="w-6 h-6 text-[#0072F5] dark:text-[#5EA2EF]" />
                       </span>
                     </div>
-                    <div className="h-px w-full bg-white/20 dark:bg-white/10" />
+                    <div className="h-px w-full bg-slate-200/70 dark:bg-white/10" />
                     <ul className="space-y-2 text-sm text-slate-700 dark:text-white/75">
                       {item.points.map((point) => (
                         <li key={point} className="flex items-start gap-3">
-                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/12 dark:bg-[#0072F5]/20">
+                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/22 border border-[#0072F5]/20 dark:bg-[#0072F5]/20 dark:border-[#0072F5]/30">
                             <CheckIcon className="h-3.5 w-3.5 text-[#0072F5] dark:text-[#5EA2EF]" />
                           </span>
                           <span>{point}</span>
@@ -588,7 +588,7 @@ function Content() {
           transition={{ duration: 0.55, ease: "easeOut" }}
           className="mt-16"
         >
-          <div className="rounded-3xl border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
+          <div className="rounded-3xl border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
             <div className="text-center space-y-2">
               <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/70">
                 Pricing
@@ -603,7 +603,7 @@ function Content() {
             </div>
 
             <div className="mt-8 grid gap-6 md:grid-cols-2">
-              <Card className="relative h-full overflow-hidden border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
+              <Card className="relative h-full overflow-hidden border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0"
@@ -647,7 +647,7 @@ function Content() {
                   <ul className="mt-6 space-y-3 text-sm text-slate-700 dark:text-white/80">
                     {pricingTiers.free.map((item) => (
                       <li key={item} className="flex items-start gap-3">
-                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/12 dark:bg-[#0072F5]/20">
+                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/22 border border-[#0072F5]/20 dark:bg-[#0072F5]/20 dark:border-[#0072F5]/30">
                           <CheckIcon className="h-3.5 w-3.5 text-[#0072F5] dark:text-[#5EA2EF]" />
                         </span>
                         <span>{item}</span>
@@ -772,7 +772,7 @@ function Content() {
               aria-hidden="true"
               className="pointer-events-none absolute -inset-6 rounded-[32px] bg-gradient-to-r from-[#5EA2EF]/20 via-[#0072F5]/15 to-transparent blur-3xl opacity-70"
             />
-            <div className="relative glass-panel-soft rounded-3xl border border-white/10 p-4 md:p-6 text-left">
+            <div className="relative glass-panel-soft rounded-3xl border border-slate-200/70 dark:border-white/10 p-4 md:p-6 text-left">
               <Accordion
                 variant="splitted"
                 selectionMode="multiple"
@@ -780,7 +780,7 @@ function Content() {
                 showDivider={false}
                 className="gap-3"
                 itemClasses={{
-                  base: "rounded-2xl border border-white/10 bg-white/70 dark:bg-white/5 shadow-[0_16px_40px_rgba(15,32,65,0.12)] backdrop-blur-xl",
+                  base: "rounded-2xl border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 shadow-[0_16px_40px_rgba(15,32,65,0.12)] backdrop-blur-xl",
                   trigger: "px-4 py-4 gap-4",
                   title:
                     "text-sm md:text-base font-semibold text-slate-900 dark:text-white",
@@ -812,7 +812,7 @@ function Content() {
           transition={{ duration: 0.55, ease: "easeOut" }}
           className="mt-16"
         >
-          <div className="glass-panel-soft relative overflow-hidden rounded-[28px] border border-white/10 p-8 shadow-[0_30px_80px_rgba(0,0,0,0.18)]">
+          <div className="glass-panel-soft relative overflow-hidden rounded-[28px] border border-slate-200/70 dark:border-white/10 p-8 shadow-[0_30px_80px_rgba(0,0,0,0.18)]">
             <div
               aria-hidden="true"
               className="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full bg-[#5EA2EF]/25 blur-3xl"
@@ -822,7 +822,7 @@ function Content() {
               className="pointer-events-none absolute -bottom-24 left-0 h-56 w-56 rounded-full bg-[#0072F5]/15 blur-3xl"
             />
             <div className="relative flex flex-col items-center text-center">
-              <span className="inline-flex items-center rounded-full border border-white/20 bg-white/70 dark:bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
+              <span className="inline-flex items-center rounded-full border border-slate-200/80 dark:border-white/20 bg-white/70 dark:bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/70">
                 Ready to start
               </span>
               <h2 className="mt-4 text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white">
@@ -834,19 +834,19 @@ function Content() {
               </p>
               <ul className="mt-6 grid gap-3 text-sm text-slate-700 dark:text-white/75 sm:grid-cols-2">
                 <li className="flex items-start justify-center gap-3">
-                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/12 dark:bg-[#0072F5]/20">
+                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/22 border border-[#0072F5]/20 dark:bg-[#0072F5]/20 dark:border-[#0072F5]/30">
                     <CheckIcon className="h-3.5 w-3.5 text-[#0072F5] dark:text-[#5EA2EF]" />
                   </span>
                   <span>One dashboard for notes, tasks, and routines.</span>
                 </li>
                 <li className="flex items-start justify-center gap-3">
-                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/12 dark:bg-[#0072F5]/20">
+                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/22 border border-[#0072F5]/20 dark:bg-[#0072F5]/20 dark:border-[#0072F5]/30">
                     <CheckIcon className="h-3.5 w-3.5 text-[#0072F5] dark:text-[#5EA2EF]" />
                   </span>
                   <span>Pin priorities and set due dates in seconds.</span>
                 </li>
                 <li className="flex items-start justify-center gap-3 sm:col-span-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/12 dark:bg-[#0072F5]/20">
+                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0072F5]/22 border border-[#0072F5]/20 dark:bg-[#0072F5]/20 dark:border-[#0072F5]/30">
                     <CheckIcon className="h-3.5 w-3.5 text-[#0072F5] dark:text-[#5EA2EF]" />
                   </span>
                   <span>Find anything fast with tags and smart folders.</span>
