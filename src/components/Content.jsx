@@ -409,7 +409,7 @@ function Content() {
                 />
                 <div className="relative h-full flex flex-col">
                   <p className="text-sm text-slate-700 dark:text-white/75">
-                    "{item.quote}"
+                    &quot;{item.quote}&quot;
                   </p>
                   <div className="mt-6 flex items-center gap-4">
                     <Avatar
@@ -447,7 +447,7 @@ function Content() {
               What you get
             </p>
             <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white mt-1">
-              Everything you need. Nothing you don't.
+              Everything you need. Nothing you don&apos;t.
             </h2>
           </div>
 
