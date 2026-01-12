@@ -83,7 +83,7 @@ const testimonials = [
     name: "Ava R.",
     role: "Operations",
     company: "Northwind",
-    src: "https://i.pravatar.cc/120?img=13",
+    src: "https://i.pravatar.cc/120?img=23",
   },
   {
     quote:
@@ -91,7 +91,7 @@ const testimonials = [
     name: "Miles K.",
     role: "Founder",
     company: "Harbor",
-    src: "https://i.pravatar.cc/120?img=23",
+    src: "https://i.pravatar.cc/120?img=13",
   },
   {
     quote:
@@ -208,22 +208,20 @@ function Content() {
   const isAuthenticated = !!authUser;
   const displayName = authUser?.displayName?.trim();
 
-const primaryCta = isAuthenticated
-  ? { label: "Open your dashboard", to: "/home" }
-  : { label: "Start free — no setup", to: "/auth?mode=signup" };
+  const primaryCta = isAuthenticated
+    ? { label: "Open your dashboard", to: "/app" }
+    : { label: "Start free — no setup", to: "/auth?mode=signup" };
 
   const secondaryCta = isAuthenticated
     ? { label: "View profile", to: "/profile" }
     : { label: "Sign in", to: "/auth?mode=signin" };
 
   const finalCta = isAuthenticated
-    ? { label: "Return to dashboard", to: "/home" }
+    ? { label: "Return to dashboard", to: "/app" }
     : { label: "Create your dashboard", to: "/auth?mode=signup" };
 
   return (
-    <div
-      className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center px-4 pt-14 md:pt-16 pb-32"
-    >
+    <div className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center px-4 pt-14 md:pt-16 pb-32">
       <div className="relative max-w-6xl w-full text-center z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -304,8 +302,12 @@ const primaryCta = isAuthenticated
               {previewCallouts.map((callout) => (
                 <div
                   key={callout.title}
-                  className={`absolute ${callout.position} flex items-center gap-3 ${
-                    callout.align === "right" ? "flex-row-reverse text-right" : ""
+                  className={`absolute ${
+                    callout.position
+                  } flex items-center gap-3 ${
+                    callout.align === "right"
+                      ? "flex-row-reverse text-right"
+                      : ""
                   }`}
                 >
                   <span className="h-px w-12 bg-white/60 dark:bg-white/40" />
@@ -394,7 +396,11 @@ const primaryCta = isAuthenticated
                 initial={{ opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 * idx }}
+                transition={{
+                  duration: 0.4,
+                  ease: "easeOut",
+                  delay: 0.05 * idx,
+                }}
                 className="glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-white/10 text-slate-900 dark:text-white"
               >
                 <div
@@ -452,7 +458,11 @@ const primaryCta = isAuthenticated
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.25 }}
-                transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 * idx }}
+                transition={{
+                  duration: 0.4,
+                  ease: "easeOut",
+                  delay: 0.05 * idx,
+                }}
                 className="group glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-white/10 text-slate-900 dark:text-white transition-all hover:border-white/20 hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
               >
                 <div
@@ -473,7 +483,11 @@ const primaryCta = isAuthenticated
                       </p>
                     </div>
                     <span className="glow-icon w-12 h-12 flex items-center justify-center shrink-0">
-                      <Image src={item.icon} alt={item.title} className="w-6 h-6 object-contain" />
+                      <Image
+                        src={item.icon}
+                        alt={item.title}
+                        className="w-6 h-6 object-contain"
+                      />
                     </span>
                   </div>
                   <div className="h-px w-full bg-white/20 dark:bg-white/10" />
@@ -521,7 +535,11 @@ const primaryCta = isAuthenticated
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.25 }}
-                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 * idx }}
+                  transition={{
+                    duration: 0.4,
+                    ease: "easeOut",
+                    delay: 0.05 * idx,
+                  }}
                   className="group glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-white/10 text-slate-900 dark:text-white transition-all hover:border-white/20 hover:shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
                 >
                   <div
@@ -579,13 +597,17 @@ const primaryCta = isAuthenticated
                 Free forever. Upgrade for sync.
               </h2>
               <p className="text-sm md:text-base text-slate-700 dark:text-white/75 max-w-2xl mx-auto">
-                Start free on one device, or go Premium for cloud sync and backups.
+                Start free on one device, or go Premium for cloud sync and
+                backups.
               </p>
             </div>
 
             <div className="mt-8 grid gap-6 md:grid-cols-2">
               <Card className="relative h-full overflow-hidden border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0"
+                >
                   <div className="absolute -top-28 -right-24 h-64 w-64 rounded-full bg-[#5EA2EF]/18 blur-3xl" />
                   <div className="absolute -bottom-28 -left-24 h-64 w-64 rounded-full bg-[#0072F5]/10 blur-3xl" />
                 </div>
@@ -653,7 +675,10 @@ const primaryCta = isAuthenticated
 
               <div className="relative h-full rounded-3xl p-[1px] bg-gradient-to-br from-[#0072F5] via-[#5EA2EF] to-[#9353D3] shadow-[0_25px_70px_rgba(0,114,245,0.25)]">
                 <Card className="relative h-full overflow-hidden rounded-3xl bg-[#0b1a33]/95 text-white border border-white/10">
-                  <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0"
+                  >
                     <div className="absolute -top-28 -left-24 h-64 w-64 rounded-full bg-[#0072F5]/25 blur-3xl" />
                     <div className="absolute -bottom-28 -right-24 h-64 w-64 rounded-full bg-[#9353D3]/18 blur-3xl" />
                   </div>
@@ -665,7 +690,9 @@ const primaryCta = isAuthenticated
                         </p>
                         <div className="mt-3 flex items-end gap-2">
                           <p className="text-4xl font-extrabold">$4.99</p>
-                          <span className="pb-1 text-sm text-white/70">/mo</span>
+                          <span className="pb-1 text-sm text-white/70">
+                            /mo
+                          </span>
                         </div>
                         <p className="mt-2 text-sm text-white/70 max-w-xs">
                           Sync, backups, sharing, and advanced workflows.
@@ -718,7 +745,6 @@ const primaryCta = isAuthenticated
                 </Card>
               </div>
             </div>
-
           </div>
         </motion.div>
 
@@ -754,10 +780,10 @@ const primaryCta = isAuthenticated
                 showDivider={false}
                 className="gap-3"
                 itemClasses={{
-                  base:
-                    "rounded-2xl border border-white/10 bg-white/70 dark:bg-white/5 shadow-[0_16px_40px_rgba(15,32,65,0.12)] backdrop-blur-xl",
+                  base: "rounded-2xl border border-white/10 bg-white/70 dark:bg-white/5 shadow-[0_16px_40px_rgba(15,32,65,0.12)] backdrop-blur-xl",
                   trigger: "px-4 py-4 gap-4",
-                  title: "text-sm md:text-base font-semibold text-slate-900 dark:text-white",
+                  title:
+                    "text-sm md:text-base font-semibold text-slate-900 dark:text-white",
                   content:
                     "px-4 pb-4 pt-0 text-sm text-slate-700 dark:text-white/70",
                   indicator: "text-[#0072F5] dark:text-[#5EA2EF]",
@@ -803,7 +829,8 @@ const primaryCta = isAuthenticated
                 Make today clear, then keep it that way.
               </h2>
               <p className="mt-2 text-sm md:text-base text-slate-700 dark:text-white/75 max-w-2xl">
-                Start free and keep priorities visible with tags, pins, and reminders.
+                Start free and keep priorities visible with tags, pins, and
+                reminders.
               </p>
               <ul className="mt-6 grid gap-3 text-sm text-slate-700 dark:text-white/75 sm:grid-cols-2">
                 <li className="flex items-start justify-center gap-3">
