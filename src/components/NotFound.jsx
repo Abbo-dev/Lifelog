@@ -22,7 +22,7 @@ export default function NotFound() {
           </p>
 
           <div className="mt-7 flex items-center justify-center gap-3 flex-wrap">
-            <Link to="/">
+            <Link to="/home">
               <Button
                 color="primary"
                 className="px-5 shadow-[0_15px_40px_rgba(0,114,245,0.35)]"
@@ -30,7 +30,7 @@ export default function NotFound() {
                 Go to landing
               </Button>
             </Link>
-            <Link to="/home">
+            <Link to="/app">
               <Button
                 variant="flat"
                 className="px-5 glass-chip border border-white/20 text-slate-900 dark:text-white"
@@ -44,4 +44,3 @@ export default function NotFound() {
     </main>
   );
 }
-
