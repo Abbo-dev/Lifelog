@@ -24,10 +24,11 @@ function AppLayout() {
     <div className={`app-shell min-h-screen pt-24 pb-14 ${focusMode ? "focus-mode" : ""}`}>
       <NavbarSide />
       <Routes>
-        <Route path="/" element={<Content />} />
+        <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
-        <Route path="/home" element={<Home />} />
+        <Route path="/home" element={<Content />} />
+        <Route path="/app" element={<Home />} />
         <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
         <Route path="/forgetpassword" element={<ForgetPassword />} />
         <Route path="/profile" element={<Profile />} />
