@@ -47,7 +47,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="w-full mt-16 px-4 md:px-6 pb-12 text-slate-200 dark:text-white/80">
+    <footer className="w-full mt-20 px-4 md:px-6 pb-12 text-slate-200 dark:text-white/80">
       <div className="max-w-6xl mx-auto rounded-2xl footer-panel px-5 md:px-8 py-9 shadow-[0_25px_60px_rgba(0,0,0,0.25)] relative overflow-hidden">
         <div
           className="pointer-events-none absolute inset-0 opacity-25"
