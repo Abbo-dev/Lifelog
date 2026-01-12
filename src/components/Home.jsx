@@ -1598,7 +1598,7 @@ function Home() {
                 />
               </div>
 
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto md:flex-nowrap md:flex-shrink-0">
                 <Select
                   selectedKeys={[sortBy]}
                   onSelectionChange={(keys) => {
@@ -1606,7 +1606,7 @@ function Home() {
                     if (value) setSortBy(value.toString());
                   }}
                   size="sm"
-                  className="min-w-[150px]"
+                  className="min-w-[120px] sm:min-w-[150px]"
                   classNames={{
                     trigger:
                       "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
@@ -1630,7 +1630,7 @@ function Home() {
                     allowEmptySelection
                     placeholder="All tags"
                     size="sm"
-                    className="min-w-[140px]"
+                    className="min-w-[120px] sm:min-w-[140px]"
                     classNames={{
                       trigger:
                         "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
@@ -1656,92 +1656,94 @@ function Home() {
                   </Select>
                 )}
 
-                {!showTrash && (
+                <div className="flex flex-wrap items-center justify-center gap-1.5 w-full md:w-auto md:flex-nowrap md:justify-start md:gap-2 md:shrink-0">
+                  {!showTrash && (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                      onPress={() =>
+                        setViewMode(viewMode === "grid" ? "list" : "grid")
+                      }
+                    >
+                      {viewMode === "grid" ? "List" : "Grid"}
+                    </Button>
+                  )}
+
                   <Button
                     size="sm"
                     variant="flat"
                     className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                    onPress={() => {
+                      toggleFocusMode();
+                    }}
+                  >
+                    {focusMode ? "Exit focus" : "Focus"}
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant={trashSelectMode ? "solid" : "flat"}
+                    className={
+                      trashSelectMode
+                        ? "bg-rose-500 text-white shadow-sm"
+                        : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                    }
                     onPress={() =>
-                      setViewMode(viewMode === "grid" ? "list" : "grid")
+                      setTrashSelectMode((prev) => {
+                        const next = !prev;
+                        if (next) {
+                          setShowTrash(false);
+                          setShowSnapshot(false);
+                          setIsSmartDrawerOpen(false);
+                        }
+                        return next;
+                      })
                     }
                   >
-                    {viewMode === "grid" ? "List" : "Grid"}
+                    {trashSelectMode ? "Done" : "Trash"}
                   </Button>
-                )}
 
-                <Button
-                  size="sm"
-                  variant="flat"
-                  className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
-                  onPress={() => {
-                    toggleFocusMode();
-                  }}
-                >
-                  {focusMode ? "Exit focus" : "Focus"}
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant={trashSelectMode ? "solid" : "flat"}
-                  className={
-                    trashSelectMode
-                      ? "bg-rose-500 text-white shadow-sm"
-                      : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
-                  }
-                  onPress={() =>
-                    setTrashSelectMode((prev) => {
-                      const next = !prev;
-                      if (next) {
-                        setShowTrash(false);
-                        setShowSnapshot(false);
-                        setIsSmartDrawerOpen(false);
-                      }
-                      return next;
-                    })
-                  }
-                >
-                  {trashSelectMode ? "Done" : "Trash"}
-                </Button>
-
-	                <Button
-	                  size="sm"
-	                  variant={showTrash ? "solid" : "flat"}
-	                  className={
-	                    showTrash
-	                      ? "bg-slate-900 text-white shadow-sm"
-	                      : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm min-w-[40px] px-2"
-	                  }
-	                  aria-label={showTrash ? "Back" : "Trash bin"}
-	                  onPress={() =>
-	                    setShowTrash((prev) => {
-	                      const next = !prev;
-	                      if (next) {
-                        setTrashSelectMode(false);
-                        setFilterTag("");
-                        setActiveSmartFolderId("");
-                        setShowSnapshot(false);
-                        setIsSmartDrawerOpen(false);
-                      }
-	                      return next;
-	                    })
-	                  }
-	                >
-	                  {showTrash ? (
-	                    <span className="inline-flex items-center gap-1">
-	                      <ArrowLeftIcon className="w-4 h-4" />
-	                      <span>Back</span>
-	                    </span>
-	                  ) : (
-		                    <span className="relative inline-flex items-center justify-center">
-		                      <TrashIcon className="w-5 h-5" />
-		                      {trashedNotes.length > 0 && (
-		                        <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-semibold flex items-center justify-center leading-none ring-1 ring-white dark:ring-slate-900">
-		                          {trashedNotes.length > 99 ? "99+" : trashedNotes.length}
-		                        </span>
-		                      )}
-		                    </span>
-		                  )}
-	                </Button>
+                  <Button
+                    size="sm"
+                    variant={showTrash ? "solid" : "flat"}
+                    className={
+                      showTrash
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm min-w-[40px] px-2"
+                    }
+                    aria-label={showTrash ? "Back" : "Trash bin"}
+                    onPress={() =>
+                      setShowTrash((prev) => {
+                        const next = !prev;
+                        if (next) {
+                          setTrashSelectMode(false);
+                          setFilterTag("");
+                          setActiveSmartFolderId("");
+                          setShowSnapshot(false);
+                          setIsSmartDrawerOpen(false);
+                        }
+                        return next;
+                      })
+                    }
+                  >
+                    {showTrash ? (
+                      <span className="inline-flex items-center gap-1">
+                        <ArrowLeftIcon className="w-4 h-4" />
+                        <span>Back</span>
+                      </span>
+                    ) : (
+                      <span className="relative inline-flex items-center justify-center">
+                        <TrashIcon className="w-5 h-5" />
+                        {trashedNotes.length > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-semibold flex items-center justify-center leading-none ring-1 ring-white dark:ring-slate-900">
+                            {trashedNotes.length > 99 ? "99+" : trashedNotes.length}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </Button>
+                </div>
 	              </div>
 	            </div>
 
