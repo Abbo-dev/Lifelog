@@ -11,17 +11,28 @@ const NavbarSide = () => {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    setIsMenuOpen(false);
+    try {
+      sessionStorage.setItem("lifelog:skipAuthModal", Date.now().toString());
+    } catch {
+      // ignore storage errors
+    }
     try {
       await signOut(auth);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       setIsAuthenticated(false);
-      setIsMenuOpen(false);
-      navigate("/");
+      navigate("/home");
     } catch (error) {
       console.error("Sign out failed", error);
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -59,7 +70,7 @@ const NavbarSide = () => {
     <header className="fixed inset-x-0 top-0 z-30 w-full text-slate-900 dark:text-white bg-transparent">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-4 flex items-center justify-between">
         <div className="flex items-center justify-center ">
-          <Link to="/">
+          <Link to="/home">
             {loading ? (
               <Skeleton className="w-[140px] rounded-lg" />
             ) : (
@@ -72,7 +83,7 @@ const NavbarSide = () => {
           </Link>
         </div>
 
-        <div className="flex items-center gap-3 md:gap-4 px-3 py-2 rounded-full bg-transparent border border-transparent shadow-none">
+        <div className="flex items-center gap-3 md:gap-4 px-4 py-2.5 rounded-full glass-panel-soft border border-white/20 dark:border-white/10 shadow-[0_12px_30px_rgba(15,32,65,0.12)]">
           <SwitchTheme />
           {/** 
           <Link
@@ -83,7 +94,11 @@ const NavbarSide = () => {
               </Link>
               */}
           {loading ? (
-            <Button className="w-20">
+            <Button
+              size="sm"
+              variant="flat"
+              className="px-4 glass-chip text-slate-900 dark:text-white"
+            >
               <Skeleton />
             </Button>
           ) : isAuthenticated ? (
@@ -123,8 +138,14 @@ const NavbarSide = () => {
                     </Link>
                     <button
                       type="button"
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-left hover:bg-red-600/20 hover:text-red-400"
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-left ${
+                        isSigningOut
+                          ? "opacity-60 cursor-not-allowed"
+                          : "hover:bg-red-600/20 hover:text-red-400"
+                      }`}
                       onClick={handleSignOut}
+                      disabled={isSigningOut}
+                      aria-busy={isSigningOut}
                     >
                       Log Out
                     </button>
@@ -140,13 +161,26 @@ const NavbarSide = () => {
                 {userName}
                 </Link>
               */}
-              <Button className="w-20" onPress={handleSignOut}>
+              <Button
+                size="sm"
+                variant="flat"
+                className="px-4 glass-chip text-slate-900 dark:text-white hover:-translate-y-0.5 transition-transform"
+                onPress={handleSignOut}
+                isLoading={isSigningOut}
+                isDisabled={isSigningOut}
+              >
                 Log Out
               </Button>
             </div>
           ) : (
             <Link to="/auth?mode=signin">
-              <Button className="w-20">Sign In</Button>
+              <Button
+                size="sm"
+                variant="flat"
+                className="px-4 glass-chip text-slate-900 dark:text-white hover:-translate-y-0.5 transition-transform"
+              >
+                Sign In
+              </Button>
             </Link>
           )}
         </div>
