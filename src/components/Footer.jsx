@@ -87,16 +87,16 @@ const Footer = () => {
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-1 gap-3 justify-items-center sm:justify-items-start text-sm font-medium">
                 <Link
-                  to="/"
+                  to="/home"
                   className="hover:text-[#5EA2EF] transition-colors"
-                  onClick={handleFooterNavClick("/")}
+                  onClick={handleFooterNavClick("/home")}
                 >
                   Home
                 </Link>
                 <Link
-                  to="/home"
+                  to="/app"
                   className="hover:text-[#5EA2EF] transition-colors"
-                  onClick={handleFooterNavClick("/home")}
+                  onClick={handleFooterNavClick("/app")}
                 >
                   Dashboard
                 </Link>
