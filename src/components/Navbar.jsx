@@ -5,6 +5,7 @@ import { signOut } from "firebase/auth";
 import SwitchTheme from "./Switch";
 import Logo from "../assets/logo2.png";
 import { auth } from "../firebase";
+import { useAuth } from "../contexts/AuthContext";
 
 const NavbarSide = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -14,6 +15,7 @@ const NavbarSide = () => {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
+  const { userPhotoUrl } = useAuth();
 
   const handleSignOut = async () => {
     if (isSigningOut) return;
@@ -37,7 +39,9 @@ const NavbarSide = () => {
   };
 
   useEffect(() => {
+    let active = true;
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      if (!active) return;
       if (currentUser) {
         setIsAuthenticated(true);
         setUserName(
@@ -52,7 +56,10 @@ const NavbarSide = () => {
         setLoading(false);
       }
     });
-    return unsubscribe;
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -113,11 +120,12 @@ const NavbarSide = () => {
                 >
                   <Avatar
                     className="w-9 h-9 rounded-full text-medium"
-                    src={auth.currentUser.photoURL}
+                    showFallback
+                    src={userPhotoUrl || undefined}
                     alt="avatar"
                     name={
                       userName?.charAt(0)?.toUpperCase() ||
-                      auth.currentUser.displayName?.charAt(0)?.toUpperCase()
+                      auth.currentUser?.displayName?.charAt(0)?.toUpperCase()
                     }
                   />
                 </button>
