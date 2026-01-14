@@ -166,7 +166,7 @@ const prepareAvatarBlob = async (file) => {
 
 function Profile() {
   const navigate = useNavigate();
-  const { user, isPremium, planLoading } = useAuth();
+  const { user, isPremium, planLoading, userPhotoUrl, setUserPhotoUrl } = useAuth();
   const billing = useBillingStatus(user?.uid);
   const apiBaseUrlRaw = import.meta.env.VITE_API_BASE_URL;
   const apiBaseUrl = (apiBaseUrlRaw || "").replace(/\/+$/, "");
@@ -476,6 +476,7 @@ function Profile() {
         url.includes("?") ? "&" : "?"
       }v=${Date.now()}`;
       await updateProfile(user, { photoURL: cacheBustedUrl });
+      setUserPhotoUrl(cacheBustedUrl);
       setAvatarStatus("Photo updated.");
     } catch (error) {
       setAvatarStatus(error?.message || "Unable to update photo.");
@@ -897,7 +898,8 @@ function Profile() {
           <div className="relative">
             <Avatar
               className="w-16 h-16 text-xl ring-4 ring-[#0072F5]/20"
-              src={user.photoURL}
+              showFallback
+              src={userPhotoUrl || undefined}
               name={user.displayName?.[0]?.toUpperCase() || "U"}
             />
             <button
