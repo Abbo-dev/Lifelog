@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { getUserPhotoUrl } from "../utils/userProfile";
 
 const AuthContext = createContext();
 
@@ -14,6 +15,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState("free");
   const [planLoading, setPlanLoading] = useState(true);
+  const [userPhotoUrl, setUserPhotoUrl] = useState("");
 
   const refreshPlan = useCallback(async (uidOverride) => {
     const uid = uidOverride || auth.currentUser?.uid;
@@ -61,7 +63,19 @@ export function AuthProvider({ children }) {
       if (!nextUser) {
         setPlan("free");
         setPlanLoading(false);
+        setUserPhotoUrl("");
         return;
+      }
+      const resolvedPhoto = getUserPhotoUrl(nextUser);
+      setUserPhotoUrl(resolvedPhoto);
+      if (!resolvedPhoto && typeof nextUser.reload === "function") {
+        try {
+          await nextUser.reload();
+          if (!alive) return;
+          setUserPhotoUrl(getUserPhotoUrl(auth.currentUser));
+        } catch {
+          // ignore reload errors
+        }
       }
       await refreshPlan(nextUser.uid);
     });
@@ -79,6 +93,8 @@ export function AuthProvider({ children }) {
     planLoading,
     isPremium: plan === "premium",
     refreshPlan,
+    userPhotoUrl,
+    setUserPhotoUrl,
   };
 
   return (
@@ -86,4 +102,4 @@ export function AuthProvider({ children }) {
       {!loading && children}
     </AuthContext.Provider>
   );
-} 
+}
