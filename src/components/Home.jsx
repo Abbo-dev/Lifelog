@@ -1675,7 +1675,7 @@ function Home() {
                 )}
 
                 <div className="flex flex-wrap items-center justify-center gap-1.5 w-full md:w-auto md:flex-nowrap md:justify-start md:gap-2 md:shrink-0">
-                  {!showTrash && (
+                  {!trashSelectMode && (
                     <Button
                       size="sm"
                       variant="flat"
@@ -2281,7 +2281,7 @@ function Home() {
           <div
             className={`w-full ${viewMode === "list" ? "max-w-[900px]" : ""}`}
           >
-            <NotesSkeleton viewMode={showTrash ? "list" : viewMode} />
+            <NotesSkeleton viewMode={viewMode} />
           </div>
         ) : showTrash ? (
           trashedNotes.length === 0 ? (
@@ -2299,7 +2299,9 @@ function Home() {
               </p>
             </motion.div>
           ) : (
-            <div className="w-full max-w-[900px]">
+            <div
+              className={`w-full ${viewMode === "list" ? "max-w-[900px]" : ""}`}
+            >
               <NoteList
                 mode="trash"
                 notes={filteredAndSortedNotes}
@@ -2307,7 +2309,7 @@ function Home() {
                 onDeleteForever={handleDeleteForever}
                 userId={currentUserId}
                 tagColors={tagColors}
-                viewMode="list"
+                viewMode={viewMode}
               />
             </div>
           )
