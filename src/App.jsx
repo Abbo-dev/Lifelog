@@ -1,5 +1,5 @@
 import './App.css'
-import Home from './components/Home'
+import App from './components/App'
 import Content from './components/Content'
 import Auth from './components/Auth'
 import ForgetPassword from './components/ForgetPassword'
@@ -28,7 +28,7 @@ function AppLayout() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
         <Route path="/home" element={<Content />} />
-        <Route path="/app" element={<Home />} />
+        <Route path="/app" element={<App />} />
         <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
         <Route path="/forgetpassword" element={<ForgetPassword />} />
         <Route path="/profile" element={<Profile />} />
@@ -43,7 +43,7 @@ function AppLayout() {
   )
 }
 
-function App() {
+function RootApp() {
   return (
     <Router>
       <ScrollToTop />
@@ -52,4 +52,4 @@ function App() {
   )
 }
 
-export default App
+export default RootApp
