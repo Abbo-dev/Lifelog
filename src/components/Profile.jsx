@@ -1184,7 +1184,7 @@ function Profile() {
               </h3>
               <p className="text-sm text-slate-500 dark:text-gray-400">
                 Craft your vibe by pinning colors and tags that matter most.
-                Drag tags in Home to instantly filter and focus.
+                Drag tags in the App to instantly filter and focus.
               </p>
               <div className="flex flex-wrap gap-2 pt-2">
                 {["Focus", "Gratitude", "Planning", "Ideas"].map((tag) => (
