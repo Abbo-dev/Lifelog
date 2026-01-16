@@ -17,6 +17,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { importLocalNotesToCloud } from "../services/notesMigration";
 import { loadLocalNotes } from "../utils/localNotes";
 import { createBillingPortalSession } from "../services/billingPortal";
+import { TOAST_CLASSNAMES } from "../utils/toastClassnames";
 
 const features = {
   free: [
@@ -30,8 +31,10 @@ const features = {
   premium: [
     "Cloud sync across devices",
     "Real-time updates + offline cache",
+    "Memory map view",
+    "Version history + restore",
+    "Export to PDF + Markdown",
     "Shareable read-only note links",
-    "Image uploads + fast previews",
     "Sync smart folders + tag colors",
     "Import local notes to cloud",
   ],
@@ -132,6 +135,7 @@ function Pricing() {
         description: "Refreshing your plan…",
         timeout: 6000,
         shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
       });
       refreshPlan();
     } else if (canceled === "1") {
@@ -140,6 +144,7 @@ function Pricing() {
         description: "No charges were made.",
         timeout: 5000,
         shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
       });
     }
 
@@ -186,6 +191,7 @@ function Pricing() {
         description: "Using the fallback checkout link.",
         timeout: 5000,
         shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
       });
       window.location.href = fallbackUrl;
     } finally {
@@ -205,6 +211,7 @@ function Pricing() {
         description: "Set VITE_API_BASE_URL to enable the billing portal.",
         timeout: 5000,
         shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
       });
       return;
     }
@@ -224,6 +231,7 @@ function Pricing() {
         description: message,
         timeout: 5000,
         shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
       });
     } finally {
       setPortalLoading(false);
