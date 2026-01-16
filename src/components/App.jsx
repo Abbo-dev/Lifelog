@@ -23,6 +23,10 @@ import {
   resolveTagColor,
 } from "../utils/tagColors";
 import {
+  PREMIUM_TOAST_CLASSNAMES,
+  TOAST_CLASSNAMES,
+} from "../utils/toastClassnames";
+import {
   getLockStatus,
   setLockPasscode,
   verifyLockPasscode,
@@ -52,23 +56,8 @@ import {
   Squares2X2Icon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import { LockClosedIcon as LockClosedSolidIcon } from "@heroicons/react/24/solid";
 
-const TOAST_CLASSNAMES = {
-  base:
-    "relative rounded-lg border border-[color:var(--surface-border)] dark:border-gray-800 bg-[var(--surface-2)]/95 dark:bg-slate-900/95 text-slate-900 dark:text-gray-100 shadow-[0_14px_36px_rgba(15,32,65,0.12)] !p-5 pb-6 pr-12",
-  content: "gap-3 items-start",
-  wrapper: "gap-0.5",
-  title: "text-sm font-semibold tracking-tight",
-  description: "text-xs text-slate-600 dark:text-gray-300",
-  icon: "!w-5 !h-5 text-[#0072F5]",
-  closeButton:
-    "!opacity-100 !pointer-events-auto !absolute !right-1 !top-1 !z-20 !w-5 !h-5 !p-0 bg-transparent !border-0 shadow-none",
-  closeIcon:
-    "!rounded-none !border-0 !bg-transparent !p-0 w-4 h-4 text-slate-500 hover:text-slate-800 dark:text-gray-300 dark:hover:text-white",
-  progressTrack:
-    "absolute inset-x-3 bottom-2 top-auto h-1 rounded-full bg-slate-200/70 dark:bg-white/10 overflow-hidden",
-  progressIndicator: "h-full rounded-full bg-gradient-to-r from-[#5EA2EF] to-[#0072F5]",
-};
 
 const clampValue = (value, min, max) =>
   Math.min(max, Math.max(min, value));
@@ -266,10 +255,14 @@ const MapNodes = memo(function MapNodes({
               event.stopPropagation();
               if (selectedId === node.id) {
                 onSelect(null);
-                onActivate(node);
                 return;
               }
               onSelect(node.id);
+            }}
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+              onSelect(null);
+              onActivate(node);
             }}
             onFocus={() => onSelect(node.id)}
             onBlur={() => onSelect(null)}
@@ -358,6 +351,34 @@ function App() {
   const [isTagDropActive, setIsTagDropActive] = useState(false);
   const [draggingTag, setDraggingTag] = useState("");
   const [dragCursor, setDragCursor] = useState({ x: 0, y: 0 });
+  const navigate = useNavigate();
+  const handleRequestPremium = useCallback(
+    (featureLabel) => {
+      const label = featureLabel ? `${featureLabel} is` : "This is";
+      addToast({
+        title: "Premium feature",
+        description: `${label} available on Premium.`,
+        timeout: 6000,
+        shouldShowTimeoutProgress: true,
+        icon: <LockClosedSolidIcon />,
+        classNames: PREMIUM_TOAST_CLASSNAMES,
+        endContent: (
+          <Button
+            size="sm"
+            variant="flat"
+            className="glass-chip text-[#0052CC] dark:text-[#5EA2EF]"
+            onPress={() => {
+              closeAll();
+              navigate("/pricing");
+            }}
+          >
+            Upgrade
+          </Button>
+        ),
+      });
+    },
+    [navigate]
+  );
   const [showSnapshot, setShowSnapshot] = useState(false);
   const [smartFolders, setSmartFolders] = useState([]);
   const [activeSmartFolderId, setActiveSmartFolderId] = useState("");
@@ -529,6 +550,12 @@ function App() {
     }
   }, [showTrash, trashSelectMode, viewMode]);
 
+  useEffect(() => {
+    if (!isPremium && viewMode === "map") {
+      setViewMode("grid");
+    }
+  }, [isPremium, viewMode]);
+
   const handleDelete = async (note) => {
     if (!currentUserId) return;
     if (!note?.id) return;
@@ -671,7 +698,6 @@ function App() {
     });
     return unsubscribe;
   }, [currentUserId, isPremium, planLoading]);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -771,6 +797,7 @@ function App() {
           description: "Please try again.",
           timeout: 5000,
           shouldShowTimeoutProgress: true,
+          classNames: TOAST_CLASSNAMES,
         });
         return false;
       }
@@ -781,6 +808,7 @@ function App() {
           description: "Please try again.",
           timeout: 5000,
           shouldShowTimeoutProgress: true,
+          classNames: TOAST_CLASSNAMES,
         });
         return false;
       }
@@ -793,6 +821,7 @@ function App() {
         description: "Create a passcode before locking notes.",
         timeout: 5000,
         shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
       });
       return false;
     }
@@ -806,6 +835,7 @@ function App() {
         description: "Try again.",
         timeout: 5000,
         shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
       });
       return false;
     }
@@ -820,6 +850,7 @@ function App() {
         description: "Switch to local notes to use note locks.",
         timeout: 5000,
         shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
       });
       return;
     }
@@ -1822,7 +1853,27 @@ function App() {
     );
   };
 
-  const MemoryMapView = () => {
+  const renderMemoryMapView = () => {
+    if (!isPremium) {
+      return (
+        <div className="w-full rounded-3xl border border-[color:var(--surface-border)] dark:border-gray-800 bg-[var(--surface-2)] dark:bg-slate-900/90 p-6 text-center shadow-sm">
+          <p className="text-sm text-slate-700 dark:text-gray-200">
+            Memory map is a Premium view.
+          </p>
+          <p className="text-xs text-slate-500 dark:text-gray-400 mt-2">
+            Upgrade to explore your notes as a spatial map.
+          </p>
+          <Button
+            size="sm"
+            className="mt-4 bg-[#0072F5] text-white hover:bg-[#0052CC]"
+            onPress={() => navigate("/pricing")}
+          >
+            Upgrade to Premium
+          </Button>
+        </div>
+      );
+    }
+
     const mapNotes = filteredAndSortedNotes;
     const previewNode = activeMapNode;
     const previewNote = previewNode?.note;
@@ -1901,7 +1952,7 @@ function App() {
                 Spatial view of your notes
               </h2>
               <p className="text-xs text-slate-500 dark:text-gray-400">
-                Click a node to preview, click again to open. Locked notes
+                Click a node to preview, double-click to open. Locked notes
                 prompt unlock.
               </p>
             </div>
@@ -2348,11 +2399,11 @@ function App() {
                     }}
                     aria-label="Filter by tag"
                   >
-                    <SelectItem key="" value="">
+                    <SelectItem key="" value="" textValue="All tags">
                       All tags
                     </SelectItem>
                     {allTags.map((tag) => (
-                      <SelectItem key={tag} value={tag}>
+                      <SelectItem key={tag} value={tag} textValue={tag}>
                         <div className="flex items-center gap-2">
                           <span
                             className="w-2.5 h-2.5 rounded-full"
@@ -2386,10 +2437,13 @@ function App() {
                           label: "Map",
                           icon: MapIcon,
                           disabled: showTrash,
+                          premiumOnly: true,
                         },
                       ].map((mode) => {
                         const isActive = viewMode === mode.key;
                         const isDisabled = !!mode.disabled;
+                        const isPremiumLocked =
+                          mode.premiumOnly && !isPremium;
                         const Icon = mode.icon;
                         return (
                           <button
@@ -2397,25 +2451,33 @@ function App() {
                             type="button"
                             disabled={isDisabled}
                             onClick={() => {
-                              if (!isDisabled) {
-                                setViewMode(mode.key);
+                              if (isDisabled) return;
+                              if (isPremiumLocked) {
+                                handleRequestPremium("Memory map");
+                                return;
                               }
+                              setViewMode(mode.key);
                             }}
                             aria-pressed={isActive}
-                            aria-disabled={isDisabled}
+                            aria-disabled={isDisabled || isPremiumLocked}
                             title={
-                              isDisabled
-                                ? "Map view is available in notes mode."
-                                : `${mode.label} view`
+                              isPremiumLocked
+                                ? "Memory map is a Premium feature."
+                                : isDisabled
+                                  ? "Map view is available in notes mode."
+                                  : `${mode.label} view`
                             }
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
                               isActive
                                 ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
                                 : "text-slate-700 dark:text-gray-200 hover:bg-white/70 dark:hover:bg-white/10"
-                            } ${isDisabled ? "opacity-50 cursor-not-allowed hover:bg-transparent" : ""}`}
+                            } ${isDisabled || isPremiumLocked ? "opacity-50 cursor-not-allowed hover:bg-transparent" : ""}`}
                           >
                             <Icon className="w-4 h-4" />
                             <span>{mode.label}</span>
+                            {isPremiumLocked && (
+                              <LockClosedIcon className="w-3 h-3 opacity-70" />
+                            )}
                           </button>
                         );
                       })}
@@ -2461,8 +2523,8 @@ function App() {
                     variant={showTrash ? "solid" : "flat"}
                     className={
                       showTrash
-                        ? "bg-slate-900 text-white shadow-sm"
-                        : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm min-w-[40px] px-2"
+                        ? "bg-slate-900 text-white shadow-sm mr-2 sm:mr-0"
+                        : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm min-w-[40px] px-2 mr-2 sm:mr-0"
                     }
                     aria-label={showTrash ? "Back" : "Trash bin"}
                     onPress={() =>
@@ -3044,6 +3106,8 @@ function App() {
                 userId={currentUserId}
                 tagColors={tagColors}
                 viewMode={viewMode}
+                isPremium={isPremium}
+                onRequestPremium={handleRequestPremium}
               />
             </div>
           )
@@ -3132,7 +3196,7 @@ function App() {
 	            </motion.div>
 	          </motion.div>
 	        ) : viewMode === "map" ? (
-            <MemoryMapView />
+            renderMemoryMapView()
           ) : (
 	          <div
 	            className={`w-full ${viewMode === "list" ? "max-w-[900px]" : ""}`}
@@ -3150,6 +3214,8 @@ function App() {
               onUnshare={isPremium ? handleUnshareNote : undefined}
               tagColors={tagColors}
               viewMode={viewMode}
+              isPremium={isPremium}
+              onRequestPremium={handleRequestPremium}
             />
 	          </div>
 	        )}
