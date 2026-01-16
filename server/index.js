@@ -1,8 +1,13 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import cors from "cors";
 import express from "express";
 import crypto from "crypto";
 import admin from "firebase-admin";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, ".env") });
 
 const requiredEnv = [
   "APP_URL",
