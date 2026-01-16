@@ -129,15 +129,19 @@ html:not(.dark) .text-gray-400 {
 }
 
 .ProseMirror ul[data-type="taskList"] li {
-  @apply flex items-start gap-2;
+  @apply flex items-center gap-2;
 }
 
 .ProseMirror ul[data-type="taskList"] li > label {
-  @apply mt-1;
+  @apply mt-0;
 }
 
 .ProseMirror ul[data-type="taskList"] li > div {
   @apply flex-1;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div > p {
+  @apply my-0;
 }
 
 /* Dark mode styles */
@@ -181,6 +185,30 @@ html:not(.dark) .text-gray-400 {
 
 .note-content li {
   margin: 0.15rem 0;
+}
+
+.note-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.5rem 0;
+}
+
+.note-content ul[data-type="taskList"] li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.note-content ul[data-type="taskList"] li > label {
+  margin-top: 0;
+}
+
+.note-content ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.note-content ul[data-type="taskList"] li > div > p {
+  margin: 0;
 }
 
 /* Force Navbar to stay transparent across themes */
