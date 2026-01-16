@@ -32,6 +32,8 @@ const NoteList = ({
   viewMode = "grid",
   mode = "active",
   userId = "",
+  isPremium = false,
+  onRequestPremium,
 }) => {
   const [openNote, setOpenNote] = useState(null);
   const [shareBusy, setShareBusy] = useState(false);
@@ -95,6 +97,7 @@ const NoteList = ({
   const sanitizedOpenContent = sanitizeHtmlLinks(openNote?.content || "");
   const openNoteLocked = !!openNote?.locked;
   const shareEnabled = typeof onShare === "function";
+  const canUsePremium = !!isPremium;
   const shareUrl = openNote?.shareId
     ? `${window.location.origin}/share/${openNote.shareId}`
     : "";
@@ -114,6 +117,14 @@ const NoteList = ({
       refreshHistory();
     }
     setShowHistory((prev) => !prev);
+  };
+
+  const runPremiumAction = (label, action) => {
+    if (!canUsePremium) {
+      onRequestPremium?.(label);
+      return;
+    }
+    action();
   };
 
   const downloadTextFile = (filename, contents, mimeType) => {
@@ -451,15 +462,15 @@ const NoteList = ({
       {openNote && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-3">
           <div className="relative w-full max-w-3xl bg-[var(--surface-2)] dark:bg-slate-900 rounded-2xl border border-[color:var(--surface-border)] dark:border-gray-800 shadow-2xl overflow-hidden">
-            <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-200 dark:border-gray-800">
-              <div className="space-y-1">
+            <div className="flex flex-col gap-3 p-4 border-b border-slate-200 dark:border-gray-800 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1 flex-1 min-w-0">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
                   Note preview
                 </p>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">
                   {openNoteLocked ? "Locked note" : openNote.title || "Untitled note"}
                 </h3>
-                <div className="text-[11px] text-slate-500 dark:text-gray-400 flex flex-wrap gap-2">
+                <div className="text-[11px] text-slate-500 dark:text-gray-400 flex flex-wrap gap-x-3 gap-y-1">
                   {!openNoteLocked &&
                     openNote.tags?.map((tag) => {
                       const tagColor = resolveTagColor(tag, tagColors);
@@ -477,7 +488,7 @@ const NoteList = ({
                       );
                     })}
                   {!openNoteLocked && openNoteDueLabel && (
-                    <span className="flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap">
                       <CalendarIcon className="w-3 h-3" />
                       <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
                         Due
@@ -486,7 +497,7 @@ const NoteList = ({
                     </span>
                   )}
                   {openNoteLastModifiedLabel && (
-                    <span className="flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap">
                       <ClockIcon className="w-3 h-3" />
                       <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
                         {openNote?.lastModified ? "Updated" : "Created"}
@@ -496,7 +507,7 @@ const NoteList = ({
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
                 {mode === "trash" ? (
                   <>
                     <button
@@ -526,14 +537,18 @@ const NoteList = ({
                     <button
                       type="button"
                       className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800"
-                      onClick={handleExportMarkdown}
+                      onClick={() =>
+                        runPremiumAction("Markdown export", handleExportMarkdown)
+                      }
                     >
                       Export MD
                     </button>
                     <button
                       type="button"
                       className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800"
-                      onClick={handleExportPdf}
+                      onClick={() =>
+                        runPremiumAction("PDF export", handleExportPdf)
+                      }
                     >
                       Export PDF
                     </button>
@@ -546,7 +561,9 @@ const NoteList = ({
                   <button
                     type="button"
                     className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800"
-                    onClick={handleToggleHistory}
+                    onClick={() =>
+                      runPremiumAction("Version history", handleToggleHistory)
+                    }
                   >
                     {showHistory ? "Back" : "History"}
                   </button>
