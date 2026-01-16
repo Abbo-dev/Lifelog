@@ -17,6 +17,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { TOAST_CLASSNAMES } from "../utils/toastClassnames";
 import SwitchTheme from "./Switch";
 import Logo from "../assets/logo2.png";
 import EmailIcon from "../assets/email.svg";
@@ -234,6 +235,7 @@ export default function Auth() {
             description: "Check your inbox to verify your LifeLog account.",
             timeout: 6000,
             shouldShowTimeoutProgress: true,
+            classNames: TOAST_CLASSNAMES,
           });
         } catch (verificationError) {
           console.warn("Failed to send verification email", verificationError);
