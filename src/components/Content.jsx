@@ -156,8 +156,9 @@ const pricingTiers = {
   premium: [
     "Cloud sync across devices",
     "Real-time updates + offline cache",
+    "Memory map view",
+    "Version history + exports",
     "Shareable read-only note links",
-    "Image uploads + fast previews",
     "Sync smart folders + tag colors",
   ],
 };
