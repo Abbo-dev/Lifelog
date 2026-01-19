@@ -21,6 +21,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useBillingStatus } from "../hooks/useBillingStatus";
 import {
   showReminderNotification,
+  requestNotificationPermission,
   useReminderScheduler,
   useReminderSettings,
 } from "../hooks/useReminders";
@@ -52,6 +53,7 @@ import {
   updatePassword,
   updateProfile,
 } from "firebase/auth";
+import { getPasswordValidation } from "../utils/passwordRules";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   format,
@@ -217,8 +219,15 @@ function Profile() {
     if (typeof window === "undefined" || !("Notification" in window)) {
       return "unsupported";
     }
+    if (!window.isSecureContext) {
+      return "insecure";
+    }
     return Notification.permission;
   });
+  const passwordValidation = useMemo(
+    () => getPasswordValidation(passwordForm.next),
+    [passwordForm.next]
+  );
 
   const toDateValue = (value) => {
     if (!value) return null;
@@ -271,6 +280,8 @@ function Profile() {
         return "Notifications are enabled in this browser.";
       case "denied":
         return "Notifications are blocked in this browser.";
+      case "insecure":
+        return "Notifications require HTTPS or localhost.";
       case "unsupported":
         return "Notifications aren't supported in this browser.";
       default:
@@ -370,6 +381,10 @@ function Profile() {
       setReminderPermission("unsupported");
       return;
     }
+    if (!window.isSecureContext) {
+      setReminderPermission("insecure");
+      return;
+    }
     setReminderPermission(Notification.permission);
   }, [user?.uid]);
 
@@ -423,8 +438,8 @@ function Profile() {
       return;
     }
 
-    if (!passwordForm.next || passwordForm.next.length < 6) {
-      setPasswordStatus("New password should be at least 6 characters.");
+    if (!passwordValidation.isValid) {
+      setPasswordStatus(passwordValidation.message);
       return;
     }
 
@@ -809,11 +824,14 @@ function Profile() {
       setReminderStatus("Notifications aren't supported in this browser.");
       return;
     }
-
-    let permission = Notification.permission;
-    if (permission !== "granted") {
-      permission = await Notification.requestPermission();
+    if (!window.isSecureContext) {
+      setReminderPermission("insecure");
+      updateReminderSettings({ enabled: false });
+      setReminderStatus("Notifications require HTTPS or localhost.");
+      return;
     }
+
+    const permission = await requestNotificationPermission();
     setReminderPermission(permission);
 
     if (permission !== "granted") {
@@ -840,11 +858,13 @@ function Profile() {
       setReminderStatus("Notifications aren't supported in this browser.");
       return;
     }
-
-    let permission = Notification.permission;
-    if (permission !== "granted") {
-      permission = await Notification.requestPermission();
+    if (!window.isSecureContext) {
+      setReminderPermission("insecure");
+      setReminderStatus("Notifications require HTTPS or localhost.");
+      return;
     }
+
+    const permission = await requestNotificationPermission();
     setReminderPermission(permission);
 
     if (permission !== "granted") {
@@ -852,10 +872,18 @@ function Profile() {
       return;
     }
 
+    const sampleTitle = "Sample note";
+    const testDue = new Date(Date.now() + 15 * 60 * 1000);
+    const dueLabel = new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(testDue);
+
     const shown = await showReminderNotification({
       title: "LifeLog reminder",
-      body: "This is how due date reminders will look.",
+      body: `"${sampleTitle}" is due ${dueLabel}. Tap to open.`,
       data: { url: "/app" },
+      permission,
     });
     setReminderStatus(
       shown
@@ -1690,7 +1718,7 @@ function Profile() {
                                     }))
                                   }
                                   className="w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0072F5]/30"
-                                  placeholder="At least 6 characters"
+                                  placeholder="At least 8 characters"
                                 />
                               </div>
                               <div className="space-y-1">
@@ -1710,6 +1738,36 @@ function Profile() {
                                   placeholder="Repeat new password"
                                 />
                               </div>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                                Password rules
+                              </p>
+                              <ul className="space-y-1 text-[11px] text-slate-500 dark:text-gray-400">
+                                {passwordValidation.results.map((rule) => (
+                                  <li
+                                    key={rule.id}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <span
+                                      className={`h-1.5 w-1.5 rounded-full ${
+                                        rule.met
+                                          ? "bg-emerald-500"
+                                          : "bg-slate-300 dark:bg-white/20"
+                                      }`}
+                                    />
+                                    <span
+                                      className={
+                                        rule.met
+                                          ? "text-emerald-600 dark:text-emerald-300"
+                                          : ""
+                                      }
+                                    >
+                                      {rule.label}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-xs text-slate-500 dark:text-gray-400">
