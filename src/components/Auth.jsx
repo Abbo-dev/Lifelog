@@ -18,6 +18,7 @@ import {
 import { auth } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { TOAST_CLASSNAMES } from "../utils/toastClassnames";
+import { getPasswordValidation } from "../utils/passwordRules";
 import SwitchTheme from "./Switch";
 import Logo from "../assets/logo2.png";
 import EmailIcon from "../assets/email.svg";
@@ -50,7 +51,7 @@ const getAuthErrorMessage = (error) => {
     case "auth/email-already-in-use":
       return "That email is already in use. Try signing in instead.";
     case "auth/weak-password":
-      return "Password is too weak. Use at least 6 characters.";
+      return "Password is too weak. Use 8+ characters with uppercase, lowercase, a number, and a symbol.";
     case "auth/too-many-requests":
       return "Too many attempts. Try again later.";
     case "auth/network-request-failed":
@@ -137,6 +138,10 @@ export default function Auth() {
     () => getPasswordStrengthMeta(password),
     [password]
   );
+  const passwordValidation = useMemo(
+    () => getPasswordValidation(password),
+    [password]
+  );
 
   useEffect(() => {
     if (!searchParams.get("mode")) {
@@ -210,6 +215,10 @@ export default function Auth() {
       const trimmedEmail = email.trim();
 
       if (isSignup) {
+        if (!passwordValidation.isValid) {
+          setError(passwordValidation.message);
+          return;
+        }
         if (password !== confirmPassword) {
           setError("Passwords do not match.");
           return;
@@ -446,27 +455,58 @@ export default function Auth() {
                   }
                 />
 
-                {isSignup && password ? (
+                {isSignup ? (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-white/70">
-                        Password strength
-                      </span>
-                      <span className={`font-semibold ${passwordStrength.textClass}`}>
-                        {passwordStrength.label}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-                      <div
-                        className={`h-full ${passwordStrength.barClass}`}
-                        style={{ width: `${passwordStrength.percent}%` }}
-                      />
-                    </div>
+                    {password ? (
+                      <>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600 dark:text-white/70">
+                            Password strength
+                          </span>
+                          <span
+                            className={`font-semibold ${passwordStrength.textClass}`}
+                          >
+                            {passwordStrength.label}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                          <div
+                            className={`h-full ${passwordStrength.barClass}`}
+                            style={{ width: `${passwordStrength.percent}%` }}
+                          />
+                        </div>
+                      </>
+                    ) : null}
+                    <ul className="space-y-1 text-[11px] text-slate-500 dark:text-white/60">
+                      {passwordValidation.results.map((rule) => (
+                        <li key={rule.id} className="flex items-center gap-2">
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              rule.met
+                                ? "bg-emerald-500"
+                                : "bg-slate-300 dark:bg-white/20"
+                            }`}
+                          />
+                          <span
+                            className={
+                              rule.met ? "text-emerald-600 dark:text-emerald-300" : ""
+                            }
+                          >
+                            {rule.label}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                     <p className="text-[11px] text-slate-500 dark:text-white/60">
                       Use 12+ characters with a mix of letters, numbers, and symbols.
                     </p>
                   </div>
-                ) : null}
+                ) : (
+                  <p className="text-[11px] text-slate-500 dark:text-white/60">
+                    Password rules: 8+ characters with uppercase, lowercase, a number,
+                    and a symbol.
+                  </p>
+                )}
 
                 {isSignup && (
                   <Input
