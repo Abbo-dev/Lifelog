@@ -9,6 +9,33 @@ const WINDOW_MS = 2 * 60 * 1000;
 const isBrowser = typeof window !== "undefined";
 const isNotificationSupported = () => isBrowser && "Notification" in window;
 
+export const requestNotificationPermission = async () => {
+  if (!isNotificationSupported()) return "unsupported";
+  if (Notification.permission !== "default") return Notification.permission;
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finalize = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value || Notification.permission);
+    };
+
+    try {
+      const result = Notification.requestPermission((permission) => {
+        finalize(permission);
+      });
+      if (result && typeof result.then === "function") {
+        result.then(finalize).catch(() => finalize(Notification.permission));
+      } else if (typeof result === "string") {
+        finalize(result);
+      }
+    } catch {
+      finalize(Notification.permission);
+    }
+  });
+};
+
 const storageKeyFor = (prefix, userId) =>
   `${prefix}${userId && typeof userId === "string" ? userId : "guest"}`;
 
@@ -82,9 +109,15 @@ const formatReminderTime = (date) =>
     timeStyle: "short",
   }).format(date);
 
-export const showReminderNotification = async ({ title, body, data }) => {
+export const showReminderNotification = async ({
+  title,
+  body,
+  data,
+  permission,
+}) => {
   if (!isNotificationSupported()) return false;
-  if (Notification.permission !== "granted") return false;
+  const resolvedPermission = permission || Notification.permission;
+  if (resolvedPermission !== "granted") return false;
 
   const payload = {
     body,
@@ -179,8 +212,8 @@ export const useReminderScheduler = ({ notes, userId, settings }) => {
               : "";
 
           const shown = await showReminderNotification({
-            title: `Reminder: ${noteTitle}`,
-            body: `Due ${dueLabel}${leadLabel}`,
+            title: "LifeLog reminder",
+            body: `"${noteTitle}" is due ${dueLabel}${leadLabel}. Tap to open.`,
             data: { noteId, url: "/app" },
           });
           if (shown) {
