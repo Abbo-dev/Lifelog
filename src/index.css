@@ -71,6 +71,17 @@ html:not(.dark) .text-gray-400 {
   }
 }
 
+@keyframes lifelog-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lifelog-spinner {
+  animation: lifelog-spin 1.1s linear infinite;
+  transform-origin: 50% 50%;
+}
+
 /* TipTap Editor Styles */
 .ProseMirror {
   @apply min-h-[150px] outline-none;
