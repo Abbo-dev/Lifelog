@@ -6,6 +6,7 @@ import SwitchTheme from "./Switch";
 import Logo from "../assets/logo2.png";
 import { auth } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { SparklesIcon } from "@heroicons/react/24/outline";
 
 const NavbarSide = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,7 +16,7 @@ const NavbarSide = () => {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
-  const { userPhotoUrl } = useAuth();
+  const { userPhotoUrl, isPremium, planLoading } = useAuth();
 
   const handleSignOut = async () => {
     if (isSigningOut) return;
@@ -131,10 +132,23 @@ const NavbarSide = () => {
                 </button>
 
                 {isMenuOpen && (
-                  <div className="absolute right-0 mt-3 w-44 rounded-2xl border border-white/15 bg-white/10 dark:bg-black/30 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-2 glass-panel-soft">
-                    <h1 className="px-3 py-2 text-sm font-medium">
-                      Hey, {userName.at(0).toUpperCase() + userName.slice(1)}
-                    </h1>
+                  <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/15 bg-white/10 dark:bg-black/30 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-2 glass-panel-soft">
+                    <div className="px-3 py-2 space-y-1">
+                      <span className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
+                        Welcome
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium truncate">
+                          {userName.at(0).toUpperCase() + userName.slice(1)}
+                        </span>
+                        {!planLoading && isPremium && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/30 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-emerald-700 dark:text-emerald-200 leading-none shrink-0">
+                            <SparklesIcon className="h-3 w-3" />
+                            Premium
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <hr className="my-2 border-white/10" />
 
                     <Link
