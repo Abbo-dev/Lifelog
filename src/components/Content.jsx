@@ -156,10 +156,13 @@ const pricingTiers = {
   premium: [
     "Cloud sync across devices",
     "Real-time updates + offline cache",
+    "Automatic cloud backups",
     "Memory map view",
-    "Version history + exports",
+    "Version history + restore",
+    "Export to PDF + Markdown",
     "Shareable read-only note links",
     "Sync smart folders + tag colors",
+    "Import local notes to cloud",
   ],
 };
 
