@@ -9,9 +9,17 @@ import {
 } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import { CheckIcon } from "@heroicons/react/20/solid";
-import { RocketLaunchIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowDownTrayIcon,
+  ClockIcon,
+  CloudArrowUpIcon,
+  RocketLaunchIcon,
+  ShareIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { importLocalNotesToCloud } from "../services/notesMigration";
@@ -31,6 +39,7 @@ const features = {
   premium: [
     "Cloud sync across devices",
     "Real-time updates + offline cache",
+    "Automatic cloud backups",
     "Memory map view",
     "Version history + restore",
     "Export to PDF + Markdown",
@@ -39,6 +48,29 @@ const features = {
     "Import local notes to cloud",
   ],
 };
+
+const premiumHighlights = [
+  {
+    title: "Everywhere sync",
+    description: "Notes stay updated on every device.",
+    icon: CloudArrowUpIcon,
+  },
+  {
+    title: "Version history",
+    description: "Restore earlier edits anytime.",
+    icon: ClockIcon,
+  },
+  {
+    title: "Export toolkit",
+    description: "PDF + Markdown exports unlocked.",
+    icon: ArrowDownTrayIcon,
+  },
+  {
+    title: "Shareable links",
+    description: "Send read-only note links fast.",
+    icon: ShareIcon,
+  },
+];
 
 const pricingFaqItems = [
   {
@@ -73,6 +105,8 @@ const pricingFaqItems = [
   },
 ];
 
+const AUTO_REDIRECT_DELAY_MS = 3000;
+
 function Pricing() {
   const { user, plan, isPremium, refreshPlan, planLoading } = useAuth();
   const navigate = useNavigate();
@@ -87,6 +121,9 @@ function Pricing() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalStatus, setPortalStatus] = useState("");
+  const [checkoutStage, setCheckoutStage] = useState("");
+  const [checkoutRedirectUrl, setCheckoutRedirectUrl] = useState("");
+  const redirectTimeoutRef = useRef(null);
 
   const monthlyPrice = 4.99;
   const annualPrice = 49.99;
@@ -123,6 +160,24 @@ function Pricing() {
     billingCycle === "annual"
       ? "mailto:support@lifelog.app?subject=LifeLog%20Premium%20Annual"
       : "mailto:support@lifelog.app?subject=LifeLog%20Premium%20Monthly";
+  const checkoutStatusLabel =
+    checkoutStage === "redirecting"
+      ? "Checkout is ready."
+      : "Preparing your secure checkout...";
+  const checkoutHelperLabel =
+    checkoutStage === "redirecting"
+      ? `Continuing automatically in ${Math.ceil(
+          AUTO_REDIRECT_DELAY_MS / 1000
+        )}s. Or use the button below.`
+      : "This can take a few seconds. Please keep this tab open.";
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const success = searchParams.get("success");
@@ -164,6 +219,11 @@ function Pricing() {
       return;
     }
 
+    if (redirectTimeoutRef.current) {
+      window.clearTimeout(redirectTimeoutRef.current);
+    }
+    setCheckoutStage("starting");
+    setCheckoutRedirectUrl("");
     setCheckoutLoading(true);
     try {
       const token = await user.getIdToken();
@@ -183,9 +243,19 @@ function Pricing() {
       if (!payload?.url) {
         throw new Error("Checkout URL missing from server response.");
       }
-      window.location.href = payload.url;
+      setCheckoutRedirectUrl(payload.url);
+      setCheckoutStage("redirecting");
+      redirectTimeoutRef.current = window.setTimeout(() => {
+        redirectTimeoutRef.current = null;
+        window.location.href = payload.url;
+      }, AUTO_REDIRECT_DELAY_MS);
     } catch (error) {
       console.error("Checkout failed", error);
+      if (redirectTimeoutRef.current) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
+      setCheckoutStage("");
+      setCheckoutRedirectUrl("");
       addToast({
         title: "Checkout unavailable",
         description: "Using the fallback checkout link.",
@@ -251,6 +321,61 @@ function Pricing() {
       className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center px-4 pt-14 md:pt-16 pb-24"
       style={{ background: "var(--app-bg)" }}
     >
+      {checkoutStage ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 14, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-white/80 dark:bg-black/40 backdrop-blur-xl shadow-[0_25px_70px_rgba(0,0,0,0.18)] p-7 text-center"
+          >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -top-20 -right-10 h-40 w-40 rounded-full bg-[#0072F5]/20 blur-3xl"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-[#00C48C]/15 blur-3xl"
+            />
+            <div className="relative space-y-4">
+              <div className="relative mx-auto h-16 w-16">
+                <div
+                  className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#0072F5] border-r-[#5EA2EF]/70 lifelog-spinner"
+                  style={{ animation: "lifelog-spin 1.1s linear infinite", willChange: "transform" }}
+                />
+                <div className="absolute inset-2 flex items-center justify-center rounded-2xl border border-white/15 bg-white/70 dark:bg-white/10">
+                  <SparklesIcon className="h-6 w-6 text-[#0072F5]" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Opening secure checkout
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-white/70">
+                  {checkoutStatusLabel}
+                </p>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-white/60">
+                {checkoutHelperLabel}
+              </p>
+              {checkoutRedirectUrl ? (
+                <Button
+                  className="w-full bg-[#0072F5] text-white hover:bg-[#0052CC]"
+                  onPress={() => {
+                    if (redirectTimeoutRef.current) {
+                      window.clearTimeout(redirectTimeoutRef.current);
+                      redirectTimeoutRef.current = null;
+                    }
+                    window.location.href = checkoutRedirectUrl;
+                  }}
+                >
+                  Continue to checkout
+                </Button>
+              ) : null}
+            </div>
+          </motion.div>
+        </div>
+      ) : null}
       <div className="relative max-w-5xl w-full z-10">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -311,6 +436,54 @@ function Pricing() {
               >
                 Open LifeLog
               </Button>
+            </div>
+          </div>
+        )}
+
+        {user && isPremium && (
+          <div className="mt-6 rounded-3xl border border-emerald-300/25 bg-emerald-50/70 dark:bg-emerald-500/10 dark:border-emerald-400/25 backdrop-blur-xl p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-2xl border border-emerald-300/30 bg-white/80 dark:bg-emerald-500/10 flex items-center justify-center">
+                  <ShieldCheckIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-200" />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-200">
+                    Premium active
+                  </p>
+                  <p className="text-base font-semibold text-slate-900 dark:text-emerald-50">
+                    Everything is unlocked.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="bg-emerald-600 text-white hover:bg-emerald-500"
+                isLoading={portalLoading}
+                onPress={openBillingPortal}
+              >
+                Manage billing
+              </Button>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {premiumHighlights.map((item) => (
+                <div
+                  key={item.title}
+                  className="flex items-start gap-3 rounded-2xl border border-emerald-200/40 bg-white/70 dark:bg-emerald-500/10 dark:border-emerald-400/20 px-4 py-3"
+                >
+                  <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200/60 bg-emerald-100/60 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                    <item.icon className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-emerald-50">
+                      {item.title}
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-emerald-100/80">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
