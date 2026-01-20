@@ -16,6 +16,13 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
+import {
+  ArrowDownTrayIcon,
+  ClockIcon,
+  CloudArrowUpIcon,
+  ShareIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 import { auth, db, storage } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useBillingStatus } from "../hooks/useBillingStatus";
@@ -73,6 +80,29 @@ const statCards = [
   { label: "Pinned", key: "pinned" },
   { label: "Tags", key: "tags" },
   { label: "Daily streak", key: "streak" },
+];
+
+const premiumHighlights = [
+  {
+    title: "Cloud sync",
+    description: "Keep notes updated across devices.",
+    icon: CloudArrowUpIcon,
+  },
+  {
+    title: "Version history",
+    description: "Restore earlier edits any time.",
+    icon: ClockIcon,
+  },
+  {
+    title: "Export toolkit",
+    description: "PDF and Markdown exports unlocked.",
+    icon: ArrowDownTrayIcon,
+  },
+  {
+    title: "Share links",
+    description: "Send read-only notes in seconds.",
+    icon: ShareIcon,
+  },
 ];
 
 const reminderLeadOptions = [
@@ -979,6 +1009,97 @@ function Profile() {
             </motion.div>
           ))}
         </div>
+
+        {isPremium && (
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="mt-6"
+          >
+            <Card className="profile-card">
+              <CardBody className="p-5 space-y-4">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="h-11 w-11 rounded-2xl border border-emerald-300/30 bg-emerald-50/80 dark:bg-emerald-500/10 flex items-center justify-center">
+                      <SparklesIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-200" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-200">
+                        Premium active
+                      </p>
+                      <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                        Everything is unlocked.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 text-white hover:bg-emerald-500"
+                    isLoading={portalLoading}
+                    onPress={handleOpenBillingPortal}
+                  >
+                    Manage billing
+                  </Button>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {premiumHighlights.map((item) => (
+                    <div
+                      key={item.title}
+                      className="flex items-start gap-3 rounded-2xl profile-surface px-4 py-3"
+                    >
+                      <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200/60 bg-emerald-100/60 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                        <item.icon className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                          {item.title}
+                        </p>
+                        <p className="text-xs text-slate-600 dark:text-white/70">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                  <div className="flex items-center justify-between gap-2 rounded-2xl profile-surface px-3 py-2">
+                    <span className="text-slate-500 dark:text-gray-400">
+                      Status
+                    </span>
+                    {billing.loaded ? (
+                      <span className="font-medium text-slate-900 dark:text-gray-100">
+                        {formatSubscriptionStatus(billing.status)}
+                      </span>
+                    ) : (
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 rounded-2xl profile-surface px-3 py-2">
+                    <span className="text-slate-500 dark:text-gray-400">
+                      Next bill
+                    </span>
+                    {billing.loaded ? (
+                      billing.nextBilledAt ? (
+                        <span className="text-slate-900 dark:text-gray-100">
+                          {formatBillingDate(billing.nextBilledAt)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 dark:text-gray-400">
+                          Not scheduled
+                        </span>
+                      )
+                    ) : (
+                      <Skeleton className="h-5 w-24 rounded-full" />
+                    )}
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </motion.div>
+        )}
 
         <motion.section
           initial={{ opacity: 0, y: 18 }}
