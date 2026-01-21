@@ -76,7 +76,7 @@ const NavbarSide = () => {
 
   return (
     <header className="fixed inset-x-0 top-0 z-30 w-full text-slate-900 dark:text-white bg-transparent">
-      <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-4 flex items-center justify-between">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center justify-center ">
           <Link to="/home">
             {loading ? (
@@ -85,13 +85,13 @@ const NavbarSide = () => {
               <Image
                 src={Logo}
                 alt="LifeLog logo"
-                className="w-[140px] dark:invert transition-all"
+                className="w-[120px] sm:w-[140px] dark:invert transition-all"
               />
             )}
           </Link>
         </div>
 
-        <div className="flex items-center gap-3 md:gap-4 px-4 py-2.5 rounded-full glass-panel-soft border border-white/20 dark:border-white/10 shadow-[0_12px_30px_rgba(15,32,65,0.12)]">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full glass-panel-soft border border-white/20 dark:border-white/10 shadow-[0_12px_30px_rgba(15,32,65,0.12)]">
           <SwitchTheme />
           {/** 
           <Link
@@ -120,7 +120,7 @@ const NavbarSide = () => {
                   aria-expanded={isMenuOpen}
                 >
                   <Avatar
-                    className="w-9 h-9 rounded-full text-medium"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full text-medium"
                     showFallback
                     src={userPhotoUrl || undefined}
                     alt="avatar"
@@ -132,7 +132,7 @@ const NavbarSide = () => {
                 </button>
 
                 {isMenuOpen && (
-                  <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/15 bg-white/10 dark:bg-black/30 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-2 glass-panel-soft">
+                  <div className="absolute right-0 left-auto mt-3 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200/80 dark:border-white/15 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-2 glass-panel-soft origin-top-right">
                     <div className="px-3 py-2 space-y-1">
                       <span className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
                         Welcome
@@ -153,17 +153,17 @@ const NavbarSide = () => {
 
                     <Link
                       to="/profile"
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-white/10"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-900/10 dark:hover:bg-white/15"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Profile
                     </Link>
                     <button
                       type="button"
-                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-left ${
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-left transition-colors ${
                         isSigningOut
                           ? "opacity-60 cursor-not-allowed"
-                          : "hover:bg-red-600/20 hover:text-red-400"
+                          : "hover:bg-red-500/35 hover:text-red-700 dark:hover:bg-red-500/35 dark:hover:text-red-200"
                       }`}
                       onClick={handleSignOut}
                       disabled={isSigningOut}
@@ -186,7 +186,7 @@ const NavbarSide = () => {
               <Button
                 size="sm"
                 variant="flat"
-                className="px-4 glass-chip text-slate-900 dark:text-white hover:-translate-y-0.5 transition-transform"
+                className="hidden sm:inline-flex px-4 glass-chip text-slate-900 dark:text-white hover:-translate-y-0.5 transition-transform"
                 onPress={handleSignOut}
                 isLoading={isSigningOut}
                 isDisabled={isSigningOut}
@@ -195,15 +195,15 @@ const NavbarSide = () => {
               </Button>
             </div>
           ) : (
-            <Link to="/auth?mode=signin">
-              <Button
-                size="sm"
-                variant="flat"
-                className="px-4 glass-chip text-slate-900 dark:text-white hover:-translate-y-0.5 transition-transform"
-              >
-                Sign In
-              </Button>
-            </Link>
+            <Button
+              as={Link}
+              to="/auth?mode=signin"
+              size="sm"
+              variant="flat"
+              className="px-4 glass-chip text-slate-900 dark:text-white hover:-translate-y-0.5 transition-transform"
+            >
+              Sign In
+            </Button>
           )}
         </div>
       </div>
