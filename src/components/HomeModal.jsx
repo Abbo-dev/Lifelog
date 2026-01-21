@@ -209,22 +209,25 @@ function HomeModal({
           <span className="leading-none">New Note</span>
         </button>
       ) : (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => onCloseModal(false)} />
-          <div className="relative bg-white dark:bg-[#1a1a1a] w-full max-w-2xl mx-4 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium text-slate-900 dark:text-gray-100">
-                  {noteToEdit ? "Edit Note" : "Create New Note"}
-                </h2>
-                <button
-                  onClick={() => onCloseModal(false)}
-                  className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => onCloseModal(false)}
+          />
+          <div className="relative bg-white dark:bg-[#1a1a1a] w-full max-w-2xl rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 sm:px-6 border-b border-slate-200/70 dark:border-gray-800">
+              <h2 className="text-lg font-medium text-slate-900 dark:text-gray-100">
+                {noteToEdit ? "Edit Note" : "Create New Note"}
+              </h2>
+              <button
+                onClick={() => onCloseModal(false)}
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <input
