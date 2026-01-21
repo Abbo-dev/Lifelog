@@ -15,6 +15,11 @@ const sections = [
       "You are responsible for the accuracy of your account information and for safeguarding your credentials. Notify us promptly of any unauthorized access or suspected breach so we can help secure your account.",
   },
   {
+    title: "Business information",
+    body:
+      "LifeLog (legal business name) operates the LifeLog app and website. We provide the service, support, and billing access described in these Terms, and we can be reached at support@lifelog.app for any account, privacy, or billing questions.",
+  },
+  {
     title: "Your content and permissions",
     body:
       "You retain ownership of the notes and files you create. To operate the service, you grant LifeLog a limited license to host, process, and display your content solely to provide and improve the app.",
@@ -31,8 +36,25 @@ const sections = [
         Free features are available without charge. If you choose a paid plan,
         payments are handled by Paddle and are subject to their terms. Fees may
         change with advance notice, and taxes may apply. You can cancel at any
-        time; refunds are provided only where required by law or under Paddle’s
-        policy. See{" "}
+        time. See{" "}
+        <a
+          className="text-[#0072F5] hover:text-[#0052CC] underline"
+          href="https://www.paddle.com/legal/terms"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Paddle’s Terms
+        </a>{" "}
+        for details.
+      </>
+    ),
+  },
+  {
+    title: "Refund policy",
+    body: (
+      <>
+        Refunds are available within 14 days of purchase in accordance with
+        Paddle’s refund policy. See{" "}
         <a
           className="text-[#0072F5] hover:text-[#0052CC] underline"
           href="https://www.paddle.com/legal/terms"
