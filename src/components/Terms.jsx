@@ -26,8 +26,24 @@ const sections = [
   },
   {
     title: "Subscriptions and billing",
-    body:
-      "Free features are available without charge. If you choose a paid plan, payments are handled by a third-party processor and are subject to their terms. Fees may change with advance notice, and taxes may apply. You can cancel at any time; refunds are provided only where required by law or the processor's policy.",
+    body: (
+      <>
+        Free features are available without charge. If you choose a paid plan,
+        payments are handled by Paddle and are subject to their terms. Fees may
+        change with advance notice, and taxes may apply. You can cancel at any
+        time; refunds are provided only where required by law or under Paddle’s
+        policy. See{" "}
+        <a
+          className="text-[#0072F5] hover:text-[#0052CC] underline"
+          href="https://www.paddle.com/legal/terms"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Paddle’s Terms
+        </a>{" "}
+        for details.
+      </>
+    ),
   },
   {
     title: "Third-party services",
