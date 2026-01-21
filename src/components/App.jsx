@@ -139,13 +139,13 @@ const buildMemoryMapLayout = (notes, tagColors) => {
       const radius = Math.min(18, ring + jitter);
       const x = clampValue(
         cluster.x + Math.cos(angle) * radius,
-        6,
-        94
+        14,
+        86
       );
       const y = clampValue(
         cluster.y + Math.sin(angle) * radius,
-        8,
-        92
+        12,
+        88
       );
       nodes.push({
         id: note.id || seedBase,
@@ -216,12 +216,14 @@ const MapClusters = memo(function MapClusters({ clusters }) {
           className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
           style={{ left: `${cluster.x}%`, top: `${cluster.y}%` }}
         >
-          <div className="glass-chip flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-semibold">
+          <div className="glass-chip flex items-center gap-2 rounded-full px-2 py-1 text-[10px] font-semibold sm:px-3 sm:py-1.5 sm:text-[11px]">
             <span
               className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: cluster.color }}
             />
-            <span className="max-w-[110px] truncate">{cluster.tag}</span>
+            <span className="max-w-[90px] truncate sm:max-w-[110px]">
+              {cluster.tag}
+            </span>
             <span className="text-[10px] text-slate-500 dark:text-gray-400">
               {cluster.notes.length}
             </span>
@@ -278,7 +280,7 @@ const MapNodes = memo(function MapNodes({
             }}
           >
             <span
-              className={`glass-chip flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium transition ${
+              className={`glass-chip flex items-center gap-2 px-2.5 py-1 rounded-full text-[10px] font-medium transition sm:px-3 sm:py-1.5 sm:text-[11px] ${
                 isLocked ? "opacity-70" : "hover:shadow-md"
               }`}
               style={{ boxShadow: `0 16px 36px ${nodeGlow}` }}
@@ -287,7 +289,9 @@ const MapNodes = memo(function MapNodes({
                 className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: node.color }}
               />
-              <span className="max-w-[150px] truncate">{noteTitle}</span>
+              <span className="max-w-[100px] truncate sm:max-w-[150px]">
+                {noteTitle}
+              </span>
               <span className="flex items-center gap-1">
                 {isPinned && <MapPinIcon className="w-3 h-3 text-[#0072F5]" />}
                 {isLocked && (
@@ -2671,13 +2675,13 @@ function App() {
                       ))}
                     </div>
 
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-[11px] text-slate-500 dark:text-gray-400">
                         Create a folder to quick-filter matching notes.
                       </p>
                       <Button
                         size="sm"
-                        className="bg-[#0072F5] hover:bg-[#0052CC] text-white text-xs font-medium rounded-lg transition-colors px-4 py-2"
+                        className="w-full sm:w-auto bg-[#0072F5] hover:bg-[#0052CC] text-white text-xs font-medium rounded-lg transition-colors px-4 py-2 whitespace-nowrap"
                         onPress={handleCreateSmartFolder}
                       >
                         Save smart folder
