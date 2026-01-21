@@ -206,7 +206,7 @@ const MenuBar = ({ editor }) => {
   };
 
   return (
-    <div className="flex flex-wrap gap-2 p-2 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
+    <div className="flex flex-nowrap gap-2 p-2 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-t-lg overflow-x-auto sm:flex-wrap sm:overflow-visible">
       <Button
         size="sm"
         variant="light"
