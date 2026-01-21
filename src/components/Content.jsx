@@ -253,22 +253,22 @@ function Content() {
               : "Capture notes, tag them, and set reminders in one calm dashboard so you always know what is next."}
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link to={primaryCta.to}>
-              <Button
-                color="primary"
-                className="px-6 py-3 text-base font-semibold shadow-[0_15px_40px_rgba(0,114,245,0.35)] hover:-translate-y-0.5 hover:scale-[1.02] transition-transform"
-              >
-                {primaryCta.label}
-              </Button>
-            </Link>
-            <Link to={secondaryCta.to}>
-              <Button
-                variant="light"
-                className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white"
-              >
-                {secondaryCta.label}
-              </Button>
-            </Link>
+            <Button
+              as={Link}
+              to={primaryCta.to}
+              color="primary"
+              className="px-6 py-3 text-base font-semibold shadow-[0_15px_40px_rgba(0,114,245,0.35)] hover:-translate-y-0.5 hover:scale-[1.02] transition-transform"
+            >
+              {primaryCta.label}
+            </Button>
+            <Button
+              as={Link}
+              to={secondaryCta.to}
+              variant="light"
+              className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white"
+            >
+              {secondaryCta.label}
+            </Button>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 dark:text-white/75">
             <span className="px-3 py-1 rounded-full glass-chip border border-slate-200/70 dark:border-white/10 text-slate-700 dark:text-white/80">
@@ -590,9 +590,9 @@ function Content() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.25 }}
           transition={{ duration: 0.55, ease: "easeOut" }}
-          className="mt-16"
+          className="mt-16 w-full"
         >
-          <div className="rounded-3xl border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
+          <div className="rounded-3xl border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl p-6 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] w-full mx-auto">
             <div className="text-center space-y-2">
               <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/70">
                 Pricing
@@ -606,8 +606,9 @@ function Content() {
               </p>
             </div>
 
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
-              <Card className="relative h-full overflow-hidden border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
+            <div className="mt-8 grid w-full gap-6 md:grid-cols-2 place-items-center md:place-items-stretch">
+              <div className="w-full flex justify-center">
+                <Card className="relative w-[92%] max-w-[460px] md:w-full md:max-w-none h-full overflow-hidden border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0"
@@ -664,21 +665,23 @@ function Content() {
                   </p>
 
                   <div className="mt-auto pt-6">
-                    <Link to={primaryCta.to}>
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        className="w-full border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 text-slate-900 dark:text-white hover:bg-white dark:hover:bg-white/10"
-                      >
-                        {isAuthenticated ? "Open LifeLog" : "Start free"}
-                      </Button>
-                    </Link>
+                    <Button
+                      as={Link}
+                      to={primaryCta.to}
+                      size="sm"
+                      variant="flat"
+                      className="w-full border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 text-slate-900 dark:text-white hover:bg-white dark:hover:bg-white/10"
+                    >
+                      {isAuthenticated ? "Open LifeLog" : "Start free"}
+                    </Button>
                   </div>
                 </CardBody>
               </Card>
+              </div>
 
-              <div className="relative h-full rounded-3xl p-[1px] bg-gradient-to-br from-[#0072F5] via-[#5EA2EF] to-[#9353D3] shadow-[0_25px_70px_rgba(0,114,245,0.25)]">
-                <Card className="relative h-full overflow-hidden rounded-3xl bg-[#0b1a33]/95 text-white border border-white/10">
+              <div className="w-full flex justify-center">
+                <div className="relative w-[92%] max-w-[460px] md:w-full md:max-w-none h-full rounded-3xl p-[1px] bg-gradient-to-br from-[#0072F5] via-[#5EA2EF] to-[#9353D3] shadow-[0_25px_70px_rgba(0,114,245,0.25)]">
+                  <Card className="relative w-full h-full overflow-hidden rounded-3xl bg-[#0b1a33]/95 text-white border border-white/10">
                   <div
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-0"
@@ -735,18 +738,19 @@ function Content() {
                     </ul>
 
                     <div className="mt-auto pt-6">
-                      <Link to="/pricing">
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          className="w-full border border-white/15 bg-white/5 text-white hover:bg-white/10"
-                        >
-                          View details
-                        </Button>
-                      </Link>
+                      <Button
+                        as={Link}
+                        to="/pricing"
+                        size="sm"
+                        variant="flat"
+                        className="w-full border border-white/15 bg-white/5 text-white hover:bg-white/10"
+                      >
+                        View details
+                      </Button>
                     </div>
                   </CardBody>
                 </Card>
+              </div>
               </div>
             </div>
           </div>
@@ -857,14 +861,14 @@ function Content() {
                 </li>
               </ul>
               <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
-                <Link to={finalCta.to}>
-                  <Button
-                    color="primary"
-                    className="px-5 shadow-[0_15px_40px_rgba(0,114,245,0.35)]"
-                  >
-                    {finalCta.label}
-                  </Button>
-                </Link>
+                <Button
+                  as={Link}
+                  to={finalCta.to}
+                  color="primary"
+                  className="px-5 shadow-[0_15px_40px_rgba(0,114,245,0.35)]"
+                >
+                  {finalCta.label}
+                </Button>
               </div>
               <p className="mt-3 text-xs text-slate-600 dark:text-white/65">
                 {isAuthenticated
