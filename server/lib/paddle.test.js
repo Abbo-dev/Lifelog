@@ -6,6 +6,7 @@ import {
   isPremiumStatus,
   normalizeDateValue,
   parsePaddleSignature,
+  resolvePaddleEventId,
   resolveNextBilledAt,
   safeJsonParse,
   verifyPaddleWebhook,
@@ -85,6 +86,12 @@ test("resolveNextBilledAt picks the first valid candidate", () => {
     current_period_end: "2024-03-01T00:00:00Z",
   };
   assert.equal(resolveNextBilledAt(resource), "2024-02-01T00:00:00.000Z");
+});
+
+test("resolvePaddleEventId prefers event_id then id", () => {
+  assert.equal(resolvePaddleEventId({ event_id: "evt_1", id: "evt_2" }), "evt_1");
+  assert.equal(resolvePaddleEventId({ id: "evt_2" }), "evt_2");
+  assert.equal(resolvePaddleEventId({}), "");
 });
 
 test("extractUidFromPaddlePayload reads uid from custom data", () => {
