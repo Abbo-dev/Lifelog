@@ -39,10 +39,12 @@ import {
 } from "../utils/localNotes";
 import {
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   query,
   serverTimestamp,
+  updateDoc,
   writeBatch,
   where,
 } from "firebase/firestore";
@@ -52,6 +54,7 @@ import {
   parseNotesJsonImport,
   parseNotesMarkdownImport,
 } from "../utils/notePortability";
+import { formatRecurringFrequency } from "../utils/recurringNotes";
 import { createBillingPortalSession } from "../services/billingPortal";
 import {
   EmailAuthProvider,
@@ -229,6 +232,9 @@ function Profile() {
     settings: reminderSettings,
   });
   const [notesLoaded, setNotesLoaded] = useState(false);
+  const [recurringNotes, setRecurringNotes] = useState([]);
+  const [recurringLoading, setRecurringLoading] = useState(false);
+  const [recurringError, setRecurringError] = useState("");
   const activeNotes = useMemo(
     () => notes.filter((note) => !note?.trashedAt),
     [notes]
@@ -304,6 +310,11 @@ function Profile() {
     return date ? format(date, "MMM d, yyyy") : "";
   };
 
+  const formatRecurringNextRun = (value) => {
+    const date = toDateValue(value);
+    return date ? format(date, "MMM d, h:mm a") : "Not scheduled";
+  };
+
   const formatReminderPermission = (permission) => {
     switch (permission) {
       case "granted":
@@ -377,6 +388,37 @@ function Profile() {
         setNotesLoaded(true);
       }
     );
+    return unsubscribe;
+  }, [user?.uid, isPremium, planLoading]);
+
+  useEffect(() => {
+    if (!user?.uid || !isPremium || planLoading) {
+      setRecurringNotes([]);
+      setRecurringLoading(false);
+      setRecurringError("");
+      return undefined;
+    }
+
+    setRecurringLoading(true);
+    const recurringRef = collection(db, "users", user.uid, "recurringNotes");
+    const unsubscribe = onSnapshot(
+      recurringRef,
+      (snapshot) => {
+        const items = snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        }));
+        setRecurringNotes(items);
+        setRecurringLoading(false);
+      },
+      (error) => {
+        console.error("Failed to load recurring notes", error);
+        setRecurringNotes([]);
+        setRecurringLoading(false);
+        setRecurringError(error?.message || "Unable to load recurring notes.");
+      }
+    );
+
     return unsubscribe;
   }, [user?.uid, isPremium, planLoading]);
 
@@ -838,6 +880,31 @@ function Profile() {
       setPortalStatus(error?.message || "Unable to open billing portal.");
     } finally {
       setPortalLoading(false);
+    }
+  };
+
+  const handleToggleRecurring = async (template) => {
+    if (!user?.uid || !template?.id) return;
+    const ref = doc(db, "users", user.uid, "recurringNotes", template.id);
+    try {
+      await updateDoc(ref, {
+        active: !template.active,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Failed to update recurring note", error);
+    }
+  };
+
+  const handleDeleteRecurring = async (template) => {
+    if (!user?.uid || !template?.id) return;
+    const confirmed = window.confirm("Delete this recurring note template?");
+    if (!confirmed) return;
+    const ref = doc(db, "users", user.uid, "recurringNotes", template.id);
+    try {
+      await deleteDoc(ref);
+    } catch (error) {
+      console.error("Failed to delete recurring note", error);
     }
   };
 
@@ -1699,6 +1766,90 @@ function Profile() {
                           {reminderStatus && (
                             <p className="text-xs text-slate-500 dark:text-gray-400">
                               {reminderStatus}
+                            </p>
+                          )}
+                        </CardBody>
+                      </Card>
+
+                      <Card className="profile-card">
+                        <CardBody className="p-4 pb-4 space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <h3 className="text-lg font-semibold">
+                              Recurring notes
+                            </h3>
+                            <Chip
+                              size="sm"
+                              className="bg-[#0072F5]/10 text-[#0052CC] dark:text-[#5EA2EF]"
+                              variant="flat"
+                            >
+                              {isPremium
+                                ? `${recurringNotes.filter((item) => item?.active !== false).length} active`
+                                : "Premium"}
+                            </Chip>
+                          </div>
+                          <p className="text-sm text-slate-500 dark:text-gray-400">
+                            Auto-create notes on a daily, weekly, or monthly schedule.
+                          </p>
+
+                          {!isPremium ? (
+                            <Button
+                              size="sm"
+                              className="shadow-md shadow-[#0072F5]/20"
+                              onPress={() => navigate("/pricing")}
+                            >
+                              Upgrade
+                            </Button>
+                          ) : (
+                            <div className="space-y-2">
+                              {recurringLoading ? (
+                                <Skeleton className="h-12 w-full rounded-xl" />
+                              ) : recurringNotes.length === 0 ? (
+                                <p className="text-xs text-slate-500 dark:text-gray-400">
+                                  No recurring notes yet. Create one from the New Note
+                                  modal.
+                                </p>
+                              ) : (
+                                recurringNotes.map((template) => (
+                                  <div
+                                    key={template.id}
+                                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-gray-800 bg-white/70 dark:bg-slate-900/60 px-3 py-2"
+                                  >
+                                    <div>
+                                      <p className="text-sm font-medium text-slate-900 dark:text-gray-100">
+                                        {template.title || "Untitled note"}
+                                      </p>
+                                      <p className="text-xs text-slate-500 dark:text-gray-400">
+                                        {formatRecurringFrequency(template.frequency)} · Next{" "}
+                                        {formatRecurringNextRun(template.nextRunAt)}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="flat"
+                                        className="border border-slate-200 dark:border-gray-700"
+                                        onPress={() => handleToggleRecurring(template)}
+                                      >
+                                        {template.active === false ? "Resume" : "Pause"}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="bordered"
+                                        className="border-rose-200 text-rose-600 dark:border-rose-900 dark:text-rose-300"
+                                        onPress={() => handleDeleteRecurring(template)}
+                                      >
+                                        Delete
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
+
+                          {recurringError && (
+                            <p className="text-xs text-rose-600 dark:text-rose-300">
+                              {recurringError}
                             </p>
                           )}
                         </CardBody>
