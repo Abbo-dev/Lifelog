@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node server/index.js"
+    "server": "node server/index.js",
+    "test": "node --test server/**/*.test.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
