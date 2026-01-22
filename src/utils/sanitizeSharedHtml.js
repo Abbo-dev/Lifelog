@@ -50,10 +50,15 @@ const sanitizeInlineStyle = (style = "") => {
   return kept.join("; ");
 };
 
-const sanitizeImageSrc = (src = "") => {
+const isSafeDataImage = (value) =>
+  /^data:image\/(png|jpe?g|gif|webp);/i.test(value);
+
+const sanitizeImageSrc = (src = "", { allowDataImages = false } = {}) => {
   const trimmed = src.trim();
   if (!trimmed) return "";
-  if (trimmed.toLowerCase().startsWith("data:")) return "";
+  if (trimmed.toLowerCase().startsWith("data:")) {
+    return allowDataImages && isSafeDataImage(trimmed) ? trimmed : "";
+  }
 
   try {
     const url = new URL(
@@ -75,7 +80,7 @@ const sanitizeImageSrc = (src = "") => {
   }
 };
 
-export const sanitizeHtmlForPublicShare = (html = "") => {
+const sanitizeHtml = (html = "", { allowDataImages = false } = {}) => {
   if (typeof html !== "string") return "";
   if (typeof window === "undefined" || typeof DOMParser === "undefined") return html;
 
@@ -121,7 +126,9 @@ export const sanitizeHtmlForPublicShare = (html = "") => {
     });
 
     doc.querySelectorAll("img").forEach((img) => {
-      const sanitizedSrc = sanitizeImageSrc(img.getAttribute("src") || "");
+      const sanitizedSrc = sanitizeImageSrc(img.getAttribute("src") || "", {
+        allowDataImages,
+      });
       if (!sanitizedSrc) {
         img.remove();
         return;
@@ -153,3 +160,9 @@ export const sanitizeHtmlForPublicShare = (html = "") => {
     return html;
   }
 };
+
+export const sanitizeHtmlForPublicShare = (html = "") =>
+  sanitizeHtml(html, { allowDataImages: false });
+
+export const sanitizeHtmlForNotes = (html = "") =>
+  sanitizeHtml(html, { allowDataImages: true });
