@@ -145,6 +145,9 @@ const howItWorks = [
   },
 ];
 
+const monthlyPrice = 7.99;
+const annualPrice = Number((monthlyPrice * 12).toFixed(2));
+
 const pricingTiers = {
   free: [
     "Local notes on one device",
@@ -154,11 +157,11 @@ const pricingTiers = {
     "Smart folders + fast search",
   ],
   premium: [
-    "Cloud sync across devices",
-    "Real-time updates + offline cache",
+    "Cloud sync across devices + offline cache",
     "Automatic cloud backups",
     "Memory map view",
     "Version history + restore",
+    "Recurring notes + scheduled templates",
     "Export to PDF + Markdown",
     "Shareable read-only note links",
     "Sync smart folders + tag colors",
@@ -696,7 +699,9 @@ function Content() {
                           Premium
                         </p>
                         <div className="mt-3 flex items-end gap-2">
-                          <p className="text-4xl font-extrabold">$4.99</p>
+                          <p className="text-4xl font-extrabold">
+                            ${monthlyPrice.toFixed(2)}
+                          </p>
                           <span className="pb-1 text-sm text-white/70">
                             /mo
                           </span>
@@ -705,10 +710,7 @@ function Content() {
                           Sync, backups, sharing, and advanced workflows.
                         </p>
                         <p className="mt-1 text-xs text-white/65">
-                          or $49.99/yr{" "}
-                          <span className="text-emerald-300 font-semibold">
-                            Save 17%
-                          </span>
+                          or ${annualPrice.toFixed(2)}/yr
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
