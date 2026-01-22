@@ -20,7 +20,16 @@ const bufferToBase64 = (buffer) =>
 const base64ToBuffer = (value) =>
   Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
 
+const hasRandomValues = () =>
+  typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function";
+
+const hasSubtleCrypto = () =>
+  typeof crypto !== "undefined" &&
+  crypto.subtle &&
+  typeof crypto.subtle.digest === "function";
+
 const hashPasscode = async (passcode, salt) => {
+  if (!hasSubtleCrypto()) return null;
   const encoder = new TextEncoder();
   const passBytes = encoder.encode(passcode);
   const data = new Uint8Array(salt.length + passBytes.length);
@@ -44,8 +53,10 @@ export const getLockStatus = (userId) => {
 
 export const setLockPasscode = async (userId, passcode) => {
   if (!userId || !storageAvailable()) return false;
+  if (!hasRandomValues()) return false;
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const hash = await hashPasscode(passcode, salt);
+  if (!hash) return false;
   const payload = {
     salt: bufferToBase64(salt),
     hash,
@@ -69,6 +80,7 @@ export const verifyLockPasscode = async (userId, passcode) => {
     const salt = parsed?.salt ? base64ToBuffer(parsed.salt) : null;
     if (!salt) return false;
     const hash = await hashPasscode(passcode, salt);
+    if (!hash) return false;
     return hash === parsed.hash;
   } catch (error) {
     console.error("Failed to verify lock passcode", error);
