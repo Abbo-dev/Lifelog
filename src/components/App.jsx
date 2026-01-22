@@ -32,6 +32,12 @@ import {
   verifyLockPasscode,
 } from "../utils/localNoteLock";
 import {
+  advanceNextRunAt,
+  computeNextRunAt,
+  normalizeRecurringFrequency,
+  normalizeRecurringInterval,
+} from "../utils/recurringNotes";
+import {
   addDoc,
   collection,
   onSnapshot,
@@ -189,6 +195,37 @@ const MAP_STARFIELD_STYLE = {
   backgroundSize: "22px 22px",
 };
 
+const safeLocalStorageGet = (key) => {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeLocalStorageSet = (key, value) => {
+  if (typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const safeLocalStorageRemove = (key) => {
+  if (typeof window === "undefined") return false;
+  try {
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const RECURRING_CHECK_INTERVAL_MS = 60 * 1000;
+
 const MapLines = memo(function MapLines({ links }) {
   return (
     <>
@@ -342,6 +379,7 @@ function App() {
   });
   const [notes, setNotes] = useState([]);
   const [notesLoaded, setNotesLoaded] = useState(false);
+  const [recurringTemplates, setRecurringTemplates] = useState([]);
   const [noteToEdit, setNoteToEdit] = useState(null);
   const [showHomeModal, setShowHomeModal] = useState(false);
   const [initialDraft, setInitialDraft] = useState(null);
@@ -356,6 +394,27 @@ function App() {
   const [draggingTag, setDraggingTag] = useState("");
   const [dragCursor, setDragCursor] = useState({ x: 0, y: 0 });
   const navigate = useNavigate();
+  const parseRecurringDate = useCallback((value) => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === "object" && "seconds" in value && "nanoseconds" in value) {
+      return new Date(
+        value.seconds * 1000 + Math.floor(value.nanoseconds / 1_000_000)
+      );
+    }
+    if (typeof value?.toDate === "function") {
+      try {
+        return value.toDate();
+      } catch {
+        return null;
+      }
+    }
+    if (typeof value === "string" || typeof value === "number") {
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    return null;
+  }, []);
   const handleRequestPremium = useCallback(
     (featureLabel) => {
       const label = featureLabel ? `${featureLabel} is` : "This is";
@@ -405,6 +464,7 @@ function App() {
   const tagColorsSeededRef = useRef(false);
   const hasTagColorsSyncedRef = useRef(false);
   const lastActiveLoadedRef = useRef(false);
+  const recurringProcessingRef = useRef(false);
   const sortOptions = [
     { value: "lastModified", label: "Last Modified" },
     { value: "createdAt", label: "Created Date" },
@@ -692,16 +752,128 @@ function App() {
 
     const docRef = collection(db, "notes");
     const q = query(docRef, where("userId", "==", currentUserId));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const notesData = querySnapshot.docs.map((docItem) => ({
-        id: docItem.id,
-        ...docItem.data(),
-      }));
-      setNotes(notesData);
-      setNotesLoaded(true);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const notesData = querySnapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        }));
+        setNotes(notesData);
+        setNotesLoaded(true);
+      },
+      (error) => {
+        console.error("Failed to load notes", error);
+        setNotesLoaded(true);
+      }
+    );
     return unsubscribe;
   }, [currentUserId, isPremium, planLoading]);
+
+  useEffect(() => {
+    if (!currentUserId || !isPremium) {
+      setRecurringTemplates([]);
+      return undefined;
+    }
+
+    const recurringRef = collection(db, "users", currentUserId, "recurringNotes");
+    const unsubscribe = onSnapshot(
+      recurringRef,
+      (snapshot) => {
+        const items = snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        }));
+        setRecurringTemplates(items);
+      },
+      (error) => {
+        console.error("Failed to load recurring notes", error);
+        setRecurringTemplates([]);
+      }
+    );
+
+    return unsubscribe;
+  }, [currentUserId, isPremium]);
+
+  useEffect(() => {
+    if (!currentUserId || !isPremium || recurringTemplates.length === 0) {
+      return undefined;
+    }
+
+    let intervalId;
+
+    const processRecurringTemplates = async () => {
+      if (recurringProcessingRef.current) return;
+      recurringProcessingRef.current = true;
+
+      try {
+        const now = new Date();
+        for (const template of recurringTemplates) {
+          if (!template || template.active === false) continue;
+
+          const nextRunAt = parseRecurringDate(template.nextRunAt);
+          if (!nextRunAt || nextRunAt > now) continue;
+
+          const frequency = normalizeRecurringFrequency(template.frequency);
+          const interval = normalizeRecurringInterval(template.interval);
+          const updatedNextRunAt = advanceNextRunAt({
+            nextRunAt,
+            frequency,
+            interval,
+            now,
+          });
+
+          const noteRef = doc(collection(db, "notes"));
+          const templateRef = doc(
+            db,
+            "users",
+            currentUserId,
+            "recurringNotes",
+            template.id
+          );
+
+          const batch = writeBatch(db);
+          batch.set(noteRef, {
+            title: template.title || "Untitled note",
+            content: template.content || "",
+            tags: Array.isArray(template.tags) ? template.tags : [],
+            color: template.color || "#ffffff",
+            isPinned: !!template.isPinned,
+            userId: currentUserId,
+            createdAt: serverTimestamp(),
+            lastModified: serverTimestamp(),
+            dueDate: template.useDueDate ? nextRunAt : null,
+            recurringTemplateId: template.id,
+            recurringRunAt: nextRunAt,
+          });
+          batch.update(templateRef, {
+            lastCreatedAt: serverTimestamp(),
+            nextRunAt: updatedNextRunAt,
+            updatedAt: serverTimestamp(),
+          });
+
+          await batch.commit();
+        }
+      } catch (error) {
+        console.error("Failed to process recurring notes", error);
+      } finally {
+        recurringProcessingRef.current = false;
+      }
+    };
+
+    processRecurringTemplates();
+    intervalId = window.setInterval(
+      processRecurringTemplates,
+      RECURRING_CHECK_INTERVAL_MS
+    );
+
+    return () => window.clearInterval(intervalId);
+  }, [
+    currentUserId,
+    isPremium,
+    recurringTemplates,
+    parseRecurringDate,
+  ]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -1019,6 +1191,52 @@ function App() {
     }
   };
 
+  const createRecurringTemplate = async (noteDraft) => {
+    if (!currentUserId || !isPremium) return;
+    const recurrence = noteDraft?.recurrence;
+    if (!recurrence?.frequency) return;
+
+    const frequency = normalizeRecurringFrequency(recurrence.frequency);
+    const interval = normalizeRecurringInterval(recurrence.interval);
+    const dueDate = parseRecurringDate(noteDraft?.dueDate);
+    const baseDate = dueDate || new Date();
+    const nextRunSeed = computeNextRunAt({
+      baseDate,
+      frequency,
+      interval,
+    });
+    const nextRunAt = advanceNextRunAt({
+      nextRunAt: nextRunSeed,
+      frequency,
+      interval,
+      now: new Date(),
+    });
+
+    const templatesRef = collection(db, "users", currentUserId, "recurringNotes");
+    await addDoc(templatesRef, {
+      title: noteDraft?.title || "Untitled note",
+      content: noteDraft?.content || "",
+      tags: Array.isArray(noteDraft?.tags) ? noteDraft.tags : [],
+      color: noteDraft?.color || "#ffffff",
+      isPinned: !!noteDraft?.isPinned,
+      frequency,
+      interval,
+      active: true,
+      useDueDate: !!noteDraft?.dueDate,
+      nextRunAt,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  };
+
+  const maybeCreateRecurringTemplate = async (noteDraft) => {
+    try {
+      await createRecurringTemplate(noteDraft);
+    } catch (error) {
+      console.error("Failed to create recurring template", error);
+    }
+  };
+
   const handleSaveNote = async (noteDraft, existingNote) => {
     if (!currentUserId) return;
 
@@ -1100,12 +1318,14 @@ function App() {
         }
 
         await batch.commit();
+        await maybeCreateRecurringTemplate(noteDraft);
         return;
       }
       await addDoc(collection(db, "notes"), {
         ...firestoreNote,
         createdAt: serverTimestamp(),
       });
+      await maybeCreateRecurringTemplate(noteDraft);
     } catch (error) {
       console.error("Error saving note:", error);
       throw error;
@@ -1579,7 +1799,7 @@ function App() {
     if (!currentUserId) {
       hasSmartFolderSyncedRef.current = false;
       smartFoldersSeededRef.current = false;
-      const local = localStorage.getItem("smartFolders_anonymous");
+      const local = safeLocalStorageGet("smartFolders_anonymous");
       if (local) {
         try {
           const parsed = JSON.parse(local);
@@ -1597,7 +1817,7 @@ function App() {
     if (!isPremium) {
       hasSmartFolderSyncedRef.current = false;
       smartFoldersSeededRef.current = false;
-      const cached = localStorage.getItem(`smartFolders_${currentUserId}`);
+      const cached = safeLocalStorageGet(`smartFolders_${currentUserId}`);
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
@@ -1613,7 +1833,7 @@ function App() {
     }
 
     // Load local cache immediately for UX, then hydrate with Firestore live data.
-    const cached = localStorage.getItem(`smartFolders_${currentUserId}`);
+    const cached = safeLocalStorageGet(`smartFolders_${currentUserId}`);
     let cachedFolders = [];
     if (cached) {
       try {
@@ -1653,7 +1873,7 @@ function App() {
             );
           });
           setSmartFolders(cachedFolders);
-          localStorage.setItem(
+          safeLocalStorageSet(
             `smartFolders_${currentUserId}`,
             JSON.stringify(cachedFolders)
           );
@@ -1662,7 +1882,7 @@ function App() {
         }
 
         setSmartFolders(list);
-        localStorage.setItem(
+        safeLocalStorageSet(
           `smartFolders_${currentUserId}`,
           JSON.stringify(list)
         );
@@ -1705,7 +1925,7 @@ function App() {
 
     const storageKey = `tagColors_${currentUserId}`;
     let cachedMap = {};
-    const cached = localStorage.getItem(storageKey);
+    const cached = safeLocalStorageGet(storageKey);
     if (cached) {
       try {
         cachedMap = normalizeTagColorMap(JSON.parse(cached));
@@ -1787,16 +2007,16 @@ function App() {
       ? `activeSmartFolder_${currentUserId}`
       : "activeSmartFolder_anonymous";
     if (!lastActiveLoadedRef.current) {
-      const saved = localStorage.getItem(key);
+      const saved = safeLocalStorageGet(key);
       if (saved) {
         setActiveSmartFolderId(saved);
       }
       lastActiveLoadedRef.current = true;
     }
     if (activeSmartFolderId) {
-      localStorage.setItem(key, activeSmartFolderId);
+      safeLocalStorageSet(key, activeSmartFolderId);
     } else {
-      localStorage.removeItem(key);
+      safeLocalStorageRemove(key);
     }
   }, [activeSmartFolderId, currentUserId]);
 
@@ -2325,6 +2545,8 @@ function App() {
                     existingTags={allTags}
                     tagColors={tagColors}
                     onSetTagColor={handleSetTagColor}
+                    isPremium={isPremium}
+                    onRequestPremium={handleRequestPremium}
                   />
                 </div>
               )}
