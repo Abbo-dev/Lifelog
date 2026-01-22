@@ -121,6 +121,9 @@ const extractUidFromPaddlePayload = (event) => {
 const resolvePaddleEventType = (event) =>
   event?.event_type || event?.type || event?.eventType || "";
 
+const resolvePaddleEventId = (event) =>
+  event?.event_id || event?.eventId || event?.eventID || event?.id || "";
+
 const resolvePaddleResource = (event) =>
   event?.data || event?.data?.object || event?.data?.data || {};
 
@@ -137,6 +140,7 @@ export {
   normalizeDateValue,
   normalizeSubscriptionStatus,
   parsePaddleSignature,
+  resolvePaddleEventId,
   resolveNextBilledAt,
   resolvePaddleEventType,
   resolvePaddleResource,
