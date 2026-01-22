@@ -292,3 +292,87 @@ test("webhook ignores duplicate event ids", async (t) => {
   assert.equal(secondPayload.duplicate, true);
   assert.ok(db._store.get("paddleEvents/evt_123"));
 });
+
+test("checkout then webhook upgrades user and stores subscription mapping", async (t) => {
+  const db = createFakeDb();
+  const verifyFirebaseToken = async () => ({
+    uid: "user-555",
+    email: "user@example.com",
+  });
+  const fetchCalls = [];
+  const fetchImpl = async (url, options) => {
+    fetchCalls.push({ url, options });
+    return {
+      ok: true,
+      async json() {
+        return { data: { checkout: { url: "https://checkout.test/session" } } };
+      },
+    };
+  };
+  const app = createApp({
+    env: buildEnv({ PADDLE_WEBHOOK_SECRET: "whsec_live" }),
+    verifyFirebaseToken,
+    db,
+    FieldValue,
+    fetchImpl,
+  });
+
+  const { server, baseUrl } = await startServer(app);
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+
+  const { response, data } = await jsonFetch(
+    `${baseUrl}/create-checkout-session`,
+    {
+      method: "POST",
+      body: JSON.stringify({ billingCycle: "monthly" }),
+    }
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(data.url, "https://checkout.test/session");
+  assert.ok(fetchCalls[0]?.options?.headers?.["Idempotency-Key"]);
+
+  const event = {
+    event_id: "evt_789",
+    event_type: "subscription.created",
+    data: {
+      id: "sub_789",
+      status: "active",
+      customer_id: "cust_789",
+      custom_data: { firebaseUid: "user-555" },
+    },
+  };
+  const rawBody = JSON.stringify(event);
+  const ts = Math.floor(Date.now() / 1000);
+  const base = `${ts}:${rawBody}`;
+  const h1 = crypto.createHmac("sha256", "whsec_live").update(base).digest("hex");
+  const signatureHeader = `ts=${ts}; h1=${h1}`;
+
+  const webhookResponse = await fetch(`${baseUrl}/webhook/paddle`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Paddle-Signature": signatureHeader,
+    },
+    body: rawBody,
+  });
+  const webhookPayload = await webhookResponse.json();
+
+  assert.equal(webhookResponse.status, 200);
+  assert.equal(webhookPayload.received, true);
+
+  const userDoc = db._store.get("users/user-555");
+  assert.equal(userDoc.plan, "premium");
+  assert.equal(userDoc.paddleCustomerId, "cust_789");
+  assert.equal(userDoc.paddleSubscriptionId, "sub_789");
+  assert.equal(userDoc.paddleSubscriptionStatus, "active");
+
+  const subscriptionDoc = db._store.get("paddleSubscriptions/sub_789");
+  assert.equal(subscriptionDoc.uid, "user-555");
+  assert.equal(subscriptionDoc.customerId, "cust_789");
+
+  const eventDoc = db._store.get("paddleEvents/evt_789");
+  assert.ok(eventDoc);
+  assert.equal(eventDoc.eventType, "subscription.created");
+  assert.ok(eventDoc.expiresAt instanceof Date);
+});
