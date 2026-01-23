@@ -17,6 +17,12 @@ const NOTE_COLORS = [
   "#ffffff",
 ];
 
+const recurringOptions = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+];
+
 function HomeModal({
   noteToEdit,
   initialDraft = null,
@@ -26,6 +32,8 @@ function HomeModal({
   existingTags: existingTagsProp = [],
   tagColors = {},
   onSetTagColor,
+  isPremium = false,
+  onRequestPremium,
 }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -33,6 +41,8 @@ function HomeModal({
   const [tags, setTags] = useState([]);
   const [color, setColor] = useState("#ffffff");
   const [isPinned, setIsPinned] = useState(false);
+  const [recurringEnabled, setRecurringEnabled] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState("weekly");
   const [newTag, setNewTag] = useState("");
   const [newTagColor, setNewTagColor] = useState("#5EA2EF");
   const [tagSuggestions, setTagSuggestions] = useState([]);
@@ -101,6 +111,8 @@ function HomeModal({
       setTags(noteToEdit.tags || []);
       setColor(noteToEdit.color || "#ffffff");
       setIsPinned(noteToEdit.isPinned || false);
+      setRecurringEnabled(false);
+      setRecurringFrequency("weekly");
       return;
     }
 
@@ -111,6 +123,8 @@ function HomeModal({
       setTags(Array.isArray(initialDraft.tags) ? initialDraft.tags : []);
       setColor(initialDraft.color || "#ffffff");
       setIsPinned(!!initialDraft.isPinned);
+      setRecurringEnabled(false);
+      setRecurringFrequency("weekly");
       return;
     }
 
@@ -120,7 +134,17 @@ function HomeModal({
     setTags([]);
     setColor("#ffffff");
     setIsPinned(false);
+    setRecurringEnabled(false);
+    setRecurringFrequency("weekly");
   }, [noteToEdit, initialDraft, showHomeModal]);
+
+  const handleRecurringToggle = () => {
+    if (!isPremium) {
+      onRequestPremium?.("Recurring notes");
+      return;
+    }
+    setRecurringEnabled((prev) => !prev);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -135,6 +159,9 @@ function HomeModal({
 
     try {
       const normalizedContent = sanitizeHtmlLinks(content);
+      const recurrence = recurringEnabled
+        ? { frequency: recurringFrequency }
+        : null;
       const noteDraft = {
         title: title.trim(),
         content: normalizedContent,
@@ -142,6 +169,7 @@ function HomeModal({
         tags,
         color,
         isPinned,
+        recurrence,
       };
 
       if (typeof onSaveNote === "function") {
@@ -335,6 +363,62 @@ function HomeModal({
                     Clear date
                   </button>
                 </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white/70 dark:bg-[#1f1f1f] p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-800 dark:text-gray-100">
+                        Recurring note
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-gray-400">
+                        Auto-create this note on a schedule.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRecurringToggle}
+                      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                        recurringEnabled
+                          ? "bg-[#0072F5] text-white border-[#0072F5]"
+                          : "bg-white/70 dark:bg-[#2a2a2a] text-slate-600 dark:text-gray-300 border-slate-200 dark:border-gray-700"
+                      }`}
+                    >
+                      {recurringEnabled ? "On" : "Off"}
+                    </button>
+                  </div>
+
+                  {!isPremium && (
+                    <button
+                      type="button"
+                      onClick={() => onRequestPremium?.("Recurring notes")}
+                      className="text-xs text-[#0052CC] dark:text-[#5EA2EF] hover:underline"
+                    >
+                      Upgrade to unlock recurring notes
+                    </button>
+                  )}
+
+                  {recurringEnabled && (
+                    <div className="flex flex-wrap gap-2">
+                      {recurringOptions.map((option) => {
+                        const active = recurringFrequency === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setRecurringFrequency(option.value)}
+                            className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                              active
+                                ? "bg-[#0072F5] text-white border-[#0072F5]"
+                                : "bg-white/70 dark:bg-[#2a2a2a] text-slate-700 dark:text-gray-200 border-slate-200 dark:border-gray-700"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div>
