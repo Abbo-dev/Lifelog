@@ -2551,7 +2551,7 @@ function App() {
                 </div>
               )}
 
-	              <div className="flex-1 max-w-[600px]">
+	              <div className="w-full flex-1 sm:max-w-[600px]">
 	                <Input
 	                  id="notes-search"
 	                  value={searchQuery}
@@ -2586,67 +2586,69 @@ function App() {
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto md:flex-nowrap md:flex-shrink-0">
-                <Select
-                  selectedKeys={[sortBy]}
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0];
-                    if (value) setSortBy(value.toString());
-                  }}
-                  size="sm"
-                  className="min-w-[120px] sm:min-w-[150px]"
-                  classNames={{
-                    trigger:
-                      "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
-                  }}
-                  aria-label="Sort notes"
-                >
-                  {sortOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </Select>
-
-                {!showTrash && (
+              <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center md:flex-nowrap md:flex-shrink-0">
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center md:w-auto md:flex-nowrap">
                   <Select
-                    selectedKeys={filterTag ? [filterTag] : []}
+                    selectedKeys={[sortBy]}
                     onSelectionChange={(keys) => {
                       const value = Array.from(keys)[0];
-                      setFilterTag(value ? value.toString() : "");
+                      if (value) setSortBy(value.toString());
                     }}
-                    allowEmptySelection
-                    placeholder="All tags"
                     size="sm"
-                    className="min-w-[120px] sm:min-w-[140px]"
+                    className="w-full sm:min-w-[150px] sm:w-auto"
                     classNames={{
                       trigger:
                         "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
                     }}
-                    aria-label="Filter by tag"
+                    aria-label="Sort notes"
                   >
-                    <SelectItem key="" value="" textValue="All tags">
-                      All tags
-                    </SelectItem>
-                    {allTags.map((tag) => (
-                      <SelectItem key={tag} value={tag} textValue={tag}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{
-                              backgroundColor: resolveTagColor(tag, tagColors),
-                            }}
-                          />
-                          <span>{tag}</span>
-                        </div>
+                    {sortOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
                       </SelectItem>
                     ))}
                   </Select>
-                )}
 
-                <div className="flex flex-wrap items-center justify-center gap-1.5 w-full md:w-auto md:flex-nowrap md:justify-start md:gap-2 md:shrink-0">
+                  {!showTrash && (
+                    <Select
+                      selectedKeys={filterTag ? [filterTag] : []}
+                      onSelectionChange={(keys) => {
+                        const value = Array.from(keys)[0];
+                        setFilterTag(value ? value.toString() : "");
+                      }}
+                      allowEmptySelection
+                      placeholder="All tags"
+                      size="sm"
+                      className="w-full sm:min-w-[140px] sm:w-auto"
+                      classNames={{
+                        trigger:
+                          "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm text-xs",
+                      }}
+                      aria-label="Filter by tag"
+                    >
+                      <SelectItem key="" value="" textValue="All tags">
+                        All tags
+                      </SelectItem>
+                      {allTags.map((tag) => (
+                        <SelectItem key={tag} value={tag} textValue={tag}>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full"
+                              style={{
+                                backgroundColor: resolveTagColor(tag, tagColors),
+                              }}
+                            />
+                            <span>{tag}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 w-full overflow-x-auto pb-1 md:w-auto md:overflow-visible md:pb-0 md:justify-start md:gap-2 md:shrink-0">
                   {!trashSelectMode && (
-                    <div className="flex items-center gap-1 rounded-full border border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-[#2a2a2a] p-1 shadow-sm">
+                    <div className="flex items-center gap-1 rounded-full border border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-[#2a2a2a] p-1 shadow-sm shrink-0">
                       {[
                         {
                           key: "grid",
@@ -2697,7 +2699,7 @@ function App() {
                               isActive
                                 ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
                                 : "text-slate-700 dark:text-gray-200 hover:bg-white/70 dark:hover:bg-white/10"
-                            } ${isDisabled || isPremiumLocked ? "opacity-50 cursor-not-allowed hover:bg-transparent" : ""}`}
+                            } ${isDisabled || isPremiumLocked ? "opacity-50 cursor-not-allowed hover:bg-transparent" : ""} shrink-0`}
                           >
                             <Icon className="w-4 h-4" />
                             <span>{mode.label}</span>
@@ -2713,7 +2715,7 @@ function App() {
                   <Button
                     size="sm"
                     variant="flat"
-                    className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                    className="bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm shrink-0"
                     onPress={() => {
                       toggleFocusMode();
                     }}
@@ -2726,8 +2728,8 @@ function App() {
                     variant={trashSelectMode ? "solid" : "flat"}
                     className={
                       trashSelectMode
-                        ? "bg-rose-500 text-white shadow-sm"
-                        : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm"
+                        ? "bg-rose-500 text-white shadow-sm shrink-0"
+                        : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm shrink-0"
                     }
                     onPress={() =>
                       setTrashSelectMode((prev) => {
@@ -2749,8 +2751,8 @@ function App() {
                     variant={showTrash ? "solid" : "flat"}
                     className={
                       showTrash
-                        ? "bg-slate-900 text-white shadow-sm mr-2 sm:mr-0"
-                        : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm min-w-[40px] px-2 mr-2 sm:mr-0"
+                        ? "bg-slate-900 text-white shadow-sm mr-2 sm:mr-0 shrink-0"
+                        : "bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-700 shadow-sm min-w-[40px] px-2 mr-2 sm:mr-0 shrink-0"
                     }
                     aria-label={showTrash ? "Back" : "Trash bin"}
                     onPress={() =>
