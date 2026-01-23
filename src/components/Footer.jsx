@@ -85,7 +85,7 @@ const Footer = () => {
               <p className="text-xs uppercase tracking-[0.2em] footer-muted">
                 Navigate
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-1 gap-3 justify-items-center sm:justify-items-start text-sm font-medium">
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm font-medium sm:grid sm:grid-cols-1 sm:gap-3 sm:justify-items-start">
                 <Link
                   to="/home"
                   className="hover:text-[#5EA2EF] transition-colors"
@@ -128,7 +128,7 @@ const Footer = () => {
               <p className="text-xs uppercase tracking-[0.2em] footer-muted">
                 Help
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-1 gap-3 justify-items-center sm:justify-items-start text-sm font-medium">
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm font-medium sm:grid sm:grid-cols-1 sm:gap-3 sm:justify-items-start">
                 <a
                   href="mailto:support@lifelog.app"
                   className="hover:text-[#5EA2EF] transition-colors"
