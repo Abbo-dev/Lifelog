@@ -157,14 +157,12 @@ const pricingTiers = {
     "Smart folders + fast search",
   ],
   premium: [
-    "Cloud sync across devices + offline cache",
-    "Automatic cloud backups",
+    "Notes, tags, and smart folders synced across devices + offline cache",
+    "Automatic backups + version history restore",
     "Memory map view",
-    "Version history + restore",
     "Recurring notes + scheduled templates",
     "Export to PDF + Markdown",
     "Shareable read-only note links",
-    "Sync smart folders + tag colors",
     "Import local notes to cloud",
   ],
 };
