@@ -146,7 +146,10 @@ const howItWorks = [
 ];
 
 const monthlyPrice = 7.99;
-const annualPrice = Number((monthlyPrice * 12).toFixed(2));
+const annualSavingsPercent = 17;
+const annualPrice = Number(
+  (monthlyPrice * 12 * (1 - annualSavingsPercent / 100)).toFixed(2)
+);
 
 const pricingTiers = {
   free: [
@@ -708,7 +711,8 @@ function Content() {
                           Sync, backups, sharing, and advanced workflows.
                         </p>
                         <p className="mt-1 text-xs text-white/65">
-                          or ${annualPrice.toFixed(2)}/yr
+                          or ${annualPrice.toFixed(2)}/yr (save{" "}
+                          {annualSavingsPercent}%)
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
