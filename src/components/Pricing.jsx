@@ -19,7 +19,7 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { importLocalNotesToCloud } from "../services/notesMigration";
@@ -37,14 +37,12 @@ const features = {
     "Starter templates (daily log, meeting notes)",
   ],
   premium: [
-    "Cloud sync across devices",
-    "Real-time updates + offline cache",
-    "Automatic cloud backups",
+    "Notes, tags, and smart folders synced across devices + offline cache",
+    "Automatic backups + version history restore",
     "Memory map view",
-    "Version history + restore",
+    "Recurring notes + scheduled templates",
     "Export to PDF + Markdown",
     "Shareable read-only note links",
-    "Sync smart folders + tag colors",
     "Import local notes to cloud",
   ],
 };
@@ -69,6 +67,11 @@ const premiumHighlights = [
     title: "Shareable links",
     description: "Send read-only note links fast.",
     icon: ShareIcon,
+  },
+  {
+    title: "Recurring templates",
+    description: "Auto-create daily, weekly, or monthly notes.",
+    icon: SparklesIcon,
   },
 ];
 
@@ -106,6 +109,9 @@ const pricingFaqItems = [
 ];
 
 const AUTO_REDIRECT_DELAY_MS = 3000;
+const PLAN_REFRESH_MIN_MS = 3000;
+const PLAN_REFRESH_RETRY_DELAY_MS = 2500;
+const PLAN_REFRESH_MAX_ATTEMPTS = 3;
 
 function Pricing() {
   const { user, plan, isPremium, refreshPlan, planLoading } = useAuth();
@@ -123,15 +129,17 @@ function Pricing() {
   const [portalStatus, setPortalStatus] = useState("");
   const [checkoutStage, setCheckoutStage] = useState("");
   const [checkoutRedirectUrl, setCheckoutRedirectUrl] = useState("");
+  const [refreshingPlan, setRefreshingPlan] = useState(false);
   const redirectTimeoutRef = useRef(null);
 
-  const monthlyPrice = 4.99;
-  const annualPrice = 49.99;
+  const monthlyPrice = 7.99;
+  const annualPrice = Number((monthlyPrice * 12).toFixed(2));
   const annualSavingsPercent = Math.max(
     0,
     Math.round(100 - (annualPrice / (monthlyPrice * 12)) * 100)
   );
   const annualEffectiveMonthly = (annualPrice / 12).toFixed(2);
+  const showAnnualSavings = annualSavingsPercent > 0;
 
   const emailLabel = useMemo(() => {
     const email = user?.email || "";
@@ -171,6 +179,32 @@ function Pricing() {
         )}s. Or use the button below.`
       : "This can take a few seconds. Please keep this tab open.";
 
+  const planRefreshActive = planLoading || refreshingPlan;
+
+  const handleRefreshPlan = useCallback(async () => {
+    if (planLoading || refreshingPlan) return;
+    setRefreshingPlan(true);
+    const startTime = Date.now();
+    let nextPlan = "free";
+    for (let attempt = 0; attempt < PLAN_REFRESH_MAX_ATTEMPTS; attempt += 1) {
+      nextPlan = await refreshPlan();
+      if (nextPlan === "premium") break;
+      if (attempt < PLAN_REFRESH_MAX_ATTEMPTS - 1) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, PLAN_REFRESH_RETRY_DELAY_MS)
+        );
+      }
+    }
+
+    const elapsed = Date.now() - startTime;
+    if (elapsed < PLAN_REFRESH_MIN_MS) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, PLAN_REFRESH_MIN_MS - elapsed)
+      );
+    }
+    setRefreshingPlan(false);
+  }, [planLoading, refreshPlan, refreshingPlan]);
+
   useEffect(() => {
     return () => {
       if (redirectTimeoutRef.current) {
@@ -192,7 +226,7 @@ function Pricing() {
         shouldShowTimeoutProgress: true,
         classNames: TOAST_CLASSNAMES,
       });
-      refreshPlan();
+      handleRefreshPlan();
     } else if (canceled === "1") {
       addToast({
         title: "Checkout canceled",
@@ -204,7 +238,7 @@ function Pricing() {
     }
 
     setSearchParams({}, { replace: true });
-  }, [refreshPlan, searchParams, setSearchParams]);
+  }, [handleRefreshPlan, searchParams, setSearchParams]);
 
   const startUpgrade = async () => {
     const fallbackUrl = selectedCheckoutUrl || mailtoUpgradeUrl;
@@ -404,7 +438,7 @@ function Pricing() {
               </span>
               <span className="mx-2 text-slate-400">•</span>
               Current plan{" "}
-              {planLoading ? (
+              {planRefreshActive ? (
                 <Skeleton className="h-6 w-20 rounded-full inline-block align-middle" />
               ) : (
                 <Chip
@@ -424,8 +458,8 @@ function Pricing() {
                 size="sm"
                 variant="flat"
                 className="border border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-[#2a2a2a] text-slate-800 dark:text-gray-200"
-                isLoading={planLoading}
-                onPress={() => refreshPlan()}
+                isLoading={planRefreshActive}
+                onPress={handleRefreshPlan}
               >
                 Refresh plan
               </Button>
@@ -511,9 +545,11 @@ function Pricing() {
               }`}
             >
               Annual
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-200 border border-emerald-300/20">
-                Save {annualSavingsPercent}%
-              </span>
+              {showAnnualSavings ? (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-200 border border-emerald-300/20">
+                  Save {annualSavingsPercent}%
+                </span>
+              ) : null}
             </button>
           </div>
         </div>
