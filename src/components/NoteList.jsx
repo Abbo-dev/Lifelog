@@ -12,7 +12,7 @@ import {
   LockClosedIcon,
   LockOpenIcon,
 } from "@heroicons/react/24/outline";
-import { sanitizeHtmlLinks } from "../utils/linkUtils";
+import { sanitizeHtmlForNotes } from "../utils/sanitizeSharedHtml";
 import { hexToRgba, resolveTagColor } from "../utils/tagColors";
 import { loadNoteHistory } from "../utils/localNoteHistory";
 import { htmlToMarkdown } from "../utils/notePortability";
@@ -85,6 +85,12 @@ const NoteList = ({
     const date = toDateValue(value);
     return date ? format(date, pattern) : "";
   };
+  const buildTagChipStyle = (tagColor) => ({
+    borderColor: hexToRgba(tagColor, 0.65),
+    backgroundColor: hexToRgba(tagColor, 0.22),
+    backgroundImage:
+      "linear-gradient(120deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12))",
+  });
   const openNoteDueLabel = openNote
     ? formatDateValue(openNote.dueDate, "MMM d, h:mm a")
     : "";
@@ -94,7 +100,7 @@ const NoteList = ({
   const openNoteCreatedLabel = openNote
     ? formatDateValue(openNote.createdAt, "MMM d, h:mm a")
     : "";
-  const sanitizedOpenContent = sanitizeHtmlLinks(openNote?.content || "");
+  const sanitizedOpenContent = sanitizeHtmlForNotes(openNote?.content || "");
   const openNoteLocked = !!openNote?.locked;
   const shareEnabled = typeof onShare === "function";
   const canUsePremium = !!isPremium;
@@ -276,167 +282,172 @@ const NoteList = ({
     const createdLabel = formatDateValue(note.createdAt, "MMM d, h:mm a");
     const sanitizedPreviewContent = isLocked
       ? ""
-      : sanitizeHtmlLinks(note.content || "");
+      : sanitizeHtmlForNotes(note.content || "");
     const isTrashMode = mode === "trash";
     const isTrashSelectMode = mode === "trashSelect";
+    const hasTags = !isLocked && Array.isArray(note.tags) && note.tags.length > 0;
 
     return (
       <div
         key={note.id}
         onClick={isTrashSelectMode ? undefined : () => setOpenNote(note)}
-        className={`group relative bg-[var(--surface-2)] dark:bg-slate-900/90 border border-[color:var(--surface-border)] dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#0072F5]/15 ${
+        className={`group relative h-full bg-[var(--surface-2)] dark:bg-slate-900/90 border border-[color:var(--surface-border)] dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#0072F5]/15 ${
           !isTrashMode && note.isPinned ? "border-[#0072F5]" : ""
         } ${isTrashSelectMode ? "cursor-default" : "cursor-pointer"}`}
       >
         <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: note.color || "#0072F5" }} />
         
-        <div className="p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-gray-100 line-clamp-2 flex-1">
-              {isLocked ? "Locked note" : note.title}
-            </h3>
-            <div className="flex items-center gap-1">
-              {isTrashMode ? (
-                <>
+        <div className="p-4 flex flex-col gap-3 h-full">
+          <div className="flex flex-col gap-3 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-gray-100 line-clamp-2 flex-1">
+                {isLocked ? "Locked note" : note.title}
+              </h3>
+              <div className="flex items-center gap-1">
+                {isTrashMode ? (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRestore?.(note);
+                      }}
+                      className="p-1 text-gray-500 hover:text-emerald-600 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-emerald-400 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                      aria-label="Restore note"
+                      type="button"
+                    >
+                      <RestoreIcon className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteForever?.(note);
+                      }}
+                      className="p-1 text-gray-500 hover:text-red-500 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                      aria-label="Delete forever"
+                      type="button"
+                    >
+                      <TrashIcon className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                ) : isTrashSelectMode ? (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onRestore?.(note);
-                    }}
-                    className="p-1 text-gray-500 hover:text-emerald-600 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-emerald-400 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                    aria-label="Restore note"
-                    type="button"
-                  >
-                    <RestoreIcon className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteForever?.(note);
+                      onDelete?.(note);
                     }}
                     className="p-1 text-gray-500 hover:text-red-500 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                    aria-label="Delete forever"
+                    aria-label="Move to trash"
                     type="button"
                   >
                     <TrashIcon className="w-3.5 h-3.5" />
                   </button>
-                </>
-              ) : isTrashSelectMode ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete?.(note);
-                  }}
-                  className="p-1 text-gray-500 hover:text-red-500 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                  aria-label="Move to trash"
-                  type="button"
-                >
-                  <TrashIcon className="w-3.5 h-3.5" />
-                </button>
-              ) : (
-                <>
-                  {typeof onToggleLock === "function" ? (
+                ) : (
+                  <>
+                    {typeof onToggleLock === "function" ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleLock?.(note);
+                        }}
+                        className="p-1 text-gray-500 hover:text-slate-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        aria-label={isLocked ? "Unlock note" : "Lock note"}
+                        title={isLocked ? "Unlock note" : "Lock note"}
+                        type="button"
+                      >
+                        {isLocked ? (
+                          <LockClosedIcon className="w-3.5 h-3.5" />
+                        ) : (
+                          <LockOpenIcon className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    ) : null}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onToggleLock?.(note);
+                        onPin?.(note);
                       }}
-                      className="p-1 text-gray-500 hover:text-slate-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                      aria-label={isLocked ? "Unlock note" : "Lock note"}
-                      title={isLocked ? "Unlock note" : "Lock note"}
+                      className={`p-1 rounded-lg transition-colors ${
+                        note.isPinned
+                          ? "text-[#0072F5] hover:bg-[#0072F5]/10"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800"
+                      }`}
+                      aria-label={note.isPinned ? "Unpin note" : "Pin note"}
+                      title={note.isPinned ? "Unpin note" : "Pin note"}
                       type="button"
+                      disabled={isLocked}
                     >
-                      {isLocked ? (
-                        <LockClosedIcon className="w-3.5 h-3.5" />
-                      ) : (
-                        <LockOpenIcon className="w-3.5 h-3.5" />
-                      )}
+                      <PinIcon className="w-3.5 h-3.5" />
                     </button>
-                  ) : null}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onPin?.(note);
-                    }}
-                    className={`p-1 rounded-lg transition-colors ${
-                      note.isPinned
-                        ? "text-[#0072F5] hover:bg-[#0072F5]/10"
-                        : "text-gray-500 hover:text-gray-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800"
-                    }`}
-                    aria-label={note.isPinned ? "Unpin note" : "Pin note"}
-                    title={note.isPinned ? "Unpin note" : "Pin note"}
-                    type="button"
-                    disabled={isLocked}
-                  >
-                    <PinIcon className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit?.(note);
-                    }}
-                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                    aria-label="Edit note"
-                    title="Edit note"
-                    type="button"
-                    disabled={isLocked}
-                  >
-                    <PencilIcon className="w-3.5 h-3.5" />
-                  </button>
-                </>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit?.(note);
+                      }}
+                      className="p-1 text-gray-500 hover:text-gray-700 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                      aria-label="Edit note"
+                      title="Edit note"
+                      type="button"
+                      disabled={isLocked}
+                    >
+                      <PencilIcon className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="h-px bg-slate-200/70 dark:bg-gray-800/70" />
+
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div
+                className="note-content text-[13px] leading-relaxed text-slate-600 dark:text-gray-300 line-clamp-3"
+                dangerouslySetInnerHTML={{ __html: sanitizedPreviewContent }}
+              />
+              {isLocked && (
+                <p className="text-xs text-slate-500 dark:text-gray-400">
+                  Locked · enter passcode to view
+                </p>
               )}
             </div>
           </div>
 
-          <div className="prose prose-sm dark:prose-invert max-w-none mb-2">
-            <div
-              className="note-content text-[13px] leading-relaxed text-slate-600 dark:text-gray-300 line-clamp-3"
-              dangerouslySetInnerHTML={{ __html: sanitizedPreviewContent }}
-            />
-            {isLocked && (
-              <p className="text-xs text-slate-500 dark:text-gray-400">
-                Locked · enter passcode to view
-              </p>
-            )}
-          </div>
+          <div className="mt-auto flex flex-col gap-2">
+            {hasTags ? (
+              <div className="flex flex-wrap gap-1">
+                {note.tags?.map((tag) => {
+                  const tagColor = resolveTagColor(tag, tagColors);
+                  return (
+                    <span
+                      key={tag}
+                      style={buildTagChipStyle(tagColor)}
+                      className="glass-chip px-2 py-0.5 rounded-full text-[11px] border text-slate-700 dark:text-gray-200"
+                    >
+                      {tag}
+                    </span>
+                  );
+                })}
+              </div>
+            ) : null}
 
-          <div className="flex flex-wrap gap-1 mb-2">
-            {!isLocked &&
-              note.tags?.map((tag) => {
-                const tagColor = resolveTagColor(tag, tagColors);
-                return (
-                  <span
-                    key={tag}
-                    style={{
-                      borderColor: tagColor,
-                      backgroundColor: hexToRgba(tagColor, 0.14),
-                    }}
-                    className="px-2 py-0.5 rounded-full text-[11px] border text-slate-700 dark:text-gray-200"
-                  >
-                    {tag}
-                  </span>
-                );
-              })}
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-gray-500">
-            <div className="flex items-center gap-2">
-              {!isLocked && dueDateLabel && (
-                <div className="flex items-center gap-1">
-                  <CalendarIcon className="w-3 h-3" />
-                  <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
-                    Due
-                  </span>
-                  <span>{dueDateLabel}</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <ClockIcon className="w-3 h-3" />
-              <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
-                {note.lastModified ? "Updated" : "Created"}
-              </span>
-              <span>{lastModifiedLabel || createdLabel || "-"}</span>
+            <div className="pt-2 border-t border-slate-200/70 dark:border-gray-800/70 flex items-center justify-between text-[11px] text-slate-500 dark:text-gray-500">
+              <div className="flex items-center gap-2">
+                {!isLocked && dueDateLabel && (
+                  <div className="flex items-center gap-1">
+                    <CalendarIcon className="w-3 h-3" />
+                    <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
+                      Due
+                    </span>
+                    <span>{dueDateLabel}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <ClockIcon className="w-3 h-3" />
+                <span className="uppercase text-[10px] tracking-wide text-slate-400 dark:text-gray-500">
+                  {note.lastModified ? "Updated" : "Created"}
+                </span>
+                <span>{lastModifiedLabel || createdLabel || "-"}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -477,11 +488,8 @@ const NoteList = ({
                       return (
                         <span
                           key={tag}
-                          style={{
-                            borderColor: tagColor,
-                            backgroundColor: hexToRgba(tagColor, 0.14),
-                          }}
-                          className="px-2 py-0.5 rounded-full border text-slate-600 dark:text-gray-200"
+                          style={buildTagChipStyle(tagColor)}
+                          className="glass-chip px-2 py-0.5 rounded-full border text-slate-600 dark:text-gray-200"
                         >
                           #{tag}
                         </span>
