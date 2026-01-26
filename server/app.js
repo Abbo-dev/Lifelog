@@ -226,9 +226,25 @@ const createApp = ({
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
 
+  const normalizeOrigin = (value) =>
+    typeof value === "string" ? value.trim().replace(/\/+$/, "") : "";
+  const allowedOrigins = [env.APP_URL, env.APP_URL_LOCAL]
+    .map(normalizeOrigin)
+    .filter(Boolean);
+  const corsOrigin = (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+    const normalized = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalized)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  };
+
   app.use(
     cors({
-      origin: env.APP_URL,
+      origin: corsOrigin,
       credentials: true,
     })
   );
@@ -322,8 +338,12 @@ const createApp = ({
         return res.status(404).json({ error: "No billing customer found for this account." });
       }
 
-      const returnUrl =
-        env.PADDLE_PORTAL_RETURN_URL || `${env.APP_URL}/profile?billing=1`;
+      const subscriptionId = userSnap.exists
+        ? userSnap.data()?.paddleSubscriptionId
+        : null;
+      const requestBody = subscriptionId
+        ? { subscription_ids: [subscriptionId] }
+        : null;
 
       const idempotencyKey = buildIdempotencyKey();
       const response = await requestWithRetry(
@@ -334,7 +354,7 @@ const createApp = ({
             Authorization: `Bearer ${env.PADDLE_API_KEY}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ return_url: returnUrl }),
+          body: requestBody ? JSON.stringify(requestBody) : undefined,
         },
         { idempotencyKey }
       );
@@ -343,7 +363,7 @@ const createApp = ({
       if (!response.ok) {
         reportError(
           "Paddle portal session failed",
-          { status: response.status, uid, payload },
+          { status: response.status, uid, payload, subscriptionId },
           { alert: true }
         );
         return res
@@ -352,7 +372,10 @@ const createApp = ({
       }
 
       const portalUrl =
-        payload?.data?.url || payload?.data?.portal_url || payload?.data?.portalUrl;
+        payload?.data?.urls?.general?.overview ||
+        payload?.data?.url ||
+        payload?.data?.portal_url ||
+        payload?.data?.portalUrl;
 
       if (!portalUrl) {
         reportError(
