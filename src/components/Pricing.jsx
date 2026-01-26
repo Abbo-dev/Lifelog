@@ -22,6 +22,7 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useBillingStatus } from "../hooks/useBillingStatus";
 import { importLocalNotesToCloud } from "../services/notesMigration";
 import { loadLocalNotes } from "../utils/localNotes";
 import { createBillingPortalSession } from "../services/billingPortal";
@@ -115,6 +116,7 @@ const PLAN_REFRESH_MAX_ATTEMPTS = 3;
 
 function Pricing() {
   const { user, plan, isPremium, refreshPlan, planLoading } = useAuth();
+  const billing = useBillingStatus(user?.uid);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const checkoutUrlMonthly = import.meta.env.VITE_CHECKOUT_URL;
@@ -133,10 +135,9 @@ function Pricing() {
   const redirectTimeoutRef = useRef(null);
 
   const monthlyPrice = 7.99;
-  const annualPrice = Number((monthlyPrice * 12).toFixed(2));
-  const annualSavingsPercent = Math.max(
-    0,
-    Math.round(100 - (annualPrice / (monthlyPrice * 12)) * 100)
+  const annualSavingsPercent = 17;
+  const annualPrice = Number(
+    (monthlyPrice * 12 * (1 - annualSavingsPercent / 100)).toFixed(2)
   );
   const annualEffectiveMonthly = (annualPrice / 12).toFixed(2);
   const showAnnualSavings = annualSavingsPercent > 0;
@@ -313,6 +314,28 @@ function Pricing() {
       addToast({
         title: "Billing portal unavailable",
         description: "Set VITE_API_BASE_URL to enable the billing portal.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
+      });
+      return;
+    }
+    if (!billing.loaded) {
+      setPortalStatus("Loading billing details. Please try again in a moment.");
+      addToast({
+        title: "Billing details loading",
+        description: "Please try again in a moment.",
+        timeout: 4500,
+        shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
+      });
+      return;
+    }
+    if (!billing.customerId) {
+      setPortalStatus("No billing profile found for this account yet.");
+      addToast({
+        title: "Billing profile unavailable",
+        description: "Finish checkout or contact support if this continues.",
         timeout: 5000,
         shouldShowTimeoutProgress: true,
         classNames: TOAST_CLASSNAMES,
@@ -656,7 +679,8 @@ function Pricing() {
                     </p>
                     {billingCycle === "annual" ? (
                       <p className="mt-1 text-xs text-white/65">
-                        ${annualEffectiveMonthly}/mo billed yearly
+                        ${annualEffectiveMonthly}/mo billed yearly · Save{" "}
+                        {annualSavingsPercent}%
                       </p>
                     ) : (
                       <p className="mt-1 text-xs text-white/65">Cancel anytime.</p>
