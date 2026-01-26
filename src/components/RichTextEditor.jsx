@@ -118,6 +118,7 @@ const MenuBar = ({ editor }) => {
   const [currentColor, setCurrentColor] = useState('#000000');
   const fileInputRef = useRef(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const baseButtonClass = 'min-w-0 px-2 text-[11px] sm:text-xs';
 
   useEffect(() => {
     if (editor) {
@@ -206,12 +207,16 @@ const MenuBar = ({ editor }) => {
   };
 
   return (
-    <div className="flex flex-nowrap gap-2 p-2 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-t-lg overflow-x-auto sm:flex-wrap sm:overflow-visible">
+    <div className="flex flex-wrap gap-1 p-2 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-t-lg sm:flex-nowrap sm:gap-2 sm:overflow-x-auto">
       <Button
         size="sm"
         variant="light"
         onPress={() => editor.chain().focus().toggleBold().run()}
-        className={editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : ''
+        }`}
+        aria-label="Bold"
+        title="Bold"
       >
         <span className="font-bold">B</span>
       </Button>
@@ -219,7 +224,11 @@ const MenuBar = ({ editor }) => {
         size="sm"
         variant="light"
         onPress={() => editor.chain().focus().toggleItalic().run()}
-        className={editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700' : ''
+        }`}
+        aria-label="Italic"
+        title="Italic"
       >
         <span className="italic">I</span>
       </Button>
@@ -227,7 +236,11 @@ const MenuBar = ({ editor }) => {
         size="sm"
         variant="light"
         onPress={() => editor.chain().focus().toggleStrike().run()}
-        className={editor.isActive('strike') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('strike') ? 'bg-gray-200 dark:bg-gray-700' : ''
+        }`}
+        aria-label="Strikethrough"
+        title="Strikethrough"
       >
         <span className="line-through">S</span>
       </Button>
@@ -235,7 +248,11 @@ const MenuBar = ({ editor }) => {
         size="sm"
         variant="light"
         onPress={() => editor.chain().focus().toggleHighlight().run()}
-        className={editor.isActive('highlight') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('highlight') ? 'bg-gray-200 dark:bg-gray-700' : ''
+        }`}
+        aria-label="Highlight"
+        title="Highlight"
       >
         <span className="bg-yellow-200 dark:bg-yellow-800 px-1">H</span>
       </Button>
@@ -243,7 +260,13 @@ const MenuBar = ({ editor }) => {
         size="sm"
         variant="light"
         onPress={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        className={editor.isActive('heading', { level: 1 }) ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('heading', { level: 1 })
+            ? 'bg-gray-200 dark:bg-gray-700'
+            : ''
+        }`}
+        aria-label="Heading 1"
+        title="Heading 1"
       >
         H1
       </Button>
@@ -251,7 +274,13 @@ const MenuBar = ({ editor }) => {
         size="sm"
         variant="light"
         onPress={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={editor.isActive('heading', { level: 2 }) ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('heading', { level: 2 })
+            ? 'bg-gray-200 dark:bg-gray-700'
+            : ''
+        }`}
+        aria-label="Heading 2"
+        title="Heading 2"
       >
         H2
       </Button>
@@ -259,36 +288,74 @@ const MenuBar = ({ editor }) => {
         size="sm"
         variant="light"
         onPress={() => editor.chain().focus().toggleBulletList().run()}
-        className={editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-gray-700' : ''
+        }`}
+        aria-label="Bullet list"
+        title="Bullet list"
       >
-        • List
+        <span className="flex items-center gap-1">
+          <span aria-hidden="true">•</span>
+          <span className="hidden sm:inline">List</span>
+        </span>
       </Button>
       <Button
         size="sm"
         variant="light"
         onPress={() => editor.chain().focus().toggleOrderedList().run()}
-        className={editor.isActive('orderedList') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('orderedList') ? 'bg-gray-200 dark:bg-gray-700' : ''
+        }`}
+        aria-label="Numbered list"
+        title="Numbered list"
       >
-        1. List
+        <span className="flex items-center gap-1">
+          <span aria-hidden="true">1.</span>
+          <span className="hidden sm:inline">List</span>
+        </span>
       </Button>
       <Button
         size="sm"
         variant="light"
         onPress={() => editor.chain().focus().toggleTaskList().run()}
-        className={editor.isActive('taskList') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('taskList') ? 'bg-gray-200 dark:bg-gray-700' : ''
+        }`}
+        aria-label="Task list"
+        title="Task list"
       >
-        ☐ Tasks
+        <span className="flex items-center gap-1">
+          <span aria-hidden="true">☐</span>
+          <span className="hidden sm:inline">Tasks</span>
+        </span>
       </Button>
       <Button
         size="sm"
         variant="light"
         onPress={addLink}
-        className={editor.isActive('link') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        className={`${baseButtonClass} ${
+          editor.isActive('link') ? 'bg-gray-200 dark:bg-gray-700' : ''
+        }`}
+        aria-label="Add link"
+        title="Add link"
       >
-        🔗 Link
+        <span className="flex items-center gap-1">
+          <span aria-hidden="true">🔗</span>
+          <span className="hidden sm:inline">Link</span>
+        </span>
       </Button>
-      <Button size="sm" variant="light" onPress={addImage}>
-        🖼 Image
+      <Button
+        size="sm"
+        variant="light"
+        onPress={addImage}
+        className={baseButtonClass}
+        aria-label="Add image"
+        title="Add image"
+      >
+        <span className="flex items-center gap-1">
+          <span aria-hidden="true">🖼</span>
+          <span className="hidden sm:inline">Image</span>
+        </span>
       </Button>
       <input
         ref={fileInputRef}
@@ -303,15 +370,25 @@ const MenuBar = ({ editor }) => {
         variant="light"
         isDisabled={isUploadingImage}
         onPress={() => fileInputRef.current?.click()}
+        className={baseButtonClass}
+        aria-label="Upload image"
+        title={isUploadingImage ? 'Uploading image' : 'Upload image'}
       >
-        {isUploadingImage ? 'Uploading…' : '⬆️ Upload'}
+        <span className="flex items-center gap-1">
+          <span aria-hidden="true">{isUploadingImage ? '⏳' : '⬆️'}</span>
+          <span className="hidden sm:inline">
+            {isUploadingImage ? 'Uploading…' : 'Upload'}
+          </span>
+        </span>
       </Button>
       <div className="relative">
         <Button
           size="sm"
           variant="light"
           onPress={() => setShowColorPicker(!showColorPicker)}
-          className="flex items-center gap-1"
+          className={`${baseButtonClass} flex items-center gap-1`}
+          aria-label="Text color"
+          title="Text color"
         >
           <span>🎨</span>
           <div
@@ -329,7 +406,7 @@ const MenuBar = ({ editor }) => {
   );
 };
 
-const RichTextEditor = ({ content, onChange }) => {
+const RichTextEditor = ({ content, onChange, className = '' }) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -359,7 +436,7 @@ const RichTextEditor = ({ content, onChange }) => {
     },
     editorProps: {
       attributes: {
-        class: 'prose dark:prose-invert max-w-none p-4 min-h-[150px] focus:outline-none',
+        class: `prose prose-sm sm:prose dark:prose-invert max-w-none p-3 sm:p-4 min-h-[140px] sm:min-h-[150px] focus:outline-none ${className}`.trim(),
       },
     },
   });
