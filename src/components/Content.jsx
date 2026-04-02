@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import {
   Accordion,
   AccordionItem,
-  Avatar,
-  AvatarGroup,
   Button,
   Card,
   CardBody,
@@ -63,45 +61,6 @@ const highlights = [
   },
 ];
 
-const socialProof = {
-  stat: "12,000+ planners",
-  roles: "Ops, product, and design teams",
-  brands: ["Northwind", "Harbor", "Fieldnote", "Mariner", "Sierra"],
-  avatars: [
-    { name: "Ava R.", src: "https://i.pravatar.cc/80?img=12" },
-    { name: "Miles K.", src: "https://i.pravatar.cc/80?img=22" },
-    { name: "Priya S.", src: "https://i.pravatar.cc/80?img=32" },
-    { name: "Noah T.", src: "https://i.pravatar.cc/80?img=42" },
-    { name: "Elena D.", src: "https://i.pravatar.cc/80?img=52" },
-  ],
-};
-
-const testimonials = [
-  {
-    quote:
-      "LifeLog keeps our weekly planning in one place. Tags and pins make priorities obvious without extra meetings.",
-    name: "Ava R.",
-    role: "Operations",
-    company: "Northwind",
-    src: "https://i.pravatar.cc/120?img=23",
-  },
-  {
-    quote:
-      "The dashboard view makes it easy to see what is due, and reminders are gentle enough to stay helpful.",
-    name: "Miles K.",
-    role: "Founder",
-    company: "Harbor",
-    src: "https://i.pravatar.cc/120?img=13",
-  },
-  {
-    quote:
-      "We replaced two tools with LifeLog. The clean editor and quick search save time every day.",
-    name: "Priya S.",
-    role: "Design lead",
-    company: "Fieldnote",
-    src: "https://i.pravatar.cc/120?img=33",
-  },
-];
 
 const previewCallouts = [
   {
@@ -361,85 +320,66 @@ function Content() {
         >
           <div className="text-center mb-8 space-y-2">
             <p className="text-[11px] uppercase tracking-[0.25em] text-slate-600 dark:text-white/65">
-              Trusted by planners
+              Built for real workflows
             </p>
             <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white">
-              {socialProof.roles} rely on LifeLog to keep priorities clear.
+              Why early adopters choose LifeLog
             </h2>
             <p className="text-sm text-slate-700 dark:text-white/70 max-w-2xl mx-auto">
-              Early access feedback from real planners and small teams.
+              A calm, focused tool for people who value simplicity over feature bloat.
             </p>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 dark:text-white/70">
-              <AvatarGroup size="sm" isBordered>
-                {socialProof.avatars.map((avatar) => (
-                  <Avatar
-                    key={avatar.name}
-                    name={avatar.name}
-                    src={avatar.src}
-                    className="bg-white/80 text-slate-900 dark:bg-white/10 dark:text-white"
-                  />
-                ))}
-              </AvatarGroup>
-              <span className="text-xs text-slate-700 dark:text-white/70">
-                {socialProof.stat} already planning with LifeLog.
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 dark:text-white/75">
-            {socialProof.brands.map((brand) => (
-              <span
-                key={brand}
-                className="px-4 py-2 rounded-full glass-chip border border-slate-200/70 dark:border-white/10 uppercase tracking-[0.25em] text-[10px]"
-              >
-                {brand}
-              </span>
-            ))}
           </div>
 
           <div className="mt-8 grid grid-cols-1 gap-4 text-left md:grid-cols-3">
-            {testimonials.map((item, idx) => (
-              <motion.div
-                key={item.name}
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{
-                  duration: 0.4,
-                  ease: "easeOut",
-                  delay: 0.05 * idx,
-                }}
-                className="glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-white"
-              >
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute -top-16 right-0 h-32 w-32 rounded-full bg-[#5EA2EF]/20 blur-3xl opacity-70"
-                />
-                <div className="relative h-full flex flex-col">
-                  <p className="text-sm text-slate-700 dark:text-white/75">
-                    &quot;{item.quote}&quot;
-                  </p>
-                  <div className="mt-6 flex items-center gap-4">
-                    <Avatar
-                      name={item.name}
-                      src={item.src}
-                      className="w-11 h-11 text-sm bg-white/80 text-slate-900 dark:bg-white/10 dark:text-white border border-slate-200/80 dark:border-white/20"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                        {item.name}
-                      </p>
-                      <p className="text-xs text-slate-600 dark:text-white/60">
-                        {item.role} - {item.company}
-                      </p>
-                    </div>
-                    <span className="glow-icon h-10 w-10 flex items-center justify-center shrink-0">
-                      <SparklesIcon className="h-5 w-5 text-[#0072F5] dark:text-[#5EA2EF]" />
+            {[
+              {
+                title: "One dashboard, zero noise",
+                body: "Notes, tasks, and reminders in a single view. No tabs, no sidebars, no learning curve.",
+                icon: Squares2X2Icon,
+              },
+              {
+                title: "Fast and offline-first",
+                body: "Local notes work instantly without sign-up. Premium adds cloud sync that stays fast.",
+                icon: RocketLaunchIcon,
+              },
+              {
+                title: "Designed for daily planning",
+                body: "Tags, pins, due dates, and recurring notes keep your day structured without overcomplicating things.",
+                icon: SparklesIcon,
+              },
+            ].map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{
+                    duration: 0.4,
+                    ease: "easeOut",
+                    delay: 0.05 * idx,
+                  }}
+                  className="glass-panel-soft relative overflow-hidden rounded-2xl p-6 border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-white"
+                >
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -top-16 right-0 h-32 w-32 rounded-full bg-[#5EA2EF]/20 blur-3xl opacity-70"
+                  />
+                  <div className="relative h-full flex flex-col gap-3">
+                    <span className="glow-icon w-10 h-10 flex items-center justify-center shrink-0">
+                      <Icon className="h-5 w-5 text-[#0072F5] dark:text-[#5EA2EF]" />
                     </span>
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-slate-700 dark:text-white/75">
+                      {item.body}
+                    </p>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
 

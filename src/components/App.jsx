@@ -16,6 +16,7 @@ import {
   upsertLocalNote,
 } from "../utils/localNotes";
 import { saveNoteVersion } from "../utils/localNoteHistory";
+import { saveCloudNoteVersion } from "../utils/cloudNoteHistory";
 import {
   hexToRgba,
   isHexColor,
@@ -48,6 +49,7 @@ import {
   updateDoc,
   serverTimestamp,
   setDoc,
+  runTransaction,
   writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebase";
@@ -225,6 +227,13 @@ const safeLocalStorageRemove = (key) => {
 };
 
 const RECURRING_CHECK_INTERVAL_MS = 60 * 1000;
+
+const buildRecurringRunNoteId = (userId, templateId, runAt) => {
+  const runDate = runAt instanceof Date ? runAt : new Date(runAt);
+  const runMs = Number.isFinite(runDate.getTime()) ? runDate.getTime() : Date.now();
+  const raw = `recurring_${userId || "user"}_${templateId || "template"}_${runMs}`;
+  return raw.replace(/[^a-zA-Z0-9_-]/g, "_");
+};
 
 const MapLines = memo(function MapLines({ links }) {
   return (
@@ -807,52 +816,70 @@ function App() {
       recurringProcessingRef.current = true;
 
       try {
+        const templateIds = recurringTemplates
+          .map((template) => template?.id)
+          .filter((templateId) => typeof templateId === "string" && templateId);
+        if (templateIds.length === 0) return;
+
         const now = new Date();
-        for (const template of recurringTemplates) {
-          if (!template || template.active === false) continue;
-
-          const nextRunAt = parseRecurringDate(template.nextRunAt);
-          if (!nextRunAt || nextRunAt > now) continue;
-
-          const frequency = normalizeRecurringFrequency(template.frequency);
-          const interval = normalizeRecurringInterval(template.interval);
-          const updatedNextRunAt = advanceNextRunAt({
-            nextRunAt,
-            frequency,
-            interval,
-            now,
-          });
-
-          const noteRef = doc(collection(db, "notes"));
+        for (const templateId of templateIds) {
           const templateRef = doc(
             db,
             "users",
             currentUserId,
             "recurringNotes",
-            template.id
+            templateId
           );
 
-          const batch = writeBatch(db);
-          batch.set(noteRef, {
-            title: template.title || "Untitled note",
-            content: template.content || "",
-            tags: Array.isArray(template.tags) ? template.tags : [],
-            color: template.color || "#ffffff",
-            isPinned: !!template.isPinned,
-            userId: currentUserId,
-            createdAt: serverTimestamp(),
-            lastModified: serverTimestamp(),
-            dueDate: template.useDueDate ? nextRunAt : null,
-            recurringTemplateId: template.id,
-            recurringRunAt: nextRunAt,
-          });
-          batch.update(templateRef, {
-            lastCreatedAt: serverTimestamp(),
-            nextRunAt: updatedNextRunAt,
-            updatedAt: serverTimestamp(),
-          });
+          await runTransaction(db, async (tx) => {
+            const templateSnap = await tx.get(templateRef);
+            if (!templateSnap.exists()) return;
 
-          await batch.commit();
+            const template = templateSnap.data() || {};
+            if (template.active === false) return;
+
+            const nextRunAt = parseRecurringDate(template.nextRunAt);
+            if (!nextRunAt || nextRunAt > now) return;
+
+            const frequency = normalizeRecurringFrequency(template.frequency);
+            const interval = normalizeRecurringInterval(template.interval);
+            const updatedNextRunAt = advanceNextRunAt({
+              nextRunAt,
+              frequency,
+              interval,
+              now,
+            });
+
+            const recurringNoteId = buildRecurringRunNoteId(
+              currentUserId,
+              templateId,
+              nextRunAt
+            );
+            const noteRef = doc(db, "notes", recurringNoteId);
+            const noteSnap = await tx.get(noteRef);
+
+            if (!noteSnap.exists()) {
+              tx.set(noteRef, {
+                title: template.title || "Untitled note",
+                content: template.content || "",
+                tags: Array.isArray(template.tags) ? template.tags : [],
+                color: template.color || "#ffffff",
+                isPinned: !!template.isPinned,
+                userId: currentUserId,
+                createdAt: serverTimestamp(),
+                lastModified: serverTimestamp(),
+                dueDate: template.useDueDate ? nextRunAt : null,
+                recurringTemplateId: templateId,
+                recurringRunAt: nextRunAt,
+              });
+            }
+
+            tx.update(templateRef, {
+              lastCreatedAt: serverTimestamp(),
+              nextRunAt: updatedNextRunAt,
+              updatedAt: serverTimestamp(),
+            });
+          });
         }
       } catch (error) {
         console.error("Failed to process recurring notes", error);
@@ -867,7 +894,20 @@ function App() {
       RECURRING_CHECK_INTERVAL_MS
     );
 
-    return () => window.clearInterval(intervalId);
+    const handleWake = () => {
+      if (typeof document === "undefined") return;
+      if (document.visibilityState === "visible") {
+        void processRecurringTemplates();
+      }
+    };
+    window.addEventListener("focus", handleWake);
+    document.addEventListener("visibilitychange", handleWake);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleWake);
+      document.removeEventListener("visibilitychange", handleWake);
+    };
   }, [
     currentUserId,
     isPremium,
@@ -1020,16 +1060,6 @@ function App() {
 
   const handleToggleLock = async (note) => {
     if (!currentUserId || !note?.id) return;
-    if (isPremium) {
-      addToast({
-        title: "Locking is local-only",
-        description: "Switch to local notes to use note locks.",
-        timeout: 5000,
-        shouldShowTimeoutProgress: true,
-        classNames: TOAST_CLASSNAMES,
-      });
-      return;
-    }
 
     const nowIso = new Date().toISOString();
 
@@ -1037,15 +1067,29 @@ function App() {
       const ok = await requestPasscode();
       if (!ok) return;
       const payload = note.lockedPayload || {};
-      const nextNote = {
-        ...note,
-        ...payload,
-        locked: false,
-        lockedPayload: null,
-        lastModified: nowIso,
-      };
-      const next = upsertLocalNote(currentUserId, nextNote);
-      setNotes(next);
+
+      if (isPremium) {
+        try {
+          await updateDoc(doc(db, "notes", note.id), {
+            ...payload,
+            locked: false,
+            lockedPayload: null,
+            lastModified: serverTimestamp(),
+          });
+        } catch (error) {
+          console.error("Error unlocking note:", error);
+        }
+      } else {
+        const nextNote = {
+          ...note,
+          ...payload,
+          locked: false,
+          lockedPayload: null,
+          lastModified: nowIso,
+        };
+        const next = upsertLocalNote(currentUserId, nextNote);
+        setNotes(next);
+      }
       return;
     }
 
@@ -1061,19 +1105,36 @@ function App() {
       isPinned: !!note.isPinned,
     };
 
-    const nextNote = {
-      ...note,
-      title: "Locked note",
-      content: "",
-      tags: [],
-      dueDate: null,
-      isPinned: false,
-      locked: true,
-      lockedPayload: payload,
-      lastModified: nowIso,
-    };
-    const next = upsertLocalNote(currentUserId, nextNote);
-    setNotes(next);
+    if (isPremium) {
+      try {
+        await updateDoc(doc(db, "notes", note.id), {
+          title: "Locked note",
+          content: "",
+          tags: [],
+          dueDate: null,
+          isPinned: false,
+          locked: true,
+          lockedPayload: payload,
+          lastModified: serverTimestamp(),
+        });
+      } catch (error) {
+        console.error("Error locking note:", error);
+      }
+    } else {
+      const nextNote = {
+        ...note,
+        title: "Locked note",
+        content: "",
+        tags: [],
+        dueDate: null,
+        isPinned: false,
+        locked: true,
+        lockedPayload: payload,
+        lastModified: nowIso,
+      };
+      const next = upsertLocalNote(currentUserId, nextNote);
+      setNotes(next);
+    }
   };
 
   const handleEditRef = useRef(handleEdit);
@@ -1250,7 +1311,11 @@ function App() {
     };
 
     if (existingNote) {
-      saveNoteVersion(currentUserId, existingNote);
+      if (isPremium && existingNote.id) {
+        saveCloudNoteVersion(existingNote.id, existingNote);
+      } else {
+        saveNoteVersion(currentUserId, existingNote);
+      }
     }
 
     if (!isPremium) {

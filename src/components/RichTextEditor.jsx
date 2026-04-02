@@ -113,7 +113,7 @@ const prepareNoteImageBlob = async (file) => {
   return blob.size < file.size ? blob : file;
 };
 
-const MenuBar = ({ editor }) => {
+const MenuBar = ({ editor, isPremium = false }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [currentColor, setCurrentColor] = useState('#000000');
   const fileInputRef = useRef(null);
@@ -179,11 +179,9 @@ const MenuBar = ({ editor }) => {
   };
 
   const uploadImages = async (files) => {
+    if (!isPremium) return;
     const userId = auth.currentUser?.uid;
-    if (!userId) {
-      window.alert('Please sign in again to upload images.');
-      return;
-    }
+    if (!userId) return;
 
     const list = Array.from(files || []).filter(Boolean);
     if (list.length === 0) return;
@@ -368,11 +366,11 @@ const MenuBar = ({ editor }) => {
       <Button
         size="sm"
         variant="light"
-        isDisabled={isUploadingImage}
+        isDisabled={isUploadingImage || !isPremium}
         onPress={() => fileInputRef.current?.click()}
         className={baseButtonClass}
         aria-label="Upload image"
-        title={isUploadingImage ? 'Uploading image' : 'Upload image'}
+        title={!isPremium ? 'Image upload is a Premium feature' : isUploadingImage ? 'Uploading image' : 'Upload image'}
       >
         <span className="flex items-center gap-1">
           <span aria-hidden="true">{isUploadingImage ? '⏳' : '⬆️'}</span>
@@ -406,7 +404,7 @@ const MenuBar = ({ editor }) => {
   );
 };
 
-const RichTextEditor = ({ content, onChange, className = '' }) => {
+const RichTextEditor = ({ content, onChange, className = '', isPremium = false }) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -449,7 +447,7 @@ const RichTextEditor = ({ content, onChange, className = '' }) => {
 
   return (
     <div className="border rounded-lg dark:border-gray-700 bg-white dark:bg-gray-800">
-      <MenuBar editor={editor} />
+      <MenuBar editor={editor} isPremium={isPremium} />
       <EditorContent editor={editor} />
     </div>
   );

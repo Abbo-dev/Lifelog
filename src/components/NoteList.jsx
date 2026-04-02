@@ -15,6 +15,7 @@ import {
 import { sanitizeHtmlForNotes } from "../utils/sanitizeSharedHtml";
 import { hexToRgba, resolveTagColor } from "../utils/tagColors";
 import { loadNoteHistory } from "../utils/localNoteHistory";
+import { loadCloudNoteHistory } from "../utils/cloudNoteHistory";
 import { htmlToMarkdown } from "../utils/notePortability";
 
 const NoteList = ({
@@ -108,10 +109,21 @@ const NoteList = ({
     ? `${window.location.origin}/share/${openNote.shareId}`
     : "";
 
-  const refreshHistory = () => {
+  const refreshHistory = async () => {
     if (!userId || !openNote?.id) {
       setHistoryItems([]);
       return [];
+    }
+    if (isPremium) {
+      try {
+        const cloudHistory = await loadCloudNoteHistory(openNote.id);
+        setHistoryItems(cloudHistory);
+        return cloudHistory;
+      } catch (error) {
+        console.error("Failed to load cloud history", error);
+        setHistoryItems([]);
+        return [];
+      }
     }
     const history = loadNoteHistory(userId, openNote.id);
     setHistoryItems(history);
@@ -558,7 +570,7 @@ const NoteList = ({
                         runPremiumAction("PDF export", handleExportPdf)
                       }
                     >
-                      Export PDF
+                      Print to PDF
                     </button>
                   </>
                 ) : null}

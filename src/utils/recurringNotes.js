@@ -73,6 +73,14 @@ export const advanceNextRunAt = ({
     guard += 1;
   }
 
+  if (next <= safeNow) {
+    return computeNextRunAt({
+      baseDate: safeNow,
+      frequency,
+      interval,
+    });
+  }
+
   return next;
 };
 

@@ -865,6 +865,10 @@ function Profile() {
       setPortalStatus("Billing portal is not configured yet.");
       return;
     }
+    if (!billing.loaded) {
+      setPortalStatus("Loading billing details. Please try again in a moment.");
+      return;
+    }
     if (!billing.customerId) {
       setPortalStatus("No billing profile found for this account yet.");
       return;

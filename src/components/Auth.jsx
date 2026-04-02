@@ -150,9 +150,9 @@ export default function Auth() {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (!user || !isSignup) return;
+    if (!user) return;
     navigate("/app", { replace: true });
-  }, [user, isSignup, navigate]);
+  }, [user, navigate]);
 
   useEffect(() => {
     setError("");

@@ -3,6 +3,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import admin from "firebase-admin";
 import createApp from "./app.js";
+import { startRecurringProcessor } from "./lib/recurringProcessor.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, ".env") });
@@ -66,6 +67,12 @@ const app = createApp({
   verifyFirebaseToken,
   db,
   FieldValue,
+});
+
+startRecurringProcessor({
+  db,
+  FieldValue,
+  env: process.env,
 });
 
 const port = Number(process.env.PORT || 4242);

@@ -2,9 +2,11 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { MapPinIcon as PinIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
+import { addToast } from "@heroui/toast";
 import RichTextEditor from "./RichTextEditor";
 import { sanitizeHtmlLinks } from "../utils/linkUtils";
 import { hexToRgba, resolveTagColor } from "../utils/tagColors";
+import { TOAST_CLASSNAMES } from "../utils/toastClassnames";
 
 const NOTE_COLORS = [
   "#0072F5",
@@ -149,11 +151,23 @@ function HomeModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
-      alert("Please enter a title");
+      addToast({
+        title: "Title required",
+        description: "Please enter a title for your note.",
+        timeout: 4000,
+        shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
+      });
       return;
     }
     if (!hasContent(content)) {
-      alert("Please add some note content before saving.");
+      addToast({
+        title: "Content required",
+        description: "Please add some note content before saving.",
+        timeout: 4000,
+        shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
+      });
       return;
     }
 
@@ -181,7 +195,13 @@ function HomeModal({
       onCloseModal(false);
     } catch (error) {
       console.error("Error saving note:", error);
-      alert("Error saving note. Please try again.");
+      addToast({
+        title: "Unable to save note",
+        description: "Something went wrong. Please try again.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
+      });
     }
   };
 
@@ -273,6 +293,7 @@ function HomeModal({
                     content={content}
                     onChange={setContent}
                     className="min-h-[200px] text-sm text-slate-900 dark:text-gray-100"
+                    isPremium={isPremium}
                   />
                 </div>
 
@@ -317,7 +338,7 @@ function HomeModal({
                     type="text"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyPress}
                     placeholder="Add tag"
                     className="flex-1 min-w-[180px] bg-white/80 dark:bg-[#2a2a2a] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors"
                   />
