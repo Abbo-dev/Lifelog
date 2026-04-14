@@ -429,6 +429,20 @@ function Pricing() {
                   Continue to checkout
                 </Button>
               ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  if (redirectTimeoutRef.current) {
+                    window.clearTimeout(redirectTimeoutRef.current);
+                    redirectTimeoutRef.current = null;
+                  }
+                  setCheckoutStage("");
+                  setCheckoutRedirectUrl("");
+                }}
+                className="text-xs text-slate-500 dark:text-white/60 hover:text-slate-700 dark:hover:text-white/80 transition-colors mt-1"
+              >
+                Cancel
+              </button>
             </div>
           </motion.div>
         </div>
