@@ -234,6 +234,15 @@ function HomeModal({
     }
   };
 
+  useEffect(() => {
+    if (!showHomeModal) return;
+    const handleEscape = (e) => {
+      if (e.key === "Escape") onCloseModal(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [showHomeModal, onCloseModal]);
+
   if (!showHomeModal) {
     return (
       <button
@@ -248,283 +257,273 @@ function HomeModal({
 
   return (
     <div className="w-full">
-      {!showHomeModal ? (
-        <button
-          onClick={() => onCloseModal(true)}
-          className="flex items-center gap-2 h-10 px-4 bg-[#0072F5] hover:bg-[#0052CC] text-white text-xs font-medium rounded-lg transition-colors"
-        >
-          <span className="text-lg leading-none">+</span>
-          <span className="leading-none">New Note</span>
-        </button>
-      ) : (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => onCloseModal(false)}
-          />
-          <div className="relative bg-white dark:bg-[#1a1a1a] w-full max-w-2xl rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-5 pt-5 pb-4 sm:px-6 border-b border-slate-200/70 dark:border-gray-800">
-              <h2 className="text-lg font-medium text-slate-900 dark:text-gray-100">
-                {noteToEdit ? "Edit Note" : "Create New Note"}
-              </h2>
-              <button
-                onClick={() => onCloseModal(false)}
-                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={() => onCloseModal(false)}
+        />
+        <div className="relative bg-white dark:bg-[#1a1a1a] w-full max-w-2xl rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-5 pt-5 pb-4 sm:px-6 border-b border-slate-200/70 dark:border-gray-800">
+            <h2 className="text-lg font-medium text-slate-900 dark:text-gray-100">
+              {noteToEdit ? "Edit Note" : "Create New Note"}
+            </h2>
+            <button
+              onClick={() => onCloseModal(false)}
+              className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
+          <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Title"
+                  className="w-full bg-white/80 dark:bg-[#2a2a2a] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors"
+                  required
+                />
+              </div>
+
+              <div className="bg-white/80 dark:bg-[#2a2a2a] rounded-lg border border-slate-200 dark:border-gray-700 p-2 shadow-inner">
+                <RichTextEditor
+                  content={content}
+                  onChange={setContent}
+                  className="min-h-[200px] text-sm text-slate-900 dark:text-gray-100"
+                  isPremium={isPremium}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {tagSuggestions.map((tag) => {
+                  const selected = tags.includes(tag);
+                  const tagColor = resolveTagColor(tag, tagColors);
+                  return (
+                    <div key={tag} className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleTag(tag)}
+                        style={{
+                          borderColor: tagColor,
+                          backgroundColor: selected
+                            ? tagColor
+                            : hexToRgba(tagColor, 0.12),
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                          selected
+                            ? "text-white"
+                            : "text-slate-700 dark:text-gray-200"
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                      <input
+                        type="color"
+                        value={tagColor}
+                        onChange={(e) => onSetTagColor?.(tag, e.target.value)}
+                        disabled={typeof onSetTagColor !== "function"}
+                        className="h-8 w-8 cursor-pointer rounded-md border border-slate-200 dark:border-gray-700 bg-transparent p-0"
+                        aria-label={`Color for tag ${tag}`}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <input
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Add tag"
+                  className="flex-1 min-w-[180px] bg-white/80 dark:bg-[#2a2a2a] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors"
+                />
+                <input
+                  type="color"
+                  value={newTagColor}
+                  onChange={(e) => setNewTagColor(e.target.value)}
+                  className="h-10 w-10 shrink-0 cursor-pointer rounded-md border border-slate-200 dark:border-gray-700 bg-transparent p-0"
+                  aria-label="New tag color"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddTag}
+                  className="w-full sm:w-auto px-4 py-2 bg-white/80 hover:bg-white dark:bg-[#2a2a2a] dark:hover:bg-[#3a3a3a] text-slate-800 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors border border-slate-200 dark:border-gray-700"
+                >
+                  Add Tag
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-sm text-slate-500 dark:text-gray-400 mb-1">
+                    Due Date
+                  </label>
                   <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Title"
+                    type="datetime-local"
+                    value={formatDateTimeLocal(dueDate)}
+                    onChange={(e) =>
+                      setDueDate(e.target.value ? new Date(e.target.value) : null)
+                    }
                     className="w-full bg-white/80 dark:bg-[#2a2a2a] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors"
-                    required
                   />
                 </div>
-
-                <div className="bg-white/80 dark:bg-[#2a2a2a] rounded-lg border border-slate-200 dark:border-gray-700 p-2 shadow-inner">
-                  <RichTextEditor
-                    content={content}
-                    onChange={setContent}
-                    className="min-h-[200px] text-sm text-slate-900 dark:text-gray-100"
-                    isPremium={isPremium}
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {tagSuggestions.map((tag) => {
-                    const selected = tags.includes(tag);
-                    const tagColor = resolveTagColor(tag, tagColors);
-                    return (
-                      <div key={tag} className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleTag(tag)}
-                          style={{
-                            borderColor: tagColor,
-                            backgroundColor: selected
-                              ? tagColor
-                              : hexToRgba(tagColor, 0.12),
-                          }}
-                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                            selected
-                              ? "text-white"
-                              : "text-slate-700 dark:text-gray-200"
-                          }`}
-                        >
-                          {tag}
-                        </button>
-                        <input
-                          type="color"
-                          value={tagColor}
-                          onChange={(e) => onSetTagColor?.(tag, e.target.value)}
-                          disabled={typeof onSetTagColor !== "function"}
-                          className="h-8 w-8 cursor-pointer rounded-md border border-slate-200 dark:border-gray-700 bg-transparent p-0"
-                          aria-label={`Color for tag ${tag}`}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <input
-                    type="text"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Add tag"
-                    className="flex-1 min-w-[180px] bg-white/80 dark:bg-[#2a2a2a] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors"
-                  />
-                  <input
-                    type="color"
-                    value={newTagColor}
-                    onChange={(e) => setNewTagColor(e.target.value)}
-                    className="h-10 w-10 shrink-0 cursor-pointer rounded-md border border-slate-200 dark:border-gray-700 bg-transparent p-0"
-                    aria-label="New tag color"
-                  />
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
                   <button
                     type="button"
-                    onClick={handleAddTag}
-                    className="w-full sm:w-auto px-4 py-2 bg-white/80 hover:bg-white dark:bg-[#2a2a2a] dark:hover:bg-[#3a3a3a] text-slate-800 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors border border-slate-200 dark:border-gray-700"
+                    onClick={() => setDueDate(new Date())}
+                    className="flex-1 sm:flex-none px-3 py-2 text-xs bg-white/80 dark:bg-[#2a2a2a] border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-white dark:hover:bg-[#3a3a3a] transition-colors text-slate-800 dark:text-gray-200"
                   >
-                    Add Tag
+                    Set to current time
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDueDate(null)}
+                    className="flex-1 sm:flex-none px-3 py-2 text-xs bg-white/60 dark:bg-[#1f1f1f] border border-slate-200 dark:border-gray-800 rounded-lg hover:bg-white/80 dark:hover:bg-[#2a2a2a] transition-colors text-slate-700 dark:text-gray-300"
+                  >
+                    Clear date
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white/70 dark:bg-[#1f1f1f] p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-800 dark:text-gray-100">
+                      Recurring note
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-gray-400">
+                      Auto-create this note on a schedule.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRecurringToggle}
+                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                      recurringEnabled
+                        ? "bg-[#0072F5] text-white border-[#0072F5]"
+                        : "bg-white/70 dark:bg-[#2a2a2a] text-slate-600 dark:text-gray-300 border-slate-200 dark:border-gray-700"
+                    }`}
+                  >
+                    {recurringEnabled ? "On" : "Off"}
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="block text-sm text-slate-500 dark:text-gray-400 mb-1">
-                      Due Date
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={formatDateTimeLocal(dueDate)}
-                      onChange={(e) =>
-                        setDueDate(e.target.value ? new Date(e.target.value) : null)
-                      }
-                      className="w-full bg-white/80 dark:bg-[#2a2a2a] text-slate-900 dark:text-gray-100 border border-slate-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#0072F5] focus:ring-2 focus:ring-[#0072F5]/30 transition-colors"
-                    />
-                  </div>
-                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
-                    <button
-                      type="button"
-                      onClick={() => setDueDate(new Date())}
-                      className="flex-1 sm:flex-none px-3 py-2 text-xs bg-white/80 dark:bg-[#2a2a2a] border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-white dark:hover:bg-[#3a3a3a] transition-colors text-slate-800 dark:text-gray-200"
-                    >
-                      Set to current time
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDueDate(null)}
-                      className="flex-1 sm:flex-none px-3 py-2 text-xs bg-white/60 dark:bg-[#1f1f1f] border border-slate-200 dark:border-gray-800 rounded-lg hover:bg-white/80 dark:hover:bg-[#2a2a2a] transition-colors text-slate-700 dark:text-gray-300"
-                    >
-                      Clear date
-                    </button>
-                  </div>
-                </div>
+                {!isPremium && (
+                  <button
+                    type="button"
+                    onClick={() => onRequestPremium?.("Recurring notes")}
+                    className="text-xs text-[#0052CC] dark:text-[#5EA2EF] hover:underline"
+                  >
+                    Upgrade to unlock recurring notes
+                  </button>
+                )}
 
-                <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white/70 dark:bg-[#1f1f1f] p-4 space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-slate-800 dark:text-gray-100">
-                        Recurring note
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-gray-400">
-                        Auto-create this note on a schedule.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRecurringToggle}
-                      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                        recurringEnabled
-                          ? "bg-[#0072F5] text-white border-[#0072F5]"
-                          : "bg-white/70 dark:bg-[#2a2a2a] text-slate-600 dark:text-gray-300 border-slate-200 dark:border-gray-700"
-                      }`}
-                    >
-                      {recurringEnabled ? "On" : "Off"}
-                    </button>
-                  </div>
-
-                  {!isPremium && (
-                    <button
-                      type="button"
-                      onClick={() => onRequestPremium?.("Recurring notes")}
-                      className="text-xs text-[#0052CC] dark:text-[#5EA2EF] hover:underline"
-                    >
-                      Upgrade to unlock recurring notes
-                    </button>
-                  )}
-
-                  {recurringEnabled && (
-                    <div className="flex flex-wrap gap-2">
-                      {recurringOptions.map((option) => {
-                        const active = recurringFrequency === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => setRecurringFrequency(option.value)}
-                            className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                              active
-                                ? "bg-[#0072F5] text-white border-[#0072F5]"
-                                : "bg-white/70 dark:bg-[#2a2a2a] text-slate-700 dark:text-gray-200 border-slate-200 dark:border-gray-700"
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm text-slate-500 dark:text-gray-400 mb-2">
-                    Note color
-                  </label>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {NOTE_COLORS.map((swatch) => {
-                      const active =
-                        typeof color === "string" &&
-                        color.toLowerCase() === swatch.toLowerCase();
-
+                {recurringEnabled && (
+                  <div className="flex flex-wrap gap-2">
+                    {recurringOptions.map((option) => {
+                      const active = recurringFrequency === option.value;
                       return (
                         <button
-                          key={swatch}
+                          key={option.value}
                           type="button"
-                          onClick={() => setColor(swatch)}
-                          className={`h-8 w-8 rounded-full border border-slate-200 dark:border-gray-700 transition-transform ${
+                          onClick={() => setRecurringFrequency(option.value)}
+                          className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                             active
-                              ? "ring-2 ring-[#0072F5] scale-[1.05]"
-                              : "hover:scale-[1.05]"
+                              ? "bg-[#0072F5] text-white border-[#0072F5]"
+                              : "bg-white/70 dark:bg-[#2a2a2a] text-slate-700 dark:text-gray-200 border-slate-200 dark:border-gray-700"
                           }`}
-                          style={{ backgroundColor: swatch }}
-                          aria-label={`Set note color to ${swatch}`}
-                        />
+                        >
+                          {option.label}
+                        </button>
                       );
                     })}
-                    <div className="flex items-center gap-2 pl-2">
-                      <input
-                        type="color"
-                        value={color}
-                        onChange={(e) => setColor(e.target.value)}
-                        className="h-9 w-9 cursor-pointer rounded-md border border-slate-200 dark:border-gray-700 bg-transparent p-0"
-                        aria-label="Custom note color"
-                      />
-                      <span className="text-xs text-slate-500 dark:text-gray-400">
-                        {color?.toUpperCase?.() || ""}
-                      </span>
-                    </div>
                   </div>
-                </div>
+                )}
+              </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-gray-800">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsPinned(!isPinned)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isPinned
-                          ? "bg-[#0072F5] text-white"
-                          : "bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-[#2a2a2a] dark:text-gray-400 dark:hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      <PinIcon className="w-4 h-4" />
-                    </button>
-                    <span className="text-xs text-gray-400">
-                      {isPinned ? "Pinned" : "Pin Note"}
+              <div>
+                <label className="block text-sm text-slate-500 dark:text-gray-400 mb-2">
+                  Note color
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  {NOTE_COLORS.map((swatch) => {
+                    const active =
+                      typeof color === "string" &&
+                      color.toLowerCase() === swatch.toLowerCase();
+
+                    return (
+                      <button
+                        key={swatch}
+                        type="button"
+                        onClick={() => setColor(swatch)}
+                        className={`h-8 w-8 rounded-full border border-slate-200 dark:border-gray-700 transition-transform ${
+                          active
+                            ? "ring-2 ring-[#0072F5] scale-[1.05]"
+                            : "hover:scale-[1.05]"
+                        }`}
+                        style={{ backgroundColor: swatch }}
+                        aria-label={`Set note color to ${swatch}`}
+                      />
+                    );
+                  })}
+                  <div className="flex items-center gap-2 pl-2">
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      className="h-9 w-9 cursor-pointer rounded-md border border-slate-200 dark:border-gray-700 bg-transparent p-0"
+                      aria-label="Custom note color"
+                    />
+                    <span className="text-xs text-slate-500 dark:text-gray-400">
+                      {color?.toUpperCase?.() || ""}
                     </span>
                   </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onCloseModal(false)}
-                      className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-[#0072F5] hover:bg-[#0052CC] text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-[#0072F5]/25"
-                    >
-                      {noteToEdit ? "Save Changes" : "Add Note"}
-                    </button>
-                  </div>
                 </div>
-              </form>
-            </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-gray-800">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPinned(!isPinned)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isPinned
+                        ? "bg-[#0072F5] text-white"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-[#2a2a2a] dark:text-gray-400 dark:hover:bg-[#3a3a3a]"
+                    }`}
+                  >
+                    <PinIcon className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs text-gray-400">
+                    {isPinned ? "Pinned" : "Pin Note"}
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onCloseModal(false)}
+                    className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#0072F5] hover:bg-[#0052CC] text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-[#0072F5]/25"
+                  >
+                    {noteToEdit ? "Save Changes" : "Add Note"}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
