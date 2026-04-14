@@ -2494,8 +2494,28 @@ function App() {
       )}
 
       {!isAuthenticated && showCard && (
-        <div className="flex justify-center items-center z-40 fixed top-0 left-0 w-full h-full backdrop-blur-sm bg-black/50">
-          <div className="w-full max-w-[400px] m-5 p-6 bg-white/90 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xl">
+        <div
+          className="flex justify-center items-center z-40 fixed top-0 left-0 w-full h-full backdrop-blur-sm bg-black/50"
+          onClick={() => {
+            setShowCard(false);
+            try { sessionStorage.setItem("lifelog:skipAuthModal", String(Date.now())); } catch {}
+          }}
+        >
+          <div
+            className="w-full max-w-[400px] m-5 p-6 bg-white/90 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setShowCard(false);
+                try { sessionStorage.setItem("lifelog:skipAuthModal", String(Date.now())); } catch {}
+              }}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-1"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
             <div className="text-center mb-6">
               <p className="text-sm text-slate-700 dark:text-gray-300">
                 In order to use LifeLog, you need to sign in or sign up.
