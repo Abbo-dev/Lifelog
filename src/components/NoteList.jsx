@@ -59,6 +59,15 @@ const NoteList = ({
     setShowHistory(false);
   }, [openNote?.id]);
 
+  useEffect(() => {
+    if (!openNote) return;
+    const handleEscape = (e) => {
+      if (e.key === "Escape") setOpenNote(null);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [openNote]);
+
   const toDateValue = (value) => {
     if (!value) return null;
     if (value instanceof Date) return value;
@@ -483,8 +492,14 @@ const NoteList = ({
       </div>
 
       {openNote && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-3">
-          <div className="relative w-full max-w-3xl bg-[var(--surface-2)] dark:bg-slate-900 rounded-2xl border border-[color:var(--surface-border)] dark:border-gray-800 shadow-2xl overflow-hidden">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-3"
+          onClick={() => setOpenNote(null)}
+        >
+          <div
+            className="relative w-full max-w-3xl bg-[var(--surface-2)] dark:bg-slate-900 rounded-2xl border border-[color:var(--surface-border)] dark:border-gray-800 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex flex-col gap-3 p-4 border-b border-slate-200 dark:border-gray-800 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-1 flex-1 min-w-0">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
@@ -626,10 +641,11 @@ const NoteList = ({
                 ) : null}
                 <button
                   type="button"
-                  className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800"
+                  className="ml-auto p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-gray-200 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors"
                   onClick={() => setOpenNote(null)}
+                  aria-label="Close preview"
                 >
-                  Close
+                  ✕
                 </button>
               </div>
             </div>
