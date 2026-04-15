@@ -33,4 +33,3 @@ serviceAccount*.json
 .env.*
 !.env.example
 server/.env.example
-firestore.rules

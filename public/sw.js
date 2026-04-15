@@ -1,5 +1,7 @@
 /* eslint-disable no-restricted-globals */
-const CACHE_NAME = "lifelog-pwa-v1";
+// Bump this version string on every deployment to bust the cache.
+// Format: lifelog-pwa-v{major}-{YYYYMMDD}
+const CACHE_NAME = "lifelog-pwa-v1-20260414";
 
 const CORE_ASSETS = [
   "/",

@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "LifeLog",
   "short_name": "LifeLog",
   "description": "A calm space to capture notes, pins, and reminders.",
@@ -16,6 +17,21 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "LifeLog home screen"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "LifeLog mobile view"
+    }
   ]
 }
-
