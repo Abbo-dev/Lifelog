@@ -7,6 +7,12 @@ import { ToastProvider } from "@heroui/toast";
 import "./index.css";
 import App from "./App.jsx";
 
+const paddleToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
+if (paddleToken && typeof window !== "undefined" && window.Paddle) {
+  window.Paddle.Environment.set("production");
+  window.Paddle.Initialize({ token: paddleToken });
+}
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ThemeProvider attribute="class" defaultTheme="dark">
