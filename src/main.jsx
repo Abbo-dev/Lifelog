@@ -10,7 +10,14 @@ import App from "./App.jsx";
 const paddleToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
 if (paddleToken && typeof window !== "undefined" && window.Paddle) {
   window.Paddle.Environment.set("production");
-  window.Paddle.Initialize({ token: paddleToken });
+  window.Paddle.Initialize({ 
+    token: paddleToken,
+    checkout: {
+      settings: {
+        theme: "dark"
+      }
+    }
+  });
 }
 
 createRoot(document.getElementById("root")).render(
