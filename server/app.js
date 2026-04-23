@@ -286,6 +286,11 @@ const createApp = ({
 
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
+        const paddleError =
+          payload?.error?.detail ||
+          payload?.error?.message ||
+          payload?.error?.type ||
+          (typeof payload?.error === "string" ? payload.error : null);
         reportError(
           "Paddle create transaction failed",
           { status: response.status, uid, payload },
@@ -293,7 +298,12 @@ const createApp = ({
         );
         return res
           .status(502)
-          .json({ error: "Paddle checkout could not be created." });
+          .json({
+            error: paddleError
+              ? `Paddle: ${paddleError}`
+              : "Paddle checkout could not be created.",
+            paddleStatus: response.status,
+          });
       }
 
       const checkoutUrl =
@@ -361,14 +371,24 @@ const createApp = ({
 
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
+        const paddleError =
+          payload?.error?.detail ||
+          payload?.error?.message ||
+          payload?.error?.type ||
+          (typeof payload?.error === "string" ? payload.error : null);
         reportError(
           "Paddle portal session failed",
-          { status: response.status, uid, payload, subscriptionId },
+          { status: response.status, uid, payload, subscriptionId, customerId },
           { alert: true }
         );
         return res
           .status(502)
-          .json({ error: "Paddle portal could not be created." });
+          .json({
+            error: paddleError
+              ? `Paddle: ${paddleError}`
+              : "Paddle portal could not be created.",
+            paddleStatus: response.status,
+          });
       }
 
       const portalUrl =
