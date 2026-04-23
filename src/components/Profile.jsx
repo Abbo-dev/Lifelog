@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardBody } from "@heroui/card";
@@ -23,6 +23,7 @@ import {
   ShareIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
+import { addToast } from "@heroui/toast";
 import { auth, db, storage } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useBillingStatus } from "../hooks/useBillingStatus";
@@ -56,6 +57,7 @@ import {
 } from "../utils/notePortability";
 import { formatRecurringFrequency } from "../utils/recurringNotes";
 import { createBillingPortalSession } from "../services/billingPortal";
+import { TOAST_CLASSNAMES } from "../utils/toastClassnames";
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -856,36 +858,72 @@ function Profile() {
     }
   };
 
-  const handleOpenBillingPortal = async () => {
+  const handleOpenBillingPortal = useCallback(async () => {
     if (!user) {
       navigate("/auth?mode=signin");
       return;
     }
     if (!apiBaseUrl) {
       setPortalStatus("Billing portal is not configured yet.");
+      addToast({
+        title: "Billing portal unavailable",
+        description: "Server URL is not configured.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
+      });
       return;
     }
     if (!billing.loaded) {
       setPortalStatus("Loading billing details. Please try again in a moment.");
+      addToast({
+        title: "Still loading",
+        description: "Billing details are loading — try again in a moment.",
+        timeout: 4000,
+        shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
+      });
       return;
     }
     if (!billing.customerId) {
       setPortalStatus("No billing profile found for this account yet.");
+      addToast({
+        title: "No billing profile",
+        description: "Complete a checkout first, or contact support.",
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
+      });
       return;
     }
 
     setPortalStatus("");
     setPortalLoading(true);
+    addToast({
+      title: "Opening billing portal",
+      description: "Connecting to the billing server — this may take a moment.",
+      timeout: 6000,
+      shouldShowTimeoutProgress: true,
+      classNames: TOAST_CLASSNAMES,
+    });
     try {
       const token = await user.getIdToken();
       const url = await createBillingPortalSession({ apiBaseUrl, token });
       window.location.href = url;
     } catch (error) {
-      setPortalStatus(error?.message || "Unable to open billing portal.");
+      const message = error?.message || "Unable to open billing portal.";
+      setPortalStatus(message);
+      addToast({
+        title: "Billing portal failed",
+        description: message,
+        timeout: 6000,
+        shouldShowTimeoutProgress: true,
+        classNames: TOAST_CLASSNAMES,
+      });
     } finally {
       setPortalLoading(false);
     }
-  };
+  }, [user, apiBaseUrl, billing.loaded, billing.customerId, navigate]);
 
   const handleToggleRecurring = async (template) => {
     if (!user?.uid || !template?.id) return;
