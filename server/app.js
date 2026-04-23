@@ -322,7 +322,7 @@ const createApp = ({
         return res.status(502).json({ error: "Checkout URL missing from Paddle." });
       }
 
-      res.json({ url: checkoutUrl });
+      res.json({ url: checkoutUrl, transactionId: payload?.data?.id });
     } catch (error) {
       const shouldAlert = !error.statusCode || error.statusCode >= 500;
       reportError(

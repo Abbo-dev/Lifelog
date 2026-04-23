@@ -131,6 +131,7 @@ function Pricing() {
   const [portalStatus, setPortalStatus] = useState("");
   const [checkoutStage, setCheckoutStage] = useState("");
   const [checkoutRedirectUrl, setCheckoutRedirectUrl] = useState("");
+  const [inlineTransactionId, setInlineTransactionId] = useState("");
   const [refreshingPlan, setRefreshingPlan] = useState(false);
   const redirectTimeoutRef = useRef(null);
 
@@ -275,10 +276,15 @@ function Pricing() {
       if (!response.ok) {
         throw new Error(payload?.error || "Unable to start checkout.");
       }
-      if (!payload?.url) {
-        throw new Error("Checkout URL missing from server response.");
+      if (!payload?.url && !payload?.transactionId) {
+        throw new Error("Checkout details missing from server response.");
       }
-      setCheckoutRedirectUrl(payload.url);
+      if (payload?.transactionId && window.Paddle) {
+        setCheckoutStage("inline");
+        setInlineTransactionId(payload.transactionId);
+        return;
+      }
+      setCheckoutRedirectUrl(payload?.url);
       setCheckoutStage("redirecting");
       redirectTimeoutRef.current = window.setTimeout(() => {
         redirectTimeoutRef.current = null;
@@ -303,6 +309,21 @@ function Pricing() {
       setCheckoutLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (checkoutStage === "inline" && inlineTransactionId && typeof window !== "undefined" && window.Paddle) {
+      window.Paddle.Checkout.open({
+        transactionId: inlineTransactionId,
+        settings: {
+          displayMode: "inline",
+          frameTarget: "paddle-checkout-container",
+          frameInitialHeight: "450",
+          frameStyle: "width: 100%; min-width: 312px; background-color: transparent; border: none;",
+          successUrl: `${apiBaseUrlRaw ? window.location.origin : import.meta.env.VITE_APP_URL || "http://localhost:5173"}/pricing?success=1`
+        }
+      });
+    }
+  }, [checkoutStage, inlineTransactionId, apiBaseUrlRaw]);
 
   const openBillingPortal = async () => {
     if (!user) {
@@ -378,7 +399,7 @@ function Pricing() {
       className="relative overflow-hidden text-slate-900 dark:text-white min-h-screen flex flex-col items-center px-4 pt-14 md:pt-16 pb-24"
       style={{ background: "var(--app-bg)" }}
     >
-      {checkoutStage ? (
+      {checkoutStage === "starting" || checkoutStage === "redirecting" ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <motion.div
             initial={{ opacity: 0, y: 14, scale: 0.98 }}
@@ -591,8 +612,33 @@ function Pricing() {
           </div>
         </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
-          <Card className="relative h-full overflow-hidden border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
+        {checkoutStage === "inline" ? (
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-10 max-w-lg mx-auto w-full bg-white/70 dark:bg-black/20 backdrop-blur-xl rounded-3xl p-4 md:p-8 border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.18)]"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Complete your upgrade</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setCheckoutStage("");
+                  setInlineTransactionId("");
+                  if (window.Paddle) {
+                    window.Paddle.Checkout.close();
+                  }
+                }}
+                className="text-xs px-3 py-1.5 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+            <div className="paddle-checkout-container min-h-[450px]" />
+          </motion.div>
+        ) : (
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <Card className="relative h-full overflow-hidden border border-white/10 bg-white/70 dark:bg-black/20 backdrop-blur-xl shadow-[0_25px_70px_rgba(0,0,0,0.18)]">
             <div aria-hidden="true" className="pointer-events-none absolute inset-0">
               <div className="absolute -top-28 -right-24 h-64 w-64 rounded-full bg-[#5EA2EF]/18 blur-3xl" />
               <div className="absolute -bottom-28 -left-24 h-64 w-64 rounded-full bg-[#0072F5]/10 blur-3xl" />
@@ -770,6 +816,7 @@ function Pricing() {
             </Card>
           </div>
         </div>
+        )}
 
         {user && isPremium && localNotesCount > 0 && (
           <div className="mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-50/70 dark:bg-emerald-500/10 dark:border-emerald-400/25 backdrop-blur-xl p-5">
