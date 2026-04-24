@@ -11,6 +11,7 @@ import {
   LinkIcon,
   LockClosedIcon,
   LockOpenIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { sanitizeHtmlForNotes } from "../utils/sanitizeSharedHtml";
 import { hexToRgba, resolveTagColor } from "../utils/tagColors";
@@ -483,10 +484,16 @@ const NoteList = ({
           <NoteCard key={note.id} note={note} />
         ))}
         {notes.length === 0 && (
-          <div className="col-span-full text-center py-8 text-xs text-gray-500">
-            {mode === "trash"
-              ? "No notes in trash."
-              : "No notes found. Create your first note!"}
+          <div className="col-span-full flex flex-col items-center justify-center text-center py-16 px-4">
+            <div className="h-12 w-12 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 flex items-center justify-center mb-4">
+              <DocumentTextIcon className="h-6 w-6 text-slate-400 dark:text-gray-500" />
+            </div>
+            <p className="text-sm font-medium text-slate-700 dark:text-gray-300">
+              {mode === "trash" ? "Trash is empty." : "No notes found."}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 max-w-sm">
+              {mode === "trash" ? "Deleted notes show up here." : "Try adjusting your search or filters, or create a new note."}
+            </p>
           </div>
         )}
       </div>

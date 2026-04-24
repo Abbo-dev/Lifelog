@@ -19,6 +19,7 @@ import { auth } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { TOAST_CLASSNAMES } from "../utils/toastClassnames";
 import { getPasswordValidation } from "../utils/passwordRules";
+import { upsertLocalNote, generateLocalNoteId } from "../utils/localNotes";
 import SwitchTheme from "./Switch";
 import Logo from "../assets/logo2.png";
 import EmailIcon from "../assets/email.svg";
@@ -236,6 +237,27 @@ export default function Auth() {
             displayName: trimmedName,
           });
         }
+
+        try {
+          const welcomeNoteId = generateLocalNoteId();
+          const now = new Date().toISOString();
+          const welcomeNote = {
+            id: welcomeNoteId,
+            title: "👋 Welcome to LifeLog!",
+            content: "<p><strong>You are ready to get organized!</strong></p><p>LifeLog is your personal space for notes, tasks, and ideas.</p><blockquote><p>\"Every organized day starts with a single note.\"</p></blockquote><p>Here are a few quick tips:</p><ul><li>Use <strong>bold</strong>, <em>italics</em>, and <span style=\"background-color: var(--mark-bg, #fde047);\">highlights</span> to structure your thoughts.</li><li>Add <span style=\"color: #0072F5;\">#tags</span> and custom colors to prioritize your work.</li><li>Pin important notes to keep them at the top.</li></ul><p>Delete this note when you are ready, or keep it as a reminder!</p>",
+            createdAt: now,
+            lastModified: now,
+            tags: ["tutorial"],
+            color: "#0072F5",
+            isPinned: true,
+            dueDate: null,
+            locked: false,
+          };
+          upsertLocalNote(userCredential.user.uid, welcomeNote);
+        } catch (noteErr) {
+          console.warn("Failed to generate welcome note", noteErr);
+        }
+
         try {
           await sendEmailVerification(userCredential.user);
           setNotice("Verification email sent. Please check your inbox.");
@@ -292,13 +314,13 @@ export default function Auth() {
             <div className="relative z-10 flex flex-col h-full min-h-[260px]">
               <div className="flex items-start justify-between gap-4">
                 <Link to="/home" className="inline-flex items-center gap-2">
-                  <Image
+                  <img
                     src={Logo}
                     alt="LifeLog"
-                    className="w-[130px] invert"
+                    className="w-[120px] sm:w-[140px] invert"
                   />
                 </Link>
-                <div className="md:hidden">
+                <div className="md:hidden p-1.5 rounded-full border border-white/20 bg-black/10 backdrop-blur-md">
                   <SwitchTheme />
                 </div>
               </div>
@@ -333,22 +355,22 @@ export default function Auth() {
           </section>
 
           <section className="relative px-8 py-10 md:px-12 md:py-12 bg-white/95 dark:bg-[#0b1a33] text-slate-900 dark:text-white">
-            <div className="hidden md:flex absolute right-6 top-6">
+            <div className="hidden md:flex absolute right-6 top-6 p-1.5 rounded-full border border-slate-200/60 dark:border-white/10 bg-slate-50 dark:bg-black/20 backdrop-blur-md">
               <SwitchTheme />
             </div>
 
             <div className="space-y-7">
               <div className="space-y-1">
-                <p className="text-sm text-slate-600 dark:text-white/70">
+                <p className="text-base text-slate-600 dark:text-white/70">
                   Hello!
                 </p>
-                <p className="text-sm font-semibold text-[#0072F5]">
+                <p className="text-base font-semibold text-[#0072F5]">
                   {greeting}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <h1 className="text-lg font-semibold">
+                <h1 className="text-2xl md:text-3xl font-semibold">
                   <span className="text-[#0072F5]">
                     {isSignup ? "Create" : "Login"}
                   </span>{" "}
@@ -393,7 +415,7 @@ export default function Auth() {
                     onChange={(e) => setUsername(e.target.value)}
                     classNames={authInputClassNames}
                     endContent={
-                      <Image
+                      <img
                         src={UserIcon}
                         alt=""
                         className="w-6 h-6 opacity-70"
@@ -416,7 +438,7 @@ export default function Auth() {
                   onChange={(e) => setEmail(e.target.value)}
                   classNames={authInputClassNames}
                   endContent={
-                    <Image
+                    <img
                       src={EmailIcon}
                       alt=""
                       className="w-6 h-6 opacity-70"
@@ -424,6 +446,7 @@ export default function Auth() {
                   }
                 />
 
+              <div className="space-y-3">
                 <Input
                   isRequired
                   variant="underlined"
@@ -446,7 +469,7 @@ export default function Auth() {
                         showPassword ? "Hide password" : "Show password"
                       }
                     >
-                      <Image
+                      <img
                         src={showPassword ? EyeOff : Eye}
                         alt=""
                         className="w-6 h-6 opacity-70"
@@ -507,10 +530,12 @@ export default function Auth() {
                     and a symbol.
                   </p>
                 )}
+              </div>
 
                 {isSignup && (
                   <Input
                     isRequired
+                    className="mt-6"
                     variant="underlined"
                     color="primary"
                     label="Confirm Password"
@@ -531,7 +556,7 @@ export default function Auth() {
                           showPassword ? "Hide password" : "Show password"
                         }
                       >
-                        <Image
+                        <img
                           src={showPassword ? EyeOff : Eye}
                           alt=""
                           className="w-6 h-6 opacity-70"

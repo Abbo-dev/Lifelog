@@ -14,17 +14,25 @@ import NavbarSide from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
 import { useFocusMode } from './hooks/useFocusMode'
+import { useAuth } from './contexts/AuthContext'
+
+function SmartRedirect() {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  return <Navigate to={user ? '/app' : '/home'} replace />
+}
 
 function AppLayout() {
   const { pathname } = useLocation()
   const { enabled: focusMode } = useFocusMode()
   const hideFooter = pathname === '/auth' || pathname === '/signin' || pathname === '/signup'
+  const hideNavbar = pathname === '/auth' || pathname === '/signin' || pathname === '/signup'
 
   return (
     <div className={`app-shell min-h-screen pt-24 pb-14 ${focusMode ? "focus-mode" : ""}`}>
-      <NavbarSide />
+      {!hideNavbar && <NavbarSide />}
       <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route path="/" element={<SmartRedirect />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
         <Route path="/home" element={<Content />} />
