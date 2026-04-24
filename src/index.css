@@ -84,7 +84,144 @@ html:not(.dark) .text-gray-400 {
   transform-origin: 50% 50%;
 }
 
-/* TipTap Editor Styles */
+/* ── Rich Text Editor Toolbar ─────────────────────────────── */
+.rte-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(148, 172, 214, 0.35);
+  background: rgba(249, 251, 255, 0.85);
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.dark .rte-toolbar {
+  background: rgba(30, 41, 59, 0.7);
+  border-bottom-color: rgba(100, 116, 139, 0.3);
+}
+
+.rte-btn {
+  min-width: 0 !important;
+  padding: 4px 7px !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  border-radius: 6px !important;
+  transition: background 0.15s, color 0.15s, transform 0.1s !important;
+}
+
+.rte-btn:hover:not([disabled]) {
+  background: rgba(0, 114, 245, 0.08) !important;
+}
+
+.dark .rte-btn:hover:not([disabled]) {
+  background: rgba(94, 162, 239, 0.12) !important;
+}
+
+.rte-btn-active {
+  background: rgba(0, 114, 245, 0.15) !important;
+  color: #0072F5 !important;
+}
+
+.dark .rte-btn-active {
+  background: rgba(94, 162, 239, 0.2) !important;
+  color: #5EA2EF !important;
+}
+
+.rte-btn[disabled] {
+  opacity: 0.35;
+}
+
+.rte-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: rgba(148, 172, 214, 0.3);
+  flex-shrink: 0;
+}
+
+.dark .rte-sep {
+  background: rgba(100, 116, 139, 0.3);
+}
+
+/* Color picker dropdown */
+.rte-color-dropdown {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  right: 0;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid rgba(148, 172, 214, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 210px;
+}
+
+.dark .rte-color-dropdown {
+  background: #1e293b;
+  border-color: rgba(100, 116, 139, 0.35);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.rte-quick-colors {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.rte-quick-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+}
+
+.rte-quick-swatch:hover {
+  transform: scale(1.15);
+}
+
+.rte-quick-swatch-active {
+  border-color: #0072F5 !important;
+  box-shadow: 0 0 0 2px rgba(0, 114, 245, 0.25);
+}
+
+.rte-reset-color {
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rte-reset-color:hover {
+  background: rgba(0, 114, 245, 0.08);
+  color: #0072F5;
+}
+
+.dark .rte-reset-color {
+  color: #94a3b8;
+}
+
+.dark .rte-reset-color:hover {
+  background: rgba(94, 162, 239, 0.12);
+  color: #5EA2EF;
+}
+
+/* Make react-colorful picker fit nicely */
+.rte-color-dropdown .react-colorful {
+  width: 100% !important;
+  height: 150px !important;
+}
+
+/* ── TipTap ProseMirror Styles ───────────────────────────── */
 .ProseMirror {
   @apply min-h-[150px] outline-none;
 }
@@ -137,6 +274,22 @@ html:not(.dark) .text-gray-400 {
   @apply bg-yellow-200 dark:bg-yellow-800;
 }
 
+/* Text alignment */
+.ProseMirror .has-text-align-center,
+.ProseMirror [style*="text-align: center"] {
+  text-align: center;
+}
+
+.ProseMirror .has-text-align-right,
+.ProseMirror [style*="text-align: right"] {
+  text-align: right;
+}
+
+.ProseMirror .has-text-align-left,
+.ProseMirror [style*="text-align: left"] {
+  text-align: left;
+}
+
 .ProseMirror ul[data-type="taskList"] {
   @apply list-none;
 }
@@ -155,6 +308,19 @@ html:not(.dark) .text-gray-400 {
 
 .ProseMirror ul[data-type="taskList"] li > div > p {
   @apply my-0;
+}
+
+/* Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: #94a3b8;
+}
+
+.dark .ProseMirror p.is-editor-empty:first-child::before {
+  color: #475569;
 }
 
 /* Dark mode styles */

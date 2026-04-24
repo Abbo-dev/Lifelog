@@ -8,11 +8,12 @@ import {
   Chip,
   Image,
 } from "@heroui/react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import {
   BellAlertIcon,
+  ChevronDownIcon,
   PencilSquareIcon,
   RocketLaunchIcon,
   SparklesIcon,
@@ -164,13 +165,17 @@ const faqItems = [
 
 function Content() {
   const [authUser, setAuthUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setAuthUser(user);
+      if (user) {
+        navigate("/app", { replace: true });
+      }
     });
     return unsubscribe;
-  }, []);
+  }, [navigate]);
 
   const isAuthenticated = !!authUser;
   const displayName = authUser?.displayName?.trim();
@@ -224,14 +229,16 @@ function Content() {
             >
               {primaryCta.label}
             </Button>
-            <Button
-              as={Link}
-              to={secondaryCta.to}
-              variant="light"
-              className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white"
-            >
-              {secondaryCta.label}
-            </Button>
+            {isAuthenticated && (
+              <Button
+                as={Link}
+                to={secondaryCta.to}
+                variant="light"
+                className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white"
+              >
+                {secondaryCta.label}
+              </Button>
+            )}
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 dark:text-white/75">
             <span className="px-3 py-1 rounded-full glass-chip border border-slate-200/70 dark:border-white/10 text-slate-700 dark:text-white/80">
@@ -746,6 +753,8 @@ function Content() {
                     key={item.id}
                     aria-label={item.question}
                     title={item.question}
+                    disableIndicatorAnimation={true}
+                    indicator={<ChevronDownIcon className="w-5 h-5" />}
                   >
                     <p className="text-sm text-slate-700 dark:text-white/70">
                       {item.answer}
