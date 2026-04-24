@@ -3,12 +3,14 @@ import StarterKit from '@tiptap/starter-kit';
 import Color from '@tiptap/extension-color';
 import TextStyle from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { Button } from '@heroui/react';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { ensureProtocol } from '../utils/linkUtils';
 import ImageNode from '../extensions/ImageNode';
@@ -19,6 +21,11 @@ const NOTE_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 const NOTE_IMAGE_MAX_DIMENSION = 2048;
 const NOTE_IMAGE_OUTPUT_MIME_TYPE = 'image/webp';
 const NOTE_IMAGE_OUTPUT_QUALITY = 0.82;
+
+const QUICK_COLORS = [
+  '#000000', '#434343', '#FF0000', '#FF6900',
+  '#FFD600', '#00C853', '#2196F3', '#9C27B0',
+];
 
 const canvasToBlob = (canvas, mimeType, quality) =>
   new Promise((resolve, reject) => {
@@ -113,12 +120,69 @@ const prepareNoteImageBlob = async (file) => {
   return blob.size < file.size ? blob : file;
 };
 
+/* ── Toolbar separator ─────────────────────────────────────── */
+const Sep = () => (
+  <div className="rte-sep" />
+);
+
+/* ── Toolbar button ─────────────────────────────────────────── */
+const TBtn = ({ onPress, isActive, isDisabled, title, ariaLabel, children }) => (
+  <Button
+    size="sm"
+    variant="light"
+    isDisabled={isDisabled}
+    onPress={onPress}
+    className={`rte-btn ${isActive ? 'rte-btn-active' : ''}`}
+    aria-label={ariaLabel || title}
+    title={title}
+  >
+    {children}
+  </Button>
+);
+
+/* ── Menu Bar ──────────────────────────────────────────────── */
 const MenuBar = ({ editor, isPremium = false }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [currentColor, setCurrentColor] = useState('#000000');
   const fileInputRef = useRef(null);
+  const colorPickerRef = useRef(null);
+  const colorBtnRef = useRef(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const baseButtonClass = 'min-w-0 px-2 text-[11px] sm:text-xs';
+
+  /* Sync the swatch color from the editor selection */
+  const syncColorFromEditor = useCallback(() => {
+    if (!editor) return;
+    const attrs = editor.getAttributes('textStyle');
+    const active = attrs?.color || '';
+    setCurrentColor(active || '#000000');
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.on('selectionUpdate', syncColorFromEditor);
+    editor.on('transaction', syncColorFromEditor);
+    return () => {
+      editor.off('selectionUpdate', syncColorFromEditor);
+      editor.off('transaction', syncColorFromEditor);
+    };
+  }, [editor, syncColorFromEditor]);
+
+  /* Click-outside to close color picker */
+  useEffect(() => {
+    if (!showColorPicker) return;
+    const handler = (e) => {
+      if (
+        colorPickerRef.current &&
+        !colorPickerRef.current.contains(e.target) &&
+        colorBtnRef.current &&
+        !colorBtnRef.current.contains(e.target)
+      ) {
+        setShowColorPicker(false);
+      }
+    };
+    document.addEventListener('pointerdown', handler, true);
+    return () => document.removeEventListener('pointerdown', handler, true);
+  }, [showColorPicker]);
 
   useEffect(() => {
     if (editor) {
@@ -133,6 +197,12 @@ const MenuBar = ({ editor, isPremium = false }) => {
   const handleColorChange = (color) => {
     setCurrentColor(color);
     editor.chain().focus().setColor(color).run();
+  };
+
+  const clearColor = () => {
+    setCurrentColor('#000000');
+    editor.chain().focus().unsetColor().run();
+    setShowColorPicker(false);
   };
 
   const addLink = () => {
@@ -205,156 +275,175 @@ const MenuBar = ({ editor, isPremium = false }) => {
   };
 
   return (
-    <div className="flex flex-wrap gap-1 p-2 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-t-lg sm:flex-nowrap sm:gap-2 sm:overflow-x-auto">
-      <Button
-        size="sm"
-        variant="light"
+    <div className="rte-toolbar">
+      {/* ── Undo / Redo ────────────────────── */}
+      <TBtn
+        onPress={() => editor.chain().focus().undo().run()}
+        isDisabled={!editor.can().undo()}
+        title="Undo"
+      >
+        ↩
+      </TBtn>
+      <TBtn
+        onPress={() => editor.chain().focus().redo().run()}
+        isDisabled={!editor.can().redo()}
+        title="Redo"
+      >
+        ↪
+      </TBtn>
+
+      <Sep />
+
+      {/* ── Inline formatting ──────────────── */}
+      <TBtn
         onPress={() => editor.chain().focus().toggleBold().run()}
-        className={`${baseButtonClass} ${
-          editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : ''
-        }`}
-        aria-label="Bold"
+        isActive={editor.isActive('bold')}
         title="Bold"
       >
         <span className="font-bold">B</span>
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+      </TBtn>
+      <TBtn
         onPress={() => editor.chain().focus().toggleItalic().run()}
-        className={`${baseButtonClass} ${
-          editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700' : ''
-        }`}
-        aria-label="Italic"
+        isActive={editor.isActive('italic')}
         title="Italic"
       >
         <span className="italic">I</span>
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+      </TBtn>
+      <TBtn
+        onPress={() => editor.chain().focus().toggleUnderline().run()}
+        isActive={editor.isActive('underline')}
+        title="Underline"
+      >
+        <span className="underline">U</span>
+      </TBtn>
+      <TBtn
         onPress={() => editor.chain().focus().toggleStrike().run()}
-        className={`${baseButtonClass} ${
-          editor.isActive('strike') ? 'bg-gray-200 dark:bg-gray-700' : ''
-        }`}
-        aria-label="Strikethrough"
+        isActive={editor.isActive('strike')}
         title="Strikethrough"
       >
         <span className="line-through">S</span>
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+      </TBtn>
+      <TBtn
         onPress={() => editor.chain().focus().toggleHighlight().run()}
-        className={`${baseButtonClass} ${
-          editor.isActive('highlight') ? 'bg-gray-200 dark:bg-gray-700' : ''
-        }`}
-        aria-label="Highlight"
+        isActive={editor.isActive('highlight')}
         title="Highlight"
       >
-        <span className="bg-yellow-200 dark:bg-yellow-800 px-1">H</span>
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+        <span className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">H</span>
+      </TBtn>
+
+      <Sep />
+
+      {/* ── Headings ───────────────────────── */}
+      <TBtn
         onPress={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        className={`${baseButtonClass} ${
-          editor.isActive('heading', { level: 1 })
-            ? 'bg-gray-200 dark:bg-gray-700'
-            : ''
-        }`}
-        aria-label="Heading 1"
+        isActive={editor.isActive('heading', { level: 1 })}
         title="Heading 1"
       >
         H1
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+      </TBtn>
+      <TBtn
         onPress={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={`${baseButtonClass} ${
-          editor.isActive('heading', { level: 2 })
-            ? 'bg-gray-200 dark:bg-gray-700'
-            : ''
-        }`}
-        aria-label="Heading 2"
+        isActive={editor.isActive('heading', { level: 2 })}
         title="Heading 2"
       >
         H2
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+      </TBtn>
+
+      <Sep />
+
+      {/* ── Text alignment ─────────────────── */}
+      <TBtn
+        onPress={() => editor.chain().focus().setTextAlign('left').run()}
+        isActive={editor.isActive({ textAlign: 'left' })}
+        title="Align left"
+      >
+        ≡
+      </TBtn>
+      <TBtn
+        onPress={() => editor.chain().focus().setTextAlign('center').run()}
+        isActive={editor.isActive({ textAlign: 'center' })}
+        title="Align center"
+      >
+        ≡
+      </TBtn>
+      <TBtn
+        onPress={() => editor.chain().focus().setTextAlign('right').run()}
+        isActive={editor.isActive({ textAlign: 'right' })}
+        title="Align right"
+      >
+        ≡
+      </TBtn>
+
+      <Sep />
+
+      {/* ── Lists & blocks ─────────────────── */}
+      <TBtn
         onPress={() => editor.chain().focus().toggleBulletList().run()}
-        className={`${baseButtonClass} ${
-          editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-gray-700' : ''
-        }`}
-        aria-label="Bullet list"
+        isActive={editor.isActive('bulletList')}
         title="Bullet list"
       >
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-0.5">
           <span aria-hidden="true">•</span>
           <span className="hidden sm:inline">List</span>
         </span>
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+      </TBtn>
+      <TBtn
         onPress={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`${baseButtonClass} ${
-          editor.isActive('orderedList') ? 'bg-gray-200 dark:bg-gray-700' : ''
-        }`}
-        aria-label="Numbered list"
+        isActive={editor.isActive('orderedList')}
         title="Numbered list"
       >
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-0.5">
           <span aria-hidden="true">1.</span>
           <span className="hidden sm:inline">List</span>
         </span>
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+      </TBtn>
+      <TBtn
         onPress={() => editor.chain().focus().toggleTaskList().run()}
-        className={`${baseButtonClass} ${
-          editor.isActive('taskList') ? 'bg-gray-200 dark:bg-gray-700' : ''
-        }`}
-        aria-label="Task list"
+        isActive={editor.isActive('taskList')}
         title="Task list"
       >
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-0.5">
           <span aria-hidden="true">☐</span>
           <span className="hidden sm:inline">Tasks</span>
         </span>
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+      </TBtn>
+      <TBtn
+        onPress={() => editor.chain().focus().toggleBlockquote().run()}
+        isActive={editor.isActive('blockquote')}
+        title="Blockquote"
+      >
+        ❝
+      </TBtn>
+      <TBtn
+        onPress={() => editor.chain().focus().toggleCodeBlock().run()}
+        isActive={editor.isActive('codeBlock')}
+        title="Code block"
+      >
+        {'</>'}
+      </TBtn>
+
+      <Sep />
+
+      {/* ── Insert ─────────────────────────── */}
+      <TBtn
         onPress={addLink}
-        className={`${baseButtonClass} ${
-          editor.isActive('link') ? 'bg-gray-200 dark:bg-gray-700' : ''
-        }`}
-        aria-label="Add link"
+        isActive={editor.isActive('link')}
         title="Add link"
       >
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-0.5">
           <span aria-hidden="true">🔗</span>
           <span className="hidden sm:inline">Link</span>
         </span>
-      </Button>
-      <Button
-        size="sm"
-        variant="light"
+      </TBtn>
+      <TBtn
         onPress={addImage}
-        className={baseButtonClass}
-        aria-label="Add image"
         title="Add image"
       >
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-0.5">
           <span aria-hidden="true">🖼</span>
           <span className="hidden sm:inline">Image</span>
         </span>
-      </Button>
+      </TBtn>
       <input
         ref={fileInputRef}
         type="file"
@@ -363,43 +452,70 @@ const MenuBar = ({ editor, isPremium = false }) => {
         className="hidden"
         onChange={(event) => uploadImages(event.target.files)}
       />
-      <Button
-        size="sm"
-        variant="light"
+      <TBtn
         isDisabled={isUploadingImage || !isPremium}
         onPress={() => fileInputRef.current?.click()}
-        className={baseButtonClass}
-        aria-label="Upload image"
         title={!isPremium ? 'Image upload is a Premium feature' : isUploadingImage ? 'Uploading image' : 'Upload image'}
       >
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-0.5">
           <span aria-hidden="true">{isUploadingImage ? '⏳' : '⬆️'}</span>
           <span className="hidden sm:inline">
             {isUploadingImage ? 'Uploading…' : 'Upload'}
           </span>
         </span>
-      </Button>
-      <div className="relative">
+      </TBtn>
+
+      <Sep />
+
+      {/* ── Color picker ───────────────────── */}
+      <div className="relative" ref={colorBtnRef}>
         <Button
           size="sm"
           variant="light"
-          onPress={() => setShowColorPicker(!showColorPicker)}
-          className={`${baseButtonClass} flex items-center gap-1`}
+          onPress={() => setShowColorPicker((v) => !v)}
+          className="rte-btn flex items-center gap-1"
           aria-label="Text color"
           title="Text color"
         >
-          <span>🎨</span>
+          <span>A</span>
           <div
-            className="w-4 h-4 rounded-full border border-gray-300"
+            className="w-4 h-1.5 rounded-sm"
             style={{ backgroundColor: currentColor }}
           />
         </Button>
         {showColorPicker && (
-          <div className="absolute z-50 mt-2 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <div ref={colorPickerRef} className="rte-color-dropdown">
+            <div className="rte-quick-colors">
+              {QUICK_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => handleColorChange(c)}
+                  className={`rte-quick-swatch ${currentColor === c ? 'rte-quick-swatch-active' : ''}`}
+                  style={{ backgroundColor: c }}
+                  aria-label={`Set color ${c}`}
+                />
+              ))}
+            </div>
             <HexColorPicker color={currentColor} onChange={handleColorChange} />
+            <button
+              type="button"
+              onClick={clearColor}
+              className="rte-reset-color"
+            >
+              Reset to default
+            </button>
           </div>
         )}
       </div>
+
+      {/* ── Clear formatting ───────────────── */}
+      <TBtn
+        onPress={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
+        title="Clear formatting"
+      >
+        ✕
+      </TBtn>
     </div>
   );
 };
@@ -411,6 +527,10 @@ const RichTextEditor = ({ content, onChange, className = '', isPremium = false }
       Color,
       TextStyle,
       Highlight,
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
